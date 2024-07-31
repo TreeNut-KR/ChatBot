@@ -1,0 +1,4 @@
+CREATE DATABASE IF NOT EXISTS chatbot;
+
+
+USE chatbot;

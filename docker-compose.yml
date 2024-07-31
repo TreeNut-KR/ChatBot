@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  nginx:
+    restart: always
+    build:
+      context: ./nginx
+    ports:
+      - 80:80
+    depends_on:
+      - fastapi
+
+  fastapi:
+    restart: always
+    build:
+      context: ./fastapi
+    ports:
+      - 8000:8000
+    expose:
+      - 8000
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mysql
+  mysql:
+    restart: unless-stopped
+    build:
+      context: ./mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
+      - ./mysql/logs:/var/log/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
