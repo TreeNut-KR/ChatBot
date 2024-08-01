@@ -22,6 +22,7 @@ services:
       - ./logs:/app/logs
     depends_on:
       - mysql
+
   mysql:
     restart: unless-stopped
     build:
@@ -37,3 +38,17 @@ services:
       - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
       - ./mysql/logs:/var/log/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    depends_on:
+      - mongodb
+
+  mongodb:
+    restart: unless-stopped
+    build:
+      context: ./mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo/data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
