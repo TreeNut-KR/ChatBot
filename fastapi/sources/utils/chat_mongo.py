@@ -1,52 +1,54 @@
-import uuid
+import os
+from typing import NoReturn, List
 from pymongo import MongoClient
+from dotenv import load_dotenv
+import uuid
 
-username = "root"  # MongoDB 사용자 이름
-password = "1234"  # MongoDB 비밀번호
-client = MongoClient(f'mongodb://{username}:{password}@192.168.219.105:27017/')  # MongoDB 서버 주소
-db = client['TreeNut']  # 데이터베이스 이름
-collection = db['chatlog']  # 컬렉션 이름
+class MongoDBHandler:
+    def __init__(self) -> NoReturn:
+        """
+        MongoDBHandler 초기화.
+        환경 변수에서 MongoDB 정보 로드.
+        """
+        load_dotenv()  # .env 파일 로드
 
-def generate_data(api_data):
-    value = []
-    for index, item in enumerate(api_data, start=1):  # 인덱스를 1부터 시작
-        value.append({
-            "index": index,
-            "img": str(item.get("img", "")),
-            "input": str(item.get("input", "")),
-            "output": str(item.get("output", ""))
-        })
-    
-    data = {
-        "id": str(uuid.uuid4()),  # UUID 생성
-        "value": value
-    }
-    return data
+        # 환경 변수에서 MongoDB 설정값 가져오기
+        self.username = os.getenv("MONGO_ADMIN_USER")
+        self.password = os.getenv("MONGO_ADMIN_PASSWORD")
+        self.database_name = os.getenv("MONGO_DATABASE")
+        self.host = os.getenv("MONGO_HOST", "localhost")
+        self.port = int(os.getenv("MONGO_PORT", 27017))
 
-# 저장된 데이터의 id로 검색
-def find_data_by_id(data_id):
-    result = collection.find_one({"id": data_id})  # id로 데이터 검색
-    return result
+        # MongoDB 클라이언트 생성
+        self.client = MongoClient(f'mongodb://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}?authSource=admin')
+        # 데이터베이스 참조
+        self.db = self.client[self.database_name]
 
+    def create_chatlog_collection(self) -> str:
+        """
+        chatlog 컬렉션을 생성하는 함수.
+        :return: 생성된 문서의 ID
+        """
+        # chatlog 컬렉션 참조
+        collection = self.db['chatlog']
 
-if __name__ == "__main__":
-    # 예시 API 데이터 (실제 API에서 받아온 데이터로 대체)
-    api_data = [
-        {"img": "image1.png", "input": "input1", "output": "output1"},
-        {"img": "image2.png", "input": "input2", "output": "output2"},
-        # 추가 데이터...
-    ]
+        # 새 문서 생성
+        document = {
+            "id": str(uuid.uuid4()),  # UUID 생성
+            "value": []  # 리스트 형태의 데이터
+        }
 
-    # 데이터를 생성하고 MongoDB에 저장
-    data = generate_data(api_data)
-    collection.insert_one(data)
+        # 문서 삽입
+        result = collection.insert_one(document)
+        print("Document created with ID:", result.inserted_id)  # 삽입된 문서의 ID 출력
 
-    print("데이터가 성공적으로 저장되었습니다.")
-    # 데이터 검색 예시
-    searched_id = data["id"]  # 방금 생성된 데이터의 id
-    found_data = find_data_by_id(searched_id)
+        return document["id"]  # 생성된 ID 반환
 
-    if found_data:
-        print("검색된 데이터:", found_data)
-    else:
-        print("해당 id의 데이터가 존재하지 않습니다.")
+    def get_collection_names(self) -> List[str]:
+        """
+        데이터베이스의 컬렉션 이름 목록을 반환하는 함수.
+        :return: 컬렉션 이름 리스트
+        """
+        collection_names = self.db.list_collection_names()
+        print("Collections in database:", collection_names)  # 컬렉션 이름 목록 출력
+        return collection_names
