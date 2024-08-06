@@ -7,7 +7,7 @@ services:
       - "80:80"
     depends_on:
       - fastapi
-      
+
   fastapi:
     restart: always
     build:
@@ -15,14 +15,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MONGO_HOST: ${MONGO_HOST}
+      MONGO_HOST: mongodb
       MONGO_PORT: 27017
       MONGO_ADMIN_USER: ${MONGO_ADMIN_USER}
       MONGO_ADMIN_PASSWORD: ${MONGO_ADMIN_PASSWORD}
       MONGO_DATABASE: ${MONGO_DATABASE}
+      MONGO_AUTH: ${MONGO_AUTH}
     volumes:
       - ./fastapi/logs:/app/logs
-      - ./fastapi/sources:/app/sources 
+      - ./fastapi/sources:/app/sources
     depends_on:
       - mysql
 
@@ -41,9 +42,13 @@ services:
       - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
       - ./mysql/logs:/var/log/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    depends_on:
+      - mongodb
 
   mongodb:
-    build: ./mongo
+    restart: unless-stopped
+    build:
+      context: ./mongo
     ports:
       - "27017:27017"
     environment:
@@ -53,3 +58,4 @@ services:
     volumes:
       - ./mongo/data:/data/db
       - ./mongo/log:/var/log/mongodb
+      - ./mongo/.env:/docker-entrypoint-initdb.d/.env
