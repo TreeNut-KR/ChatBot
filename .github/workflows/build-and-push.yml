@@ -3,7 +3,7 @@ name: Build and Push Docker Images
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'  # 'v'로 시작하는 태그에 대해 작업을 실행합니다.
 
 jobs:
   build-and-push:
