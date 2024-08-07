@@ -17,5 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY sources /app/sources
 COPY sources/.env /app/sources/.env  
 
+# 로그 디렉토리 생성 및 권한 설정
+RUN mkdir -p /app/sources/logs
+RUN chmod -R 755 /app/sources/logs
+
 # 어플리케이션 실행
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]

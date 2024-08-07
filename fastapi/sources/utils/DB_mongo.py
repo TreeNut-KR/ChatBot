@@ -1,9 +1,11 @@
 import os
-from typing import NoReturn, List, Dict
-from pymongo import MongoClient
-from dotenv import load_dotenv
 import uuid
+from dotenv import load_dotenv
+from pymongo import MongoClient
+from pymongo.errors import PyMongoError
+from typing import NoReturn, List, Dict
 
+from .Error_handlers import NotFoundException, InternalServerErrorException
 
 class MongoDBHandler:
     def __init__(self) -> NoReturn:
@@ -13,11 +15,11 @@ class MongoDBHandler:
         """
         # 현재 파일의 디렉토리 경로
         current_directory = os.path.dirname(os.path.abspath(__file__))
-        env_file_path = os.path.join(current_directory, '.env')
+        env_file_path = os.path.join(current_directory, '../.env')
         load_dotenv(env_file_path)  # .env 파일 로드
         
         # 환경 변수에서 MongoDB 설정값 가져오기
-        self.host = os.getenv("MONGO_HOST", "localhost")  # Docker 컨테이너 이름 또는 호스트 IP
+        self.host = os.getenv("MONGO_HOST")
         self.port = int(os.getenv("MONGO_PORT", 27017))
         self.username = os.getenv("MONGO_ADMIN_USER")
         self.password = os.getenv("MONGO_ADMIN_PASSWORD")
@@ -32,27 +34,39 @@ class MongoDBHandler:
             password=self.password,
             authSource=self.auth_name
         )
-        self.db = self.client[self.database_name] # 데이터베이스 참조
-
+        self.db = self.client[self.database_name]
+        
+    def get_db_names(self) -> List[str]:
+        """
+        데이터베이스 이름 목록을 반환하는 함수.
+        :return: 데이터베이스 이름 리스트
+        """
+        return self.client.list_database_names()
+    
+    def get_collection_names(self, database_name) -> List[str]:
+        """
+        데이터베이스의 컬렉션 이름 목록을 반환하는 함수.
+        :param database_name: 데이터베이스 이름
+        :return: 컬렉션 이름 리스트
+        """
+        # 데이터베이스가 존재하는지 확인
+        if database_name not in self.get_db_names():
+            raise NotFoundException(f"Database '{database_name}' not found.")
+        return self.client[database_name].list_collection_names()
+    
     def create_chatlog_collection(self) -> str:
         """
         chatlog 컬렉션을 생성하는 함수.
-        :return: 생성된 문서의 ID
+        :return: 생성된 문서의 UUID
         """
-        # chatlog 컬렉션 참조
         collection = self.db['chatlog']
-
-        # 새 문서 생성
+        document_id = str(uuid.uuid4())
         document = {
-            "id": str(uuid.uuid4()),  # UUID 생성
-            "value": []  # 리스트 형태의 데이터
+            "id": document_id,
+            "value": []
         }
-
-        # 문서 삽입
-        result = collection.insert_one(document)
-        print("Document created with ID:", result.inserted_id)  # 삽입된 문서의 ID 출력
-
-        return document["id"]  # 생성된 ID 반환
+        collection.insert_one(document)
+        return document_id
     
     def add_to_value(self, document_id: str, new_data: Dict) -> str:
         """
@@ -61,48 +75,25 @@ class MongoDBHandler:
         :param new_data: 추가할 JSON 데이터
         :return: 성공 메시지 또는 실패 메시지
         """
-        # chatlog 컬렉션 참조
-        collection = self.db['chatlog']
-
         try:
-            # 문서 조회
+            collection = self.db['chatlog']
             document = collection.find_one({"id": document_id})
-            
             if document is None:
-                return f"No document found with ID: {document_id}"
+                raise NotFoundException(f"No document found with ID: {document_id}")
             
-            # 자동 인덱스 생성
             new_index = len(document['value']) + 1
             new_data_with_index = {
                 "index": new_index,
                 **new_data
             }
-
-            # 'value' 필드에 새로운 데이터 추가
             result = collection.update_one(
-                {"id": document_id},  # 문서 식별 조건
-                {"$push": {"value": new_data_with_index}}  # 'value' 배열에 데이터 추가
+                {"id": document_id},
+                {"$push": {"value": new_data_with_index}}
             )
 
             if result.modified_count > 0:
                 return f"Successfully added data to document with ID: {document_id}"
             else:
-                return f"No document found with ID: {document_id} or no data added."
-        
-        except Exception as e:
-            # 예외 발생 시 실패 메시지와 함께 예외 내용 반환
-            return f"An error occurred: {str(e)}"
-
-    def get_collection_names(self) -> List[str]:
-        """
-        데이터베이스의 컬렉션 이름 목록을 반환하는 함수.
-        :return: 컬렉션 이름 리스트
-        """
-        return self.db.list_collection_names()
-    
-    def get_db_names(self) -> List[str]:
-        """
-        데이터베이스 이름 목록을 반환하는 함수.
-        :return: 데이터베이스 이름 리스트
-        """
-        return self.client.list_database_names()
+                raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=str(e))
