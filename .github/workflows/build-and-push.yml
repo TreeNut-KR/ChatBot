@@ -35,8 +35,8 @@ jobs:
           context: ./nginx
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/nginx:latest
-            ghcr.io/${{ github.repository_owner }}/nginx:${{ github.ref_name }}
+            ghcr.io/treenut-kr/nginx:latest
+            ghcr.io/treenut-kr/nginx:${{ github.ref_name }}
 
       - name: Build and push FastAPI image
         uses: docker/build-push-action@v2
@@ -44,8 +44,8 @@ jobs:
           context: ./fastapi
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/fastapi:latest
-            ghcr.io/${{ github.repository_owner }}/fastapi:${{ github.ref_name }}
+            ghcr.io/treenut-kr/fastapi:latest
+            ghcr.io/treenut-kr/fastapi:${{ github.ref_name }}
 
       - name: Build and push MySQL image
         uses: docker/build-push-action@v2
@@ -53,8 +53,8 @@ jobs:
           context: ./mysql
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mysql:latest
-            ghcr.io/${{ github.repository_owner }}/mysql:${{ github.ref_name }}
+            ghcr.io/treenut-kr/mysql:latest
+            ghcr.io/treenut-kr/mysql:${{ github.ref_name }}
 
       - name: Build and push MongoDB image
         uses: docker/build-push-action@v2
@@ -62,5 +62,5 @@ jobs:
           context: ./mongo
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mongodb:latest
-            ghcr.io/${{ github.repository_owner }}/mongodb:${{ github.ref_name }}
+            ghcr.io/treenut-kr/mongodb:latest
+            ghcr.io/treenut-kr/mongodb:${{ github.ref_name }}
