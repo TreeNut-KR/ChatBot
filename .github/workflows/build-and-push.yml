@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3  # 최신 버전으로 업데이트
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2  # 최신 버전으로 업데이트
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
@@ -27,7 +27,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.TREENUT }}
+          password: ${{ secrets.GITHUB_TOKEN }}  # GitHub Token 사용
 
       - name: Install Node.js and build react-frontpage
         run: |
@@ -35,40 +35,24 @@ jobs:
           npm install
           npm run build
         env:
-          NODE_VERSION: '14'  # 또는 필요한 Node.js 버전으로 설정
+          NODE_VERSION: '18'  # 최신 Node.js 버전으로 업데이트
 
       - name: Create .env files for Docker build
         run: |
-          echo "NOTE='첫 프로젝트 파일은 Github에 테스트용 .env를 배포합니다. gitignore에 .env를 등록히얐으니, 추후 .env 업데이트 후 PUSH 되는 일이 없도록 합니다.'" > ./.env
-          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> ./.env
-          echo "MYSQL_ROOT_HOST=${{ secrets.MYSQL_ROOT_HOST }}" >> ./.env
-          echo "MYSQL_ROOT_USER=${{ secrets.MYSQL_ROOT_USER }}" >> ./.env
-          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> ./.env
-          echo "MONGO_DATABASE=${{ secrets.MONGO_DATABASE }}" >> ./.env
-          echo "MONGO_ADMIN_USER=${{ secrets.MONGO_ADMIN_USER }}" >> ./.env
-          echo "MONGO_ADMIN_PASSWORD=${{ secrets.MONGO_ADMIN_PASSWORD }}" >> ./.env
-          echo "MONGO_HOST=${{ secrets.MONGO_HOST }}" >> ./.env
-
+          # Root .env 파일 생성
+          echo "${{ secrets.DOCKER_ENV }}" > .env
+      
+          # MongoDB 관련 .env 파일 생성
           mkdir -p mongo
-          echo "MONGO_ADMIN_USER=${{ secrets.MONGO_ADMIN_USER }}" > ./mongo/.env
-          echo "MONGO_ADMIN_PASSWORD=${{ secrets.MONGO_ADMIN_PASSWORD }}" >> ./mongo/.env
-          echo "MONGO_DATABASE=${{ secrets.MONGO_DATABASE }}" >> ./mongo/.env
-          echo "MONGO_HOST=${{ secrets.MONGO_HOST }}" >> ./mongo/.env
-          echo "MONGO_PORT=${{ secrets.MONGO_PORT }}" >> ./mongo/.env
-
+          echo "${{ secrets.MONGO_ENV }}" > ./mongo/.env
+     
+          # FastAPI 관련 .env 파일 생성
           mkdir -p fastapi/sources
-          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" > ./fastapi/sources/.env
-          echo "MYSQL_ROOT_HOST=${{ secrets.MYSQL_ROOT_HOST }}" >> ./fastapi/sources/.env
-          echo "MYSQL_ROOT_USER=${{ secrets.MYSQL_ROOT_USER }}" >> ./fastapi/sources/.env
-          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> ./fastapi/sources/.env
-          echo "MONGO_ADMIN_USER=${{ secrets.MONGO_ADMIN_USER }}" >> ./fastapi/sources/.env
-          echo "MONGO_ADMIN_PASSWORD=${{ secrets.MONGO_ADMIN_PASSWORD }}" >> ./fastapi/sources/.env
-          echo "MONGO_DATABASE=${{ secrets.MONGO_DATABASE }}" >> ./fastapi/sources/.env
-          echo "MONGO_HOST=${{ secrets.MONGO_HOST }}" >> ./fastapi/sources/.env
-          echo "MONGO_AUTH=admin" >> ./fastapi/sources/.env
+          echo "${{ secrets.FASTAPI_ENV }}" > ./fastapi/sources/.env
+        
 
       - name: Build and push Nginx image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3  # 최신 버전으로 업데이트
         with:
           context: ./nginx
           push: true
@@ -77,7 +61,7 @@ jobs:
             ghcr.io/treenut-kr/nginx:${{ github.ref_name }}
 
       - name: Build and push FastAPI image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3  # 최신 버전으로 업데이트
         with:
           context: ./fastapi
           push: true
@@ -86,7 +70,7 @@ jobs:
             ghcr.io/treenut-kr/fastapi:${{ github.ref_name }}
 
       - name: Build and push MySQL image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3  # 최신 버전으로 업데이트
         with:
           context: ./mysql
           push: true
@@ -95,7 +79,7 @@ jobs:
             ghcr.io/treenut-kr/mysql:${{ github.ref_name }}
 
       - name: Build and push MongoDB image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3  # 최신 버전으로 업데이트
         with:
           context: ./mongo
           push: true
