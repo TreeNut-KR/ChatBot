@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   nginx:
     restart: always
     build:
       context: ./nginx
     ports:
-      - 80:80
+      - "80:80"
     depends_on:
       - fastapi
 
@@ -15,11 +13,17 @@ services:
     build:
       context: ./fastapi
     ports:
-      - 8000:8000
-    expose:
-      - 8000
+      - "8000:8000"
+    environment:
+      MONGO_HOST: mongodb
+      MONGO_PORT: 27017
+      MONGO_ADMIN_USER: ${MONGO_ADMIN_USER}
+      MONGO_ADMIN_PASSWORD: ${MONGO_ADMIN_PASSWORD}
+      MONGO_DATABASE: ${MONGO_DATABASE}
+      MONGO_AUTH: ${MONGO_AUTH}
     volumes:
-      - ./logs:/app/logs
+      - ./fastapi/logs:/app/logs
+      - ./fastapi/sources:/app/sources
     depends_on:
       - mysql
 
@@ -28,10 +32,10 @@ services:
     build:
       context: ./mysql
     ports:
-      - 3307:3306
+      - "3307:3306"
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - ./mysql/data:/var/lib/mysql
@@ -47,8 +51,11 @@ services:
       context: ./mongo
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD}
+      MONGO_DATABASE: ${MONGO_DATABASE}
     volumes:
       - ./mongo/data:/data/db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      - ./mongo/log:/var/log/mongodb
+      - ./mongo/.env:/docker-entrypoint-initdb.d/.env

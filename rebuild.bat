@@ -1,15 +1,25 @@
-#!/bin/bash
+@echo off
+chcp 65001
+SETLOCAL
 
-# 모든 컨테이너 중지
-docker stop $(docker ps -aq)
+echo Docker Compose off...
+docker-compose down -v
+echo.
 
-# 모든 컨테이너 삭제
-docker rm $(docker ps -aq)
+echo docker images remove...
+FOR /F "tokens=1" %%i IN ('docker images -q --filter "dangling=false"') DO (
+    docker rmi %%i
+)
+echo.
 
-# 모든 이미지 삭제
-docker rmi $(docker images -q)
+echo folder remove...
+rmdir /s /q .\fastapi\logs
+rmdir /s /q .\mysql\data
+rmdir /s /q .\mysql\logs
+rmdir /s /q .\mongo\data
+rmdir /s /q .\mongo\log
+echo.
 
-#리빌드
-docker compose up -d
-
-echo "도커 컨테이너 리빌드 완료"
+echo Docker Compose on...
+docker-compose up
+ENDLOCAL
