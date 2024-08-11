@@ -1,11 +1,16 @@
 import logging
 from fastapi import HTTPException, Request, FastAPI
 from fastapi.responses import JSONResponse
+from typing import Dict, Type, Callable
 import os
 
-# 로그 디렉토리 및 파일 경로
-log_dir = "./logs"
-log_file = "./logs/error.log"
+# 현재 파일의 상위 디렉토리 경로
+current_directory = os.path.dirname(os.path.abspath(__file__))
+parent_directory = os.path.dirname(current_directory)  # 상위 디렉토리
+
+# 로그 디렉토리 및 파일 경로 설정
+log_dir = os.path.join(parent_directory, "logs")
+log_file = os.path.join(log_dir, "error.log")
 
 # 로그 디렉토리가 없는 경우 생성
 if not os.path.exists(log_dir):
@@ -13,9 +18,9 @@ if not os.path.exists(log_dir):
 
 # Logger 설정
 logger = logging.getLogger("fastapi_error_handlers")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 file_handler = logging.FileHandler(log_file)
-file_handler.setLevel(logging.ERROR)
+file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
@@ -36,63 +41,67 @@ class ForbiddenException(HTTPException):
     def __init__(self, detail: str = "Forbidden"):
         super().__init__(status_code=403, detail=detail)
 
+class ValueErrorException(HTTPException):
+    def __init__(self, detail: str = "Value Error"):
+        super().__init__(status_code=422, detail=detail)
+
 class InternalServerErrorException(HTTPException):
     def __init__(self, detail: str = "Internal server error"):
         super().__init__(status_code=500, detail=detail)
 
-async def not_found_exception_handler(request: Request, exc: NotFoundException):
-    '''
-    404 Not Found 에러 핸들러
-    '''
-    logger.error(f"NotFoundException: {exc.detail} - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
-    return JSONResponse(
+class DatabaseErrorException(HTTPException):
+    def __init__(self, detail: str = "Database Error"):
+        super().__init__(status_code=503, detail=detail)
+
+# 예외와 핸들러 매핑
+exception_handlers: Dict[Type[HTTPException], Callable[[Request, HTTPException], JSONResponse]] = {
+    NotFoundException: lambda request, exc: JSONResponse(
         status_code=exc.status_code,
         content={"detail": "The requested resource could not be found."},
-    )
-
-async def bad_request_exception_handler(request: Request, exc: BadRequestException):
-    '''
-    400 Bad Request 에러 핸들러
-    '''
-    logger.error(f"BadRequestException: {exc.detail} - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
-    return JSONResponse(
+    ),
+    BadRequestException: lambda request, exc: JSONResponse(
         status_code=exc.status_code,
         content={"detail": "The request was invalid."},
-    )
-
-async def unauthorized_exception_handler(request: Request, exc: UnauthorizedException):
-    '''
-    401 Unauthorized 에러 핸들러
-    '''
-    logger.error(f"UnauthorizedException: {exc.detail} - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
-    return JSONResponse(
+    ),
+    UnauthorizedException: lambda request, exc: JSONResponse(
         status_code=exc.status_code,
         content={"detail": "Unauthorized access."},
-    )
-
-async def forbidden_exception_handler(request: Request, exc: ForbiddenException):
-    '''
-    403 Forbidden 에러 핸들러
-    '''
-    logger.error(f"ForbiddenException: {exc.detail} - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
-    return JSONResponse(
+    ),
+    ForbiddenException: lambda request, exc: JSONResponse(
         status_code=exc.status_code,
         content={"detail": "Access to this resource is forbidden."},
-    )
-
-async def internal_server_error_exception_handler(request: Request, exc: InternalServerErrorException):
-    '''
-    500 Internal Server Error 에러 핸들러
-    '''
-    logger.error(f"InternalServerErrorException: {exc.detail} - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
-    return JSONResponse(
+    ),
+    ValueErrorException: lambda request, exc: JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": "The input data is invalid."},
+    ),
+    InternalServerErrorException: lambda request, exc: JSONResponse(
         status_code=exc.status_code,
         content={"detail": "An internal server error occurred."},
-    )
+    ),
+    DatabaseErrorException: lambda request, exc: JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": "A database error occurred. Please contact the administrator."},
+    ),
+}
+
+async def generic_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+    '''
+    예외 핸들러
+    '''
+    handler = exception_handlers.get(type(exc), None)
+    if handler is None:
+        logger.error(f"Unhandled exception: {exc.detail} - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred."},
+        )
+    if exc.status_code == 403:
+        logger.info(f"403 Forbidden - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
+    else:
+        logger.error(f"{exc.__class__.__name__}: {exc.detail} - URL: {request.url} - Method: {request.method} - Headers: {request.headers}")
+    return handler(request, exc)
 
 def add_exception_handlers(app: FastAPI):
-    app.add_exception_handler(NotFoundException, not_found_exception_handler)
-    app.add_exception_handler(BadRequestException, bad_request_exception_handler)
-    app.add_exception_handler(UnauthorizedException, unauthorized_exception_handler)
-    app.add_exception_handler(ForbiddenException, forbidden_exception_handler)
-    app.add_exception_handler(InternalServerErrorException, internal_server_error_exception_handler)
+    for exc_type, handler in exception_handlers.items():
+        app.add_exception_handler(exc_type, generic_exception_handler)
