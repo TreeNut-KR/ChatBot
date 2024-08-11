@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   nginx:
     restart: always
@@ -15,8 +17,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MONGO_HOST: mongodb
-      MONGO_PORT: 27017
+      MONGO_HOST: ${MONGO_HOST}
+      MONGO_PORT: ${MONGO_PORT}
       MONGO_ADMIN_USER: ${MONGO_ADMIN_USER}
       MONGO_ADMIN_PASSWORD: ${MONGO_ADMIN_PASSWORD}
       MONGO_DATABASE: ${MONGO_DATABASE}
@@ -42,8 +44,6 @@ services:
       - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
       - ./mysql/logs:/var/log/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    depends_on:
-      - mongodb
 
   mongodb:
     restart: unless-stopped

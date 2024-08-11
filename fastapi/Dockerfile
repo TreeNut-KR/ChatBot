@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 소스 코드 및 .env 파일 복사
 COPY sources /app/sources
-COPY sources/.env /app/sources/.env  
+COPY sources/.env /app/sources/.env
 
 # 로그 디렉토리 생성 및 권한 설정
 RUN mkdir -p /app/sources/logs
