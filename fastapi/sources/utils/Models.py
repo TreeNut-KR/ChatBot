@@ -44,7 +44,7 @@ class ChatData_Request(BaseModel):
         }
     }
     
-    async def url_status(self, img_url: str): 
+    async def url_status(self, img_url: str):
         '''
         URL의 연결 테스트 함수
         '''
@@ -55,3 +55,7 @@ class ChatData_Request(BaseModel):
                 raise ValueError('이미지에 접근할 수 없습니다.')
         except httpx.RequestError:
             raise ValueError('이미지 URL에 접근하는 중 오류가 발생했습니다.')
+        
+class ChatData_Response(BaseModel):
+    id: str = Field(..., title="채팅 id")
+    value: list = Field(... , title="채팅 로그")

@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from pydantic import ValidationError
 
 from utils.DB_mongo import MongoDBHandler
-from utils.Models import ChatData_Request
+from utils.Models import ChatData_Request, ChatData_Response
 from utils.Error_handlers import(
     add_exception_handlers,
     NotFoundException,
@@ -164,6 +164,35 @@ async def save_chat_log(request: ChatData_Request):
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
+
+@chat_router.post("/load_log", response_model=ChatData_Response, summary="유저 채팅 불러오기")
+async def load_chat_log(request: ChatData_Request) -> ChatData_Response:
+    '''
+    생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
+    
+    이 엔드포인트는 주어진 문서 ID에 해당하는 채팅 로그를 가져와 클라이언트에 반환합니다.
+    
+    - **200 OK**: 채팅 로그가 성공적으로 반환됨
+    - **404 Not Found**: 지정된 문서 ID가 존재하지 않음
+    - **500 Internal Server Error**: 채팅 데이터를 불러오는 도중 문제가 발생함
+    '''
+    try:
+        # 해당 채팅 로그 불러오기
+        chat_logs = await asyncio.to_thread(mongo_handler.get_to_value, request.id)
+        # 반환할 데이터 모델 맞춤
+        response_data = ChatData_Response(
+            id=request.id,
+            value=chat_logs
+        )
+        return response_data
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+    
+    
 app.include_router(
     chat_router,
     prefix="/chat",

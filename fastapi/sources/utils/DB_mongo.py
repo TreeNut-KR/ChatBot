@@ -97,3 +97,25 @@ class MongoDBHandler:
                 raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
         except PyMongoError as e:
             raise InternalServerErrorException(detail=str(e))
+
+    def get_to_value(self, document_id: str) -> list:
+        """
+        특정 문서의 'value' 필드에 JSON 데이터를 추가하는 함수.
+        :param document_id: 문서의 ID
+        :return: 해당 문서의 'value' 필드 데이터 또는 빈 배열
+        """
+        try:
+            collection = self.db['chatlog']
+            document = collection.find_one({"id": document_id})
+
+            if document is None:
+                raise NotFoundException(f"No document found with ID: {document_id}")
+
+            # document에서 value를 반환
+            return document.get("value", [])
+            
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=str(e))
+
+
+        
