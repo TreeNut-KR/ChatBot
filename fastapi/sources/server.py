@@ -8,14 +8,19 @@ from pydantic import ValidationError
 
 from utils.DB_mongo import MongoDBHandler
 from utils.Models import ChatData_Request
-from utils.Error_handlers import add_exception_handlers, NotFoundException, BadRequestException, UnauthorizedException, ForbiddenException, InternalServerErrorException
+from utils.Error_handlers import(
+    add_exception_handlers,
+    NotFoundException,
+    BadRequestException,
+    InternalServerErrorException
+)
 
 app = FastAPI()
 add_exception_handlers(app) # 예외 핸들러 추가
 mongo_handler = MongoDBHandler()# MongoDB 핸들러 초기화
 
 # 커스텀 OpenAPI 설정
-def custom_openapi(): 
+def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     
