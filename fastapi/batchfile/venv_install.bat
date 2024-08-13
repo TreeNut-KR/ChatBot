@@ -10,7 +10,7 @@ pip install -r .\fastapi\requirements.txt
 
 echo 가상 환경이 성공적으로 설정되었습니다.
 echo 가상 환경을 활성화하려면 다음 명령을 사용하세요:
-echo CALL %ENV_DIR%\Scripts\activate.bat
+echo CALL %ENV_DIR%\Scripts\activate.ps1
 
 ENDLOCAL
  

@@ -17,7 +17,7 @@ class MongoDBHandler:
         current_directory = os.path.dirname(os.path.abspath(__file__))
         env_file_path = os.path.join(current_directory, '../.env')
         load_dotenv(env_file_path)  # .env 파일 로드
-        
+        print(os.getenv("MONGO_HOST"))
         # 환경 변수에서 MongoDB 설정값 가져오기
         self.host = os.getenv("MONGO_HOST")
         self.port = int(os.getenv("MONGO_PORT", 27017))
