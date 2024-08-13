@@ -16,29 +16,23 @@ services:
       context: ./fastapi
     ports:
       - "8000:8000"
-    environment:
-      MONGO_HOST: ${MONGO_HOST}
-      MONGO_PORT: ${MONGO_PORT}
-      MONGO_ADMIN_USER: ${MONGO_ADMIN_USER}
-      MONGO_ADMIN_PASSWORD: ${MONGO_ADMIN_PASSWORD}
-      MONGO_DATABASE: ${MONGO_DATABASE}
-      MONGO_AUTH: ${MONGO_AUTH}
     volumes:
-      - ./fastapi/logs:/app/logs
       - ./fastapi/sources:/app/sources
+      - ./fastapi/sources/logs:/app/sources/logs
     depends_on:
       - mysql
+      - mongodb
 
   mysql:
     restart: unless-stopped
     build:
       context: ./mysql
     ports:
-      - "3307:3306"
+      - "3308:3306"
     environment:
-      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_INITDB_ROOT_USERNAME: ${MYSQL_ROOT_USER}
+      MYSQL_INITDB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - ./mysql/data:/var/lib/mysql
       - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
