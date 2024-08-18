@@ -10,9 +10,9 @@
  & ./rebuild.bat
 ```
 
-#### - FastAPI 작업영역 
+#### - FastAPI 작업영역
 `./fastapi/sources`
-#### - 프론트 작업영역 
+#### - 프론트 작업영역
 `./nginx/frontpage-react`
 #### - 프론트 빌드파일 경로
 `./frontpage-react/build`
@@ -23,13 +23,13 @@
 
 ```bash
 git tag v0.0.1
-git push origin v0.0.1 
+git push origin v0.0.
 ```
 - v0.0.1를 실제 태그로 수정하여 입력하면 태그가 활성화, 깃 액션에 해당 태그로 작동
 
 ### 버전 태그 삭제
 ```bash
-git tag -d v0.0.1 
-git push origin --delete v0.0.1 
+git tag -d v0.0.1
+git push origin --delete v0.0.1
 ```
-- v0.0.1를 로컬에서 태그 삭제, 원격 저장소에서 태그 삭제 
+- v0.0.1를 로컬에서 태그 삭제, 원격 저장소에서 태그 삭제
