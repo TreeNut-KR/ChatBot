@@ -97,3 +97,32 @@ class MongoDBHandler:
                 raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
         except PyMongoError as e:
             raise InternalServerErrorException(detail=str(e))
+
+    def remove_chat_value(self, document_id : str, selected_count : int):
+        """
+        특정 대화의 최신 대화 ~ 선택한 대화를 지우는 함수.
+        :param document_id : 문서의 ID
+        :param selected_count : 선택한 대화
+        :return : 성공 메시지 또는 실패 매시지
+        """   
+        try:
+            collection = self.db['chatlog']
+            document = collection.find_one({"id" : document_id})
+            if document is None:
+                raise NotFoundException(f"No document found with ID: {document_id}")
+
+            rmcount = len(document) - selected_count - 1
+            for i in range (selected_count, len(document)):
+                document[i] = None
+                collection.delete_one(
+                    {"id" : i}
+                )
+                rmcount -= 1
+
+            if rmcount == 0:
+                return f"Successfully removed data to document with ID: {document_id}"
+            else:
+                raise NotFoundException(f"No document found with ID: {document_id} or no data removed.")
+
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=str(e))
