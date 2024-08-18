@@ -12,5 +12,5 @@ SET ENV_DIR=.venv
 "%PYTHON_PATH%" -m venv %ENV_DIR%
 
 echo 가상 환경 활성화 중...
-CALL %ENV_DIR%\Scripts\activate.bat
+CALL %ENV_DIR%\Scripts\activate.ps1
 ENDLOCAL
