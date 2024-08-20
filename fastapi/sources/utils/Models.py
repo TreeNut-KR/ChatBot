@@ -47,7 +47,13 @@ class Validators:
         except httpx.RequestError:
             raise ValueError('이미지 URL에 접근하는 중 오류가 발생했습니다.')
 
-class ChatData_Request(BaseModel):
+class ChatLog_Creation_Request(BaseModel):    
+    user_id: str = Field(
+        examples=["shaa97102"],
+        title="유저 id",
+        min_length=6, max_length=50,
+        description="유저 id 길이 제약"
+    )
     id: str = Field(
         examples=["123e4567-e89b-12d3-a456-426614174000"],
         title="채팅방 id",
@@ -80,8 +86,21 @@ class ChatData_Request(BaseModel):
     @field_validator('img_url', mode='before')
     def check_img_url(cls, v):
         return Validators.validate_URL(v)
+    
+    def model_dump(self, **kwargs):
+        """
+        Pydantic BaseModel의 dict() 메서드를 대체하는 model_dump() 메서드입니다.
+        필터링된 데이터만 반환하도록 수정할 수 있습니다.
+        """
+        return super().model_dump(**kwargs)
         
-class ChatData_ID_Request(BaseModel):
+class ChatLog_Identifier_Request(BaseModel):
+    user_id: str = Field(
+        examples=["shaa97102"],
+        title="유저 id",
+        min_length=6, max_length=50,
+        description="유저 id 길이 제약"
+    )
     id: str = Field(
         examples=["123e4567-e89b-12d3-a456-426614174000"],
         title="채팅방 id",
@@ -93,6 +112,14 @@ class ChatData_ID_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
     
+class ChatLog_Id_Request(BaseModel):
+    user_id: str = Field(
+        examples=["shaa97102"],
+        title="유저 id",
+        min_length=6, max_length=50,
+        description="유저 id 길이 제약"
+    )   
+
 class ChatData_Response(BaseModel):
     id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
     value: list = Field(examples=[{}], title="채팅 로그")
