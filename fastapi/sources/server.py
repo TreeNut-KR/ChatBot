@@ -1,26 +1,21 @@
-import os
 import asyncio
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Query
-from fastapi.openapi.utils import get_openapi
-from fastapi.middleware.cors import CORSMiddleware
+import os
 from contextlib import asynccontextmanager
-from starlette.middleware.sessions import SessionMiddleware
-from pydantic import ValidationError
 
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
+from pydantic import ValidationError
+from starlette.middleware.sessions import SessionMiddleware
 from utils.DB_mongo import MongoDBHandler
 from utils.DB_mysql import MySQLDBHandler
-from utils.Models import(
-    ChatData_Request,
-    ChatData_ID_Request,
-    ChatData_Response,
-    Validators
-)
-from utils.Error_handlers import(
-    add_exception_handlers,
-    NotFoundException,
-    BadRequestException,
-    InternalServerErrorException
-)
+from utils.Error_handlers import (BadRequestException,
+                                  InternalServerErrorException,
+                                  NotFoundException, add_exception_handlers)
+from utils.Models import (ChatData_Response, ChatLog_Creation_Request,
+                          ChatLog_Id_Request, ChatLog_Identifier_Request,
+                          Validators)
+
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 
 mysql_handler = MySQLDBHandler() # MySQL 핸들러 초기화
 mongo_handler = MongoDBHandler() # MongoDB 핸들러 초기화
@@ -155,15 +150,15 @@ mongo_router = APIRouter()
 async def list_databases():
     '''
     데이터베이스 서버에 있는 모든 데이터베이스의 목록을 반환합니다.
-    
+
     이 엔드포인트는 MongoDB 서버에 연결하여 데이터베이스의 이름을 조회하고,
     이를 클라이언트에 JSON 형태로 반환합니다.
-    
+
     - **200 OK**: 데이터베이스 목록이 성공적으로 반환됨
     - **500 Internal Server Error**: 서버에서 데이터를 조회하는 도중 문제가 발생함
     '''
     try:
-        database = await asyncio.to_thread(mongo_handler.get_db_names)
+        database = mongo_handler.get_db_names()  # await 제거
         return {"Database": database}
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
@@ -188,8 +183,8 @@ async def list_collections(db_name: str = Query(..., description="데이터베�
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
-@mongo_router.get("/chat/create", summary="유저 채팅 ID 생성")
-async def create_chat():
+@mongo_router.post("/chat/create", summary="유저 채팅방 ID 생성")
+async def create_chat(request: ChatLog_Id_Request):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
     
@@ -200,13 +195,16 @@ async def create_chat():
     - **500 Internal Server Error**: 채팅 로그 문서를 생성하는 도중 문제가 발생함
     '''
     try:
-        document_id = await asyncio.to_thread(mongo_handler.create_chatlog_collection)
+        document_id = await asyncio.to_thread(
+            mongo_handler.create_chatlog_collection,
+            user_id = request.user_id
+        )
         return {"Document ID": document_id}
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
 @mongo_router.post("/chat/save_log", summary="유저 채팅 저장")
-async def save_chat_log(request: ChatData_Request):
+async def save_chat_log(request: ChatLog_Creation_Request):
     '''
     생성된 채팅 문서에 유저의 채팅 데이터를 저장합니다.
     
@@ -220,7 +218,15 @@ async def save_chat_log(request: ChatData_Request):
     '''
     try:
         await Validators().url_status(request.img_url) # 이미지 URL 확인
-        response_message = await asyncio.to_thread(mongo_handler.add_to_value, request.id, request.dict())
+        request_data = request.model_dump()
+        filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
+        
+        response_message = await asyncio.to_thread(
+            mongo_handler.add_chatlog_value,
+            user_id = request.user_id,
+            document_id = request.id,
+            new_data = filtered_data
+        )
         return {"Result": response_message}
     except ValidationError as e:
         raise BadRequestException(detail=str(e))
@@ -231,7 +237,7 @@ async def save_chat_log(request: ChatData_Request):
 
 
 @mongo_router.post("/chat/load_log", response_model=ChatData_Response, summary="유저 채팅 불러오기")
-async def load_chat_log(request: ChatData_ID_Request) -> ChatData_Response:
+async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Response:
     '''
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
     
@@ -242,7 +248,11 @@ async def load_chat_log(request: ChatData_ID_Request) -> ChatData_Response:
     - **500 Internal Server Error**: 채팅 데이터를 불러오는 도중 문제가 발생함
     '''
     try:
-        chat_logs = await asyncio.to_thread(mongo_handler.get_to_value, request.id)
+        chat_logs = await asyncio.to_thread(
+            mongo_handler.get_chatlog_value,
+            user_id = request.user_id,
+            document_id = request.id
+        )
         response_data = ChatData_Response(
             id=request.id,
             value=chat_logs
@@ -296,6 +306,6 @@ async def catch_exceptions_middleware(request: Request, call_next):
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app=app, host="0.0.0.0", port=8000)
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app=app, host="0.0.0.0", port=8000)

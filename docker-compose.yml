@@ -20,6 +20,11 @@ services:
     depends_on:
       - mysql
       - mongodb
+    command: [
+      "/usr/local/bin/wait-for-it",
+      "mysql:3306", "--",
+      "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"
+      ]
 
   mysql:
     restart: unless-stopped
@@ -35,7 +40,11 @@ services:
       - ./mysql/data:/var/lib/mysql
       - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
       - ./mysql/logs:/var/log/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: [
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci"
+      ]
+
 
   mongodb:
     restart: unless-stopped
