@@ -1,49 +1,82 @@
-import asyncio
 import os
 from contextlib import asynccontextmanager
-
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.utils import get_openapi
 from pydantic import ValidationError
-from starlette.middleware.sessions import SessionMiddleware
-from utils.DB_mongo import MongoDBHandler
-from utils.DB_mysql import MySQLDBHandler
-from utils.Error_handlers import (BadRequestException,
-                                  InternalServerErrorException,
-                                  NotFoundException, add_exception_handlers)
-from utils.Models import (ChatData_Response, ChatLog_Creation_Request,
-                          ChatLog_Id_Request, ChatLog_Identifier_Request,
-                          Validators)
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 
-mysql_handler = MySQLDBHandler() # MySQL 핸들러 초기화
-mongo_handler = MongoDBHandler() # MongoDB 핸들러 초기화
+from starlette.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+
+from utils.DB_mongo import MongoDBHandler
+from utils.DB_mysql import MySQLDBHandler
+from utils.Error_handlers import (
+    BadRequestException,
+    InternalServerErrorException,
+    NotFoundException,
+    add_exception_handlers
+)
+from utils.Models import (
+    ChatData_Response,
+    ChatLog_Creation_Request,
+    ChatLog_Id_Request,
+    ChatLog_Identifier_Request,
+    Validators
+)
+
+mysql_handler = MySQLDBHandler()  # MySQL 핸들러 초기화
+mongo_handler = MongoDBHandler()  # MongoDB 핸들러 초기화
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     '''
     FastAPI 애플리케이션의 수명 주기를 관리하는 함수.
-    
-    이 함수는 애플리케이션이 시작될 때와 종료될 때 실행됩니다.
-    
-    - **mysql_handler.connect()**: MySQL 데이터베이스와의 연결을 설정합니다.
-    - **mysql_handler.disconnect()**: MySQL 데이터베이스와의 연결을 종료합니다.
-    
-    Args:
-        app (FastAPI): 현재 FastAPI 애플리케이션 인스턴스.
-    
-    Yields:
-        None
     '''
     await mysql_handler.connect()
-    yield
-    await mysql_handler.disconnect()
+    try:
+        yield
+    finally:
+        await mysql_handler.disconnect()
 
 app = FastAPI(lifespan=lifespan)
-add_exception_handlers(app) # 예외 핸들러 추가
+add_exception_handlers(app)  # 예외 핸들러 추가
 
-# 커스텀 OpenAPI 설정
+class ExceptionMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        try:
+            response = await call_next(request)
+            return response
+        except Exception as e:
+            # 예외 세부 사항을 보다 안전하게 처리
+            error_detail = self._get_error_detail(e)
+            return JSONResponse(
+                status_code=500,
+                content={"detail": error_detail}
+            )
+    
+    def _get_error_detail(self, exception: Exception) -> str:
+        if isinstance(exception, TypeError):
+            return str(exception)
+        try:
+            return getattr(exception, 'detail', str(exception))
+        except Exception as ex:
+            return f"Unexpected error occurred: {str(ex)}"
+        
+app.add_middleware(ExceptionMiddleware)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "your-secret-key")  # 기본 비밀 키 추가
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -77,33 +110,14 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET") # 아직 구현 안함
-)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-'''
-MySQL 관련 라우터 정의
-'''
+# MySQL 관련 라우터 정의
 mysql_router = APIRouter()
 
 @mysql_router.get("/tables", summary="테이블 목록 가져오기")
 async def list_tables():
     '''
     MySQL 데이터베이스 내의 모든 테이블 목록을 반환합니다.
-    
-    이 엔드포인트는 MySQL 서버에 연결하여 테이블의 이름을 조회하고,
-    이를 클라이언트에 JSON 형태로 반환합니다.
-    
-    - **200 OK**: 테이블 목록이 성공적으로 반환됨
-    - **500 Internal Server Error**: 서버에서 데이터를 조회하는 도중 문제가 발생함
     '''
     try:
         tables = await mysql_handler.get_tables()
@@ -115,13 +129,6 @@ async def list_tables():
 async def execute_query(query: str):
     '''
     사용자 정의 MySQL 쿼리를 실행하고 결과를 반환합니다.
-    
-    이 엔드포인트는 주어진 SQL 쿼리를 실행하여 결과를 조회하고,
-    이를 클라이언트에 JSON 형태로 반환합니다.
-    
-    - **200 OK**: 쿼리 실행 결과가 성공적으로 반환됨
-    - **400 Bad Request**: 잘못된 쿼리가 제공됨
-    - **500 Internal Server Error**: 쿼리를 실행하는 도중 문제가 발생함
     '''
     try:
         if not query.lower().startswith(("select", "show")):
@@ -137,29 +144,21 @@ async def execute_query(query: str):
 app.include_router(
     mysql_router,
     prefix="/mysql",
-    tags=["MySQL Routor"],
+    tags=["MySQL Router"],
     responses={500: {"description": "Internal Server Error"}}
 )
 
-'''
-MongoDB 관련 라우터 정의
-'''
+# MongoDB 관련 라우터 정의
 mongo_router = APIRouter()
 
 @mongo_router.get("/db", summary="데이터베이스 목록 가져오기")
 async def list_databases():
     '''
     데이터베이스 서버에 있는 모든 데이터베이스의 목록을 반환합니다.
-
-    이 엔드포인트는 MongoDB 서버에 연결하여 데이터베이스의 이름을 조회하고,
-    이를 클라이언트에 JSON 형태로 반환합니다.
-
-    - **200 OK**: 데이터베이스 목록이 성공적으로 반환됨
-    - **500 Internal Server Error**: 서버에서 데이터를 조회하는 도중 문제가 발생함
     '''
     try:
-        database = mongo_handler.get_db_names()  # await 제거
-        return {"Database": database}
+        databases = await mongo_handler.get_db_names()
+        return {"Database": databases}
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
@@ -167,19 +166,10 @@ async def list_databases():
 async def list_collections(db_name: str = Query(..., description="데이터베이스 이름")):
     '''
     현재 선택된 데이터베이스 내의 모든 컬렉션 이름을 반환합니다.
-    
-    이 엔드포인트는 MongoDB에서 선택된 데이터베이스의 컬렉션 목록을 조회하고,
-    이를 클라이언트에 JSON 형태로 반환합니다.
-    
-    - **200 OK**: 컬렉션 목록이 성공적으로 반환됨
-    - **404 Not Found**: 데이터베이스가 존재하지 않음
-    - **500 Internal Server Error**: 컬렉션 목록을 조회하는 도중 문제가 발생함
     '''
     try:
-        collections = await asyncio.to_thread(mongo_handler.get_collection_names, db_name)
+        collections = await mongo_handler.get_collection_names(database_name=db_name)
         return {"Collections": collections}
-    except NotFoundException as e:
-        raise NotFoundException(detail=str(e))
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
@@ -187,45 +177,27 @@ async def list_collections(db_name: str = Query(..., description="데이터베�
 async def create_chat(request: ChatLog_Id_Request):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
-    
-    이 엔드포인트는 MongoDB에서 새로운 채팅 로그 컬렉션을 생성하고,
-    생성된 문서의 ID를 클라이언트에 JSON 형태로 반환합니다.
-    
-    - **200 OK**: 채팅 로그 문서의 ID가 성공적으로 반환됨
-    - **500 Internal Server Error**: 채팅 로그 문서를 생성하는 도중 문제가 발생함
     '''
     try:
-        document_id = await asyncio.to_thread(
-            mongo_handler.create_chatlog_collection,
-            user_id = request.user_id
-        )
+        document_id = await mongo_handler.create_chatlog_collection(user_id=request.user_id)
         return {"Document ID": document_id}
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
-@mongo_router.post("/chat/save_log", summary="유저 채팅 저장")
+@mongo_router.put("/chat/save_log", summary="유저 채팅 저장")
 async def save_chat_log(request: ChatLog_Creation_Request):
     '''
     생성된 채팅 문서에 유저의 채팅 데이터를 저장합니다.
-    
-    이 엔드포인트는 제공된 채팅 데이터를 MongoDB의 문서에 저장하며,
-    저장 결과를 클라이언트에 JSON 형태로 반환합니다.
-    
-    - **200 OK**: 채팅 데이터가 성공적으로 저장됨
-    - **400 Bad Request**: 요청 데이터가 유효하지 않거나 검증 실패
-    - **404 Not Found**: 지정된 문서 ID가 존재하지 않음
-    - **500 Internal Server Error**: 채팅 데이터를 저장하는 도중 문제가 발생함
     '''
     try:
-        await Validators().url_status(request.img_url) # 이미지 URL 확인
+        await Validators().url_status(request.img_url)  # 이미지 URL 확인
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
         
-        response_message = await asyncio.to_thread(
-            mongo_handler.add_chatlog_value,
-            user_id = request.user_id,
-            document_id = request.id,
-            new_data = filtered_data
+        response_message = await mongo_handler.add_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id,
+            new_data=filtered_data
         )
         return {"Result": response_message}
     except ValidationError as e:
@@ -235,23 +207,15 @@ async def save_chat_log(request: ChatLog_Creation_Request):
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
-
 @mongo_router.post("/chat/load_log", response_model=ChatData_Response, summary="유저 채팅 불러오기")
 async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Response:
     '''
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
-    
-    이 엔드포인트는 주어진 문서 ID에 해당하는 채팅 로그를 가져와 클라이언트에 반환합니다.
-    
-    - **200 OK**: 채팅 로그가 성공적으로 반환됨
-    - **404 Not Found**: 지정된 문서 ID가 존재하지 않음
-    - **500 Internal Server Error**: 채팅 데이터를 불러오는 도중 문제가 발생함
     '''
     try:
-        chat_logs = await asyncio.to_thread(
-            mongo_handler.get_chatlog_value,
-            user_id = request.user_id,
-            document_id = request.id
+        chat_logs = await mongo_handler.get_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id
         )
         response_data = ChatData_Response(
             id=request.id,
@@ -264,11 +228,11 @@ async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Respons
         raise NotFoundException(detail=str(e))
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
-    
+
 app.include_router(
     mongo_router,
     prefix="/mongo",
-    tags=["MongoDB Routor"],
+    tags=["MongoDB Router"],
     responses={500: {"description": "Internal Server Error"}}
 )
 
@@ -276,26 +240,14 @@ app.include_router(
 async def health_check():
     '''
     서버의 상태를 확인하는 헬스 체크 엔드포인트입니다.
-    
-    이 엔드포인트는 서버가 정상적으로 작동하는지 확인하기 위한 간단한 응답을 반환합니다.
-    
-    - **200 OK**: 서버가 정상적으로 작동 중임을 나타내는 메시지 반환
     '''
     return {"Connection": "Success"}
 
 @app.middleware("http")
 async def catch_exceptions_middleware(request: Request, call_next):
-    '''
+    """
     모든 HTTP 요청에 대해 예외를 처리하는 미들웨어입니다.
-    
-    이 미들웨어는 요청 처리 중 발생하는 예외를 잡아내어 적절한 HTTP 상태 코드와 메시지로 응답합니다.
-    
-    - **400 Bad Request**: 요청 데이터가 유효하지 않거나 검증 실패
-    - **401 Unauthorized**: 인증 실패
-    - **403 Forbidden**: 권한이 없음
-    - **404 Not Found**: 요청한 자원을 찾을 수 없음
-    - **500 Internal Server Error**: 서버에서 알 수 없는 오류 발생
-    '''
+    """
     try:
         response = await call_next(request)
         return response
@@ -304,8 +256,5 @@ async def catch_exceptions_middleware(request: Request, call_next):
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise InternalServerErrorException(detail=str(e))
-
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app=app, host="0.0.0.0", port=8000)
+        error_detail = str(e)
+        raise InternalServerErrorException(detail=error_detail)

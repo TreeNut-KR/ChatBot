@@ -10,11 +10,13 @@ class MySQLDBHandler:
         env_file_path = os.path.join(current_directory, '../.env')
         load_dotenv(env_file_path)
 
-        self.database = Database(f"mysql://{os.getenv('MYSQL_ROOT_USER')}:" \
-                                 f"{os.getenv('MYSQL_ROOT_PASSWORD')}@" \
-                                 f"{os.getenv('MYSQL_HOST')}:" \
-                                 f"{os.getenv('MYSQL_PORT')}/" \
-                                 f"{os.getenv('MYSQL_DATABASE')}")
+        self.database = Database(
+            f"mysql://{os.getenv('MYSQL_ROOT_USER')}:" \
+            f"{os.getenv('MYSQL_ROOT_PASSWORD')}@" \
+            f"{os.getenv('MYSQL_HOST')}:" \
+            f"{os.getenv('MYSQL_PORT')}/" \
+            f"{os.getenv('MYSQL_DATABASE')}"
+        )
 
     async def connect(self):
         await self.database.connect()
@@ -30,20 +32,3 @@ class MySQLDBHandler:
         query = "SHOW TABLES"
         tables = await self.execute_query(query)
         return [table[f'Tables_in_{os.getenv("MYSQL_DATABASE")}'] for table in tables]
-
-# if __name__ == "__main__":
-#     async def main():
-#         db_handler = MySQLDBHandler()
-#         await db_handler.connect()
-#         print("Database connected successfully!")
-
-#         # 테이블 목록 가져오기
-#         tables = await db_handler.get_tables()
-#         print("Tables in the database:")
-#         for table in tables:
-#             print(f"- {table}")
-
-#         await db_handler.disconnect()
-#         print("Database disconnected successfully!")
-
-#     asyncio.run(main())

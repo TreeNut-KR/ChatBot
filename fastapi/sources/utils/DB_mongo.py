@@ -1,89 +1,121 @@
 import os
 import uuid
-from typing import Dict, List, NoReturn
-
+from typing import Dict, List
 from dotenv import load_dotenv
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
 
 from .Error_handlers import InternalServerErrorException, NotFoundException
 
-
 class MongoDBHandler:
     def __init__(self) -> None:
+        """
+        MongoDBHandler 클래스 초기화.
+        MongoDB에 연결하고 필요한 환경 변수를 로드합니다.
+        """
         try:
+            # 환경 변수 파일 경로 설정
             current_directory = os.path.dirname(os.path.abspath(__file__))
             env_file_path = os.path.join(current_directory, '../.env')
             load_dotenv(env_file_path)
             
-            self.host = os.getenv("MONGO_HOST")
-            self.port = int(os.getenv("MONGO_PORT", 27017))
-            self.username = os.getenv("MONGO_ADMIN_USER")
-            self.password = os.getenv("MONGO_ADMIN_PASSWORD")
-            self.database_name = os.getenv("MONGO_DATABASE")
-            self.auth_name = os.getenv("MONGO_AUTH")
+            # 환경 변수에서 MongoDB 연결 URI 가져오기
+            mongo_host = os.getenv("MONGO_HOST")
+            mongo_port = os.getenv("MONGO_PORT", 27017)
+            mongo_user = os.getenv("MONGO_ADMIN_USER")
+            mongo_password = os.getenv("MONGO_ADMIN_PASSWORD")
+            mongo_db = os.getenv("MONGO_DATABASE")
+            mongo_auth = os.getenv("MONGO_AUTH")
             
-            self.client = MongoClient(
-                host=self.host,
-                port=self.port,
-                username=self.username,
-                password=self.password,
-                authSource=self.auth_name
+            # MongoDB URI 생성
+            self.mongo_uri = (
+                f"mongodb://{mongo_user}:{mongo_password}@{mongo_host}:{mongo_port}/{mongo_db}?authSource={mongo_auth}"
             )
-            self.db = self.client[self.database_name]
+            
+            # MongoDB 클라이언트 초기화
+            self.client = AsyncIOMotorClient(self.mongo_uri)
+            self.db = self.client[mongo_db]
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"MongoDB connection error: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=str(e))
+            raise InternalServerErrorException(detail=f"Error initializing MongoDBHandler: {str(e)}")
 
-    def get_db_names(self) -> List[str]:
+    async def get_db_names(self) -> List[str]:
         """
-        데이터베이스 이름 목록을 반환하는 함수.
+        데이터베이스 이름 목록을 반환합니다.
+        
         :return: 데이터베이스 이름 리스트
+        :raises InternalServerErrorException: 데이터베이스 이름을 가져오는 도중 문제가 발생할 경우
         """
-        return self.client.list_database_names()
-    
-    def get_collection_names(self, database_name) -> List[str]:
+        try:
+            return await self.client.list_database_names()
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error retrieving database names: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+
+    async def get_collection_names(self, database_name: str) -> List[str]:
         """
-        데이터베이스의 컬렉션 이름 목록을 반환하는 함수.
+        데이터베이스의 컬렉션 이름 목록을 반환합니다.
+        
         :param database_name: 데이터베이스 이름
         :return: 컬렉션 이름 리스트
+        :raises NotFoundException: 데이터베이스가 존재하지 않을 경우
+        :raises InternalServerErrorException: 컬렉션 이름을 가져오는 도중 문제가 발생할 경우
         """
-        # 데이터베이스가 존재하는지 확인
-        db_names = self.get_db_names()
+        db_names = await self.get_db_names()
         if database_name not in db_names:
             raise NotFoundException(f"Database '{database_name}' not found.")
-        return self.client[database_name].list_collection_names()
-    
-    def create_chatlog_collection(self, user_id: str) -> str:
+        try:
+            return await self.client[database_name].list_collection_names()
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error retrieving collection names: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+
+    async def create_chatlog_collection(self, user_id: str) -> str:
         """
-        chatlog 컬렉션을 생성하는 함수.
+        사용자 ID에 기반한 채팅 로그 컬렉션을 생성합니다.
+        
+        :param user_id: 사용자 ID
         :return: 생성된 문서의 UUID
+        :raises InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
         """
-        collection = self.db[f'chatlog_{user_id}']
-        document_id = str(uuid.uuid4())
-        document = {
-            "id": document_id,
-            "value": []
-        }
-        collection.insert_one(document)
-        return document_id
-    
-    def add_chatlog_value(self, user_id: str, document_id: str, new_data: Dict) -> str:
+        try:
+            collection_name = f'chatlog_{user_id}'
+            collection = self.db[collection_name]
+            document_id = str(uuid.uuid4())
+            document = {
+                "id": document_id,
+                "value": []
+            }
+            await collection.insert_one(document)
+            return document_id
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error creating chatlog collection: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+
+    async def add_chatlog_value(self, user_id: str, document_id: str, new_data: Dict) -> str:
         """
-        특정 문서의 'value' 필드에 JSON 데이터를 추가하는 함수.
+        특정 문서의 'value' 필드에 JSON 데이터를 추가합니다.
+        
         :param user_id: 사용자 ID
         :param document_id: 문서의 ID
         :param new_data: 추가할 JSON 데이터
-        :return: 성공 메시지 또는 실패 메시지
+        :return: 성공 메시지
+        :raises NotFoundException: 문서가 존재하지 않을 경우
+        :raises InternalServerErrorException: 데이터를 추가하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'chatlog_{user_id}']
-            document = collection.find_one({"id": document_id})
+            document = await collection.find_one({"id": document_id})
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
             
-            
-            new_data_filtered = { # 'id', 'user_id' 필드를 제외한 나머지 필드만 사용
-                key: value for key, value in new_data.items() if key not in ['id','user_id']
+            # 'id', 'user_id' 필드를 제외한 나머지 필드만 사용
+            new_data_filtered = {
+                key: value for key, value in new_data.items() if key not in ['id', 'user_id']
             }
 
             new_index = len(document['value']) + 1
@@ -91,7 +123,7 @@ class MongoDBHandler:
                 "index": new_index,
                 **new_data_filtered
             }
-            result = collection.update_one(
+            result = await collection.update_one(
                 {"id": document_id},
                 {"$push": {"value": new_data_with_index}}
             )
@@ -101,51 +133,69 @@ class MongoDBHandler:
             else:
                 raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=str(e))
+            raise InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
-    def get_chatlog_value(self, user_id: str, document_id: str) -> list:
+    async def get_chatlog_value(self, user_id: str, document_id: str) -> List[Dict]:
         """
-        특정 문서의 'value' 필드에 JSON 데이터를 추가하는 함수.
+        특정 문서의 'value' 필드를 반환합니다.
+        
+        :param user_id: 사용자 ID
         :param document_id: 문서의 ID
         :return: 해당 문서의 'value' 필드 데이터 또는 빈 배열
+        :raises NotFoundException: 문서가 존재하지 않을 경우
+        :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'chatlog_{user_id}']
-            document = collection.find_one({"id": document_id})
+            document = await collection.find_one({"id": document_id})
 
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
 
             # document에서 value를 반환
             return document.get("value", [])
-            
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=str(e))
+            raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
-    def remove_chatlog_value(self, user_id: str, document_id: str, selected_count: int) -> str:
+    async def remove_chatlog_value(self, user_id: str, document_id: str, selected_count: int) -> str:
         """
-        특정 대화의 최신 대화 ~ 선택한 대화를 지우는 함수.
+        특정 대화의 최신 대화 ~ 선택한 대화를 지웁니다.
+        
         :param user_id: 사용자 ID
         :param document_id: 문서의 ID
         :param selected_count: 선택한 대화의 인덱스
-        :return: 성공 메시지 또는 실패 메시지
+        :return: 성공 메시지
+        :raises NotFoundException: 문서가 존재하지 않을 경우
+        :raises InternalServerErrorException: 데이터를 제거하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'chatlog_{user_id}']
-            document = collection.find_one({"id": document_id})
+            document = await collection.find_one({"id": document_id})
 
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
 
-            result = collection.update_one( # 선택한 인덱스 이후의 대화 항목을 삭제합니다.
+            # 'value' 필드에서 삭제할 항목 필터링
+            value_to_remove = [item for item in document.get("value", []) if item.get("index") == selected_count]
+
+            if not value_to_remove:
+                raise NotFoundException(f"No data found to remove with index: {selected_count}")
+
+            # 해당 index의 데이터를 삭제
+            result = await collection.update_one(
                 {"id": document_id},
-                {"$pull": {"value": {"index": {"$gte": selected_count}}}}
+                {"$pull": {"value": {"index": selected_count}}}
             )
 
             if result.modified_count > 0:
-                return f"Successfully removed data from document with ID: {document_id}"
+                return f"Successfully removed data with index: {selected_count} from document with ID: {document_id}"
             else:
-                raise NotFoundException(f"No document found with ID: {document_id} or no data removed.")
-                
+                raise NotFoundException(f"No data removed for document with ID: {document_id}")
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=str(e))
+            raise InternalServerErrorException(detail=f"Error removing chatlog value: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")

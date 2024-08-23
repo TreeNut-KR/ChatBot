@@ -1,7 +1,6 @@
 import os
 import logging
-from typing import Callable, Dict, Type
-
+from typing import Callable, Dict, Type, Optional
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI, HTTPException, Request
 
@@ -49,9 +48,8 @@ class ValueErrorException(HTTPException):
         super().__init__(status_code=422, detail=detail)
 
 class InternalServerErrorException(HTTPException):
-    def __init__(self, detail: str = "Internal server error"):
+    def __init__(self, detail: Optional[str] = None):
         super().__init__(status_code=500, detail=detail)
-
 class DatabaseErrorException(HTTPException):
     def __init__(self, detail: str = "Database Error"):
         super().__init__(status_code=503, detail=detail)

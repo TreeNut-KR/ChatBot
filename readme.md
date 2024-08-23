@@ -2,7 +2,7 @@
 
 #### 1. Linux, Mac OS
 ```bash
-./rebuild.sh
+source ./rebuild.sh
 ```
 
 #### 2. Windows OS
