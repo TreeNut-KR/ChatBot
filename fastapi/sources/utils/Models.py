@@ -47,7 +47,7 @@ class Validators:
         except httpx.RequestError:
             raise ValueError('이미지 URL에 접근하는 중 오류가 발생했습니다.')
 
-class ChatLog_Creation_Request(BaseModel):    
+class ChatLog_Creation_Request(BaseModel):
     user_id: str = Field(
         examples=["shaa97102"],
         title="유저 id",
@@ -118,7 +118,7 @@ class ChatLog_Id_Request(BaseModel):
         title="유저 id",
         min_length=6, max_length=50,
         description="유저 id 길이 제약"
-    )   
+    )
 
 class ChatData_Response(BaseModel):
     id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
