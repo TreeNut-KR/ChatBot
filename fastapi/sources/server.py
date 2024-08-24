@@ -230,8 +230,8 @@ async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Respons
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
     
-@mongo_router.delete("/chat/delete_log", response_model=ChatData_Response, summary="유저 채팅 일부 지우기")
-async def delete_chat_log(request: ChatLog_delete_Request) -> ChatData_Response:
+@mongo_router.delete("/chat/delete_log", summary="유저 채팅 일부 지우기")
+async def delete_chat_log(request: ChatLog_delete_Request):
     '''
     최신 대화 ~ 선택된 채팅을 로그에서 삭제합니다.
     '''

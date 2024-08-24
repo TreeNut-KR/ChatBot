@@ -179,23 +179,24 @@ class MongoDBHandler:
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
 
-            # 'value' 필드에서 삭제할 항목 필터링
-            value_to_remove = [item for item in document.get("value", []) if item.get("index") == selected_count]
+            # 'value' 필드에서 삭제할 항목 필터링 (selected_count 이상)
+            value_to_remove = [item for item in document.get("value", []) if item.get("index") >= selected_count]
 
             if not value_to_remove:
-                raise NotFoundException(f"No data found to remove with index: {selected_count}")
+                raise NotFoundException(f"No data found to remove starting from index: {selected_count}")
 
-            # 해당 index의 데이터를 삭제
+            # 해당 index부터 마지막 데이터까지 삭제
             result = await collection.update_one(
                 {"id": document_id},
-                {"$pull": {"value": {"index": selected_count}}}
+                {"$pull": {"value": {"index": {"$gte": selected_count}}}}
             )
 
             if result.modified_count > 0:
-                return f"Successfully removed data with index: {selected_count} from document with ID: {document_id}"
+                return f"Successfully removed data from index: {selected_count} to the end in document with ID: {document_id}"
             else:
                 raise NotFoundException(f"No data removed for document with ID: {document_id}")
         except PyMongoError as e:
             raise InternalServerErrorException(detail=f"Error removing chatlog value: {str(e)}")
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+
