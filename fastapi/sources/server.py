@@ -23,6 +23,7 @@ from utils.Models import (
     ChatLog_Creation_Request,
     ChatLog_Id_Request,
     ChatLog_Identifier_Request,
+    ChatLog_delete_Request,
     Validators
 )
 
@@ -228,6 +229,26 @@ async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Respons
         raise NotFoundException(detail=str(e))
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
+    
+@mongo_router.delete("/chat/delete_log", response_model=ChatData_Response, summary="유저 채팅 일부 지우기")
+async def delete_chat_log(request: ChatLog_delete_Request) -> ChatData_Response:
+    '''
+    최신 대화 ~ 선택된 채팅을 로그에서 삭제합니다.
+    '''
+    try:
+        response_message = await mongo_handler.remove_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id,
+            selected_count=request.index
+        )
+        return {"Result": response_message}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+
 
 app.include_router(
     mongo_router,
