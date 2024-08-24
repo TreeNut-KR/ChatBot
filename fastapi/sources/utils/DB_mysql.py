@@ -13,8 +13,8 @@ class MySQLDBHandler:
         self.database = Database(
             f"mysql://{os.getenv('MYSQL_ROOT_USER')}:" \
             f"{os.getenv('MYSQL_ROOT_PASSWORD')}@" \
-            f"{os.getenv('MYSQL_HOST')}:" \
-            f"{os.getenv('MYSQL_PORT')}/" \
+            f"{os.getenv('MYSQL_ROOT_HOST')}:" \
+            f"{os.getenv('MYSQL_ROOT_PORT')}/" \
             f"{os.getenv('MYSQL_DATABASE')}"
         )
 
