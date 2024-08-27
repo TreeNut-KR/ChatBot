@@ -84,7 +84,7 @@ def custom_openapi():
     
     openapi_schema = get_openapi(
         title="ChatBot FastAPI",
-        version="v0.0.1-dev",
+        version="v0.1.0-dev",
         summary="쳇봇 데이터 관리 API (개발 중인 버전)",
         routes=app.routes,
         description=(
