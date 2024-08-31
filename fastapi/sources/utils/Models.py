@@ -136,6 +136,25 @@ class ChatLog_delete_Request(BaseModel):
     @field_validator('id', mode='before')
     def check_id(cls, v):
         return Validators.validate_uuid(v)
+    
+class ChatRoom_Delete_Request(BaseModel):
+    user_id: str = Field(
+        examples=["shaa97102"],
+        title="유저 id",
+        min_length=6, max_length=50,
+        description="유저 id 길이 제약"
+    )
+
+    id: str = Field(
+        examples=["123e4567-e89b-12d3-a456-426614174000"],
+        title="채팅방 id",
+        min_length=1, max_length=36,
+        description="UUID 형식"
+    )
+
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
 
 class ChatLog_Id_Request(BaseModel):
     user_id: str = Field(

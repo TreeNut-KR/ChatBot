@@ -24,6 +24,7 @@ from utils.Models import (
     ChatLog_Id_Request,
     ChatLog_Identifier_Request,
     ChatLog_delete_Request,
+    ChatRoom_Delete_Request,
     Validators
 )
 
@@ -248,7 +249,24 @@ async def delete_chat_log(request: ChatLog_delete_Request):
         raise NotFoundException(detail=str(e))
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
-
+    
+@mongo_router.delete("/chat/delete_room", summary="유저 채팅 지우기")
+async def delete_chat_room(request: ChatRoom_Delete_Request):
+    '''
+    유저의 채팅방을 삭제합니다.
+    '''
+    try:
+        response_message = await mongo_handler.remove_chatroom_value(
+            user_id=request.user_id,
+            document_id=request.id
+        )
+        return {"Successfuly removed chatroom id : ": request.id}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
 
 app.include_router(
     mongo_router,
