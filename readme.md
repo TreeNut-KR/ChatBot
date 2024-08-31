@@ -23,13 +23,18 @@ source ./rebuild.sh
 
 ```bash
 git tag v0.0.1
-git push origin v0.0.
+git push origin v0.0.1
 ```
 - v0.0.1를 실제 태그로 수정하여 입력하면 태그가 활성화, 깃 액션에 해당 태그로 작동
 
 ### 버전 태그 삭제
 ```bash
 git tag -d v0.0.1
+```
+- `git tag -d v0.0.1는 v0.0.1`를 로컬에서 태그 삭제
+
+### **⚠️사용 주의⚠️**
+```bash
 git push origin --delete v0.0.1
 ```
-- v0.0.1를 로컬에서 태그 삭제, 원격 저장소에서 태그 삭제
+- `git push origin --delete v0.0.1`는 **원격 저장소**에서 태그 삭제 -> 이전 버전 릴리스 삭제, 이전 버전의 성공한 릴리스가 삭제될 수 있기에 반드시 협의 후 사용.
