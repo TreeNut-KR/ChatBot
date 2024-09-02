@@ -216,7 +216,6 @@ class MongoDBHandler:
 
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
-        
 
             remove_chatroom = await collection.delete_one(document)
 

@@ -112,7 +112,7 @@ class ChatLog_Identifier_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
 
-class ChatLog_delete_Request(BaseModel):
+class ChatLog_Delete_Request(BaseModel):
     user_id: str = Field(
         examples=["shaa97102"],
         title="유저 id",
