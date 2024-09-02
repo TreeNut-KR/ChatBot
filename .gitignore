@@ -191,6 +191,8 @@ cython_debug/
 # PyCharm
 
 
+
+springboot/gradlew
 springboot/HELP.md
 springboot/.gradle
 springboot/build/
