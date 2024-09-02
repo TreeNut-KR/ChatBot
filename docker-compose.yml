@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   nginx:
     restart: always
@@ -7,6 +9,7 @@ services:
       - "80:80"
     depends_on:
       - fastapi
+      - springboot  # Spring Boot 서비스 추가
 
   fastapi:
     restart: always
@@ -31,12 +34,11 @@ services:
     build:
       context: ./mysql
     ports:
-      - "3306:3306"
+      - "3308:3306"
     environment:
-      MYSQL_ROOT_HOST: '%'
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_INITDB_ROOT_USERNAME: ${MYSQL_ROOT_USER}
-      MYSQL_INITDB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - ./mysql/data:/var/lib/mysql
       - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
@@ -45,7 +47,6 @@ services:
       "--character-set-server=utf8mb4",
       "--collation-server=utf8mb4_unicode_ci"
       ]
-
 
   mongodb:
     restart: unless-stopped
@@ -61,3 +62,14 @@ services:
       - ./mongo/data:/data/db
       - ./mongo/log:/var/log/mongodb
       - ./mongo/.env:/docker-entrypoint-initdb.d/.env
+
+  springboot:
+    restart: always
+    build:
+      context: ./springboot
+      dockerfile: Dockerfile
+    command: ./gradlew build -x test --no-daemon  # 테스트를 건너뛰고 빌드
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql  # MySQL 서비스에 의존

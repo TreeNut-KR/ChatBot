@@ -189,3 +189,44 @@ dmypy.json
 cython_debug/
 
 # PyCharm
+
+
+
+springboot/gradlew
+springboot/HELP.md
+springboot/.gradle
+springboot/build/
+!springboot/gradle/wrapper/gradle-wrapper.jar
+!springboot/**/src/main/**/build/
+!springboot/**/src/test/**/build/
+
+### STS ###
+springboot/.apt_generated
+springboot/.classpath
+springboot/.factorypath
+springboot/.project
+springboot/.settings
+springboot/.springBeans
+springboot/.sts4-cache
+springboot/bin/
+!springboot/**/src/main/**/bin/
+!springboot/**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+springboot/.idea
+springboot/*.iws
+springboot/*.iml
+springboot/*.ipr
+springboot/out/
+!springboot/**/src/main/**/out/
+!springboot/**/src/test/**/out/
+
+### NetBeans ###
+springboot/nbproject/private/
+springboot/nbbuild/
+springboot/dist/
+springboot/nbdist/
+springboot/.nb-gradle/
+
+### VS Code ###
+springboot/.vscode/
