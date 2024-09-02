@@ -15,7 +15,7 @@ class SecurityConfig {
         http
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/api/users/register", "/api/users/login").permitAll()
+                    .requestMatchers("/server/user/register", "/server/user/login").permitAll()
                     .anyRequest().authenticated()
             }
         return http.build()

@@ -25,6 +25,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
 
     runtimeOnly("mysql:mysql-connector-java:8.0.33") // 버전 추가
+    implementation("io.jsonwebtoken:jjwt:0.9.1")
+    implementation("javax.servlet:javax.servlet-api:4.0.1")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
