@@ -1,31 +1,23 @@
 import os
 from contextlib import asynccontextmanager
-from pydantic import ValidationError
 
-from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-
-from starlette.responses import JSONResponse
+from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-
+from starlette.responses import JSONResponse
 from utils.DB_mongo import MongoDBHandler
 from utils.DB_mysql import MySQLDBHandler
-from utils.Error_handlers import (
-    BadRequestException,
-    InternalServerErrorException,
-    NotFoundException,
-    add_exception_handlers
-)
-from utils.Models import (
-    ChatData_Response,
-    ChatLog_Creation_Request,
-    ChatLog_Id_Request,
-    ChatLog_Identifier_Request,
-    ChatLog_delete_Request,
-    Validators
-)
+from utils.Error_handlers import (BadRequestException,
+                                  InternalServerErrorException,
+                                  NotFoundException, add_exception_handlers)
+from utils.Models import (ChatData_Response, ChatLog_Creation_Request,
+                          ChatLog_Delete_Request, ChatLog_Id_Request,
+                          ChatLog_Identifier_Request, ChatRoom_Delete_Request,
+                          Validators)
+
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 
 mysql_handler = MySQLDBHandler()  # MySQL 핸들러 초기화
 mongo_handler = MongoDBHandler()  # MongoDB 핸들러 초기화
@@ -231,7 +223,7 @@ async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Respons
         raise InternalServerErrorException(detail=str(e))
     
 @mongo_router.delete("/chat/delete_log", summary="유저 채팅 일부 지우기")
-async def delete_chat_log(request: ChatLog_delete_Request):
+async def delete_chat_log(request: ChatLog_Delete_Request):
     '''
     최신 대화 ~ 선택된 채팅을 로그에서 삭제합니다.
     '''
@@ -248,7 +240,24 @@ async def delete_chat_log(request: ChatLog_delete_Request):
         raise NotFoundException(detail=str(e))
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
-
+    
+@mongo_router.delete("/chat/delete_room", summary="유저 채팅 지우기")
+async def delete_chat_room(request: ChatRoom_Delete_Request):
+    '''
+    유저의 채팅방을 삭제합니다.
+    '''
+    try:
+        response_message = await mongo_handler.remove_chatroom_value(
+            user_id=request.user_id,
+            document_id=request.id
+        )
+        return {"Result": response_message}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
 
 app.include_router(
     mongo_router,
