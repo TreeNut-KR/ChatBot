@@ -210,10 +210,10 @@ async def update_chat_log(request: ChatLog_Update_Request):
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
         
-        response_message = await mongo_handler.add_chatlog_value(
+        response_message = await mongo_handler.update_chatlog_value(
             user_id=request.user_id,
             document_id=request.id,
-            new_data=filtered_data,
+            new_Data=filtered_data
         )
         return {"Result": response_message}
     except ValidationError as e:
