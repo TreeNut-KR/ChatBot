@@ -154,10 +154,63 @@ class MongoDBHandler:
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
 
+            value_list = document.get("value", [])
+
+            sorted_value_list = sorted(value_list, key=lambda x:x.get("index"))
+
             # document에서 value를 반환
-            return document.get("value", [])
+            return sorted_value_list
         except PyMongoError as e:
             raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+
+    async def update_chatlog_value(self, user_id:str, document_id:str, new_Data : Dict):
+        """
+        특정 문서의 'value' 필드를 수정합니다.
+
+        :param user_id: 사용자 ID
+        :param document_id: 문서의 ID
+        :param index : 대화의 ID
+        :return: 해당 문서의 수정된 'value' 필드 데이터
+        :raises NotFoundException: 문서가 존재하지 않을 경우
+        :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
+        """
+        try:
+            collection = self.db[f'chatlog_{user_id}']
+            document = await collection.find_one({"id": document_id})
+            if document is None:
+                raise NotFoundException(f"No document found with ID: {document_id}")
+
+
+            update_data_filtered = {
+                key: value for key, value in new_Data.items() if key not in ['user_id']
+            }
+
+            index = new_Data.get('index')
+
+            update_data_with_index = {
+                "index":index,
+                **update_data_filtered
+            }
+
+            result = await collection.update_one(
+                {"id": document_id},
+                {"$pull": {"value": {"index": index}}}
+            )
+
+            result = await collection.update_one(
+                {"id": document_id},
+                {"$push": {"value": update_data_with_index}}
+            )
+
+            if result.modified_count > 0:
+            # if True:
+                return f"Successfully added data to document with ID: {document_id}, Values:{index}"
+            else:
+                raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
