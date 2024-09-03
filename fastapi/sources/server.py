@@ -12,10 +12,10 @@ from utils.DB_mysql import MySQLDBHandler
 from utils.Error_handlers import (BadRequestException,
                                   InternalServerErrorException,
                                   NotFoundException, add_exception_handlers)
-from utils.Models import (ChatData_Response, ChatLog_Creation_Request,
-                          ChatLog_Delete_Request, ChatLog_Id_Request,
-                          ChatLog_Identifier_Request, ChatRoom_Delete_Request,
-                          Validators)
+from utils.Models import (ChatLog_Update_Request, ChatLog_Create_Request,
+                          ChatLog_Delete_Request, ChatRoom_Delete_Request,
+                          ChatLog_Identifier_Request, ChatLog_Id_Request,
+                          ChatData_Response, Validators)
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 
@@ -178,7 +178,7 @@ async def create_chat(request: ChatLog_Id_Request):
         raise InternalServerErrorException(detail=str(e))
 
 @mongo_router.put("/chat/save_log", summary="유저 채팅 저장")
-async def save_chat_log(request: ChatLog_Creation_Request):
+async def save_chat_log(request: ChatLog_Create_Request):
     '''
     생성된 채팅 문서에 유저의 채팅 데이터를 저장합니다.
     '''
@@ -199,6 +199,30 @@ async def save_chat_log(request: ChatLog_Creation_Request):
         raise NotFoundException(detail=str(e))
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
+    
+@mongo_router.put("/chat/update_log", summary="유저 채팅 업데이트")
+async def update_chat_log(request: ChatLog_Update_Request):
+    '''
+    기존 채팅 문서에 유저의 채팅 데이터를 수정합니다.
+    '''
+    try:
+        await Validators().url_status(request.img_url)  # 이미지 URL 확인
+        request_data = request.model_dump()
+        filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
+        
+        response_message = await mongo_handler.add_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id,
+            new_data=filtered_data,
+        )
+        return {"Result": response_message}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+    
 
 @mongo_router.post("/chat/load_log", response_model=ChatData_Response, summary="유저 채팅 불러오기")
 async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Response:
@@ -209,6 +233,7 @@ async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Respons
         chat_logs = await mongo_handler.get_chatlog_value(
             user_id=request.user_id,
             document_id=request.id
+
         )
         response_data = ChatData_Response(
             id=request.id,
