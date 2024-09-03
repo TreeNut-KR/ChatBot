@@ -12,10 +12,10 @@ from utils.DB_mysql import MySQLDBHandler
 from utils.Error_handlers import (BadRequestException,
                                   InternalServerErrorException,
                                   NotFoundException, add_exception_handlers)
-from utils.Models import (ChatLog_Update_Request, ChatLog_Create_Request,
-                          ChatLog_Delete_Request, ChatRoom_Delete_Request,
-                          ChatLog_Identifier_Request, ChatLog_Id_Request,
-                          ChatData_Response, Validators)
+from utils.Models import (ChatData_Response, ChatLog_Create_Request,
+                          ChatLog_Delete_Request, ChatLog_Id_Request,
+                          ChatLog_Identifier_Request, ChatLog_Update_Request,
+                          ChatRoom_Delete_Request, Validators)
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 
@@ -69,7 +69,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -101,11 +100,9 @@ def custom_openapi():
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
-
 app.openapi = custom_openapi
 
-# MySQL 관련 라우터 정의
-mysql_router = APIRouter()
+mysql_router = APIRouter() # MySQL 관련 라우터 정의
 
 @mysql_router.get("/tables", summary="테이블 목록 가져오기")
 async def list_tables():
@@ -141,8 +138,7 @@ app.include_router(
     responses={500: {"description": "Internal Server Error"}}
 )
 
-# MongoDB 관련 라우터 정의
-mongo_router = APIRouter()
+mongo_router = APIRouter() # MongoDB 관련 라우터 정의
 
 @mongo_router.get("/db", summary="데이터베이스 목록 가져오기")
 async def list_databases():

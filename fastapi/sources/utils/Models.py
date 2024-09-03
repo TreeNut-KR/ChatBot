@@ -54,6 +54,7 @@ user_id_set = Field(
         title="유저 id",
         min_length=6, max_length=50,
         description="유저 id 길이 제약"
+
 )
 id_set = Field(
     examples=["123e4567-e89b-12d3-a456-426614174000"],

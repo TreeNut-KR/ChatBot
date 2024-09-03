@@ -205,7 +205,6 @@ class MongoDBHandler:
             )
 
             if result.modified_count > 0:
-            # if True:
                 return f"Successfully added data to document with ID: {document_id}, Values:{index}"
             else:
                 raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
@@ -276,7 +275,6 @@ class MongoDBHandler:
                 raise NotFoundException(f"No data found to remove document: {document_id}")
             elif remove_chatroom.deleted_count > 0:
                 return f"Successfully deleted document with ID: {document_id}"
-
         except PyMongoError as e:
             raise InternalServerErrorException(detail=f"Error deleting document: {str(e)}")
         except Exception as e:
