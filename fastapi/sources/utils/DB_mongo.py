@@ -200,7 +200,7 @@ class MongoDBHandler:
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
-    async def remove_chatroom_value(self, user_id:str, document_id:str)->str:
+    async def remove_chatroom_value(self, user_id: str, document_id: str) -> str:
         """
         특정 대화방을 지웁니다.
         
@@ -217,14 +217,13 @@ class MongoDBHandler:
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
 
-            remove_chatroom = await collection.delete_one(document)
+            remove_chatroom = await collection.delete_one({"id": document_id})  # 수정: 조건으로 ID 사용
 
-            if not remove_chatroom:
-                raise NotFoundException(f"No data found to remove document: {remove_chatroom}")
-            
-            if document == None:
+            if remove_chatroom.deleted_count == 0:
+                raise NotFoundException(f"No data found to remove document: {document_id}")
+            elif remove_chatroom.deleted_count > 0:
                 return f"Successfully deleted document with ID: {document_id}"
-            
+
         except PyMongoError as e:
             raise InternalServerErrorException(detail=f"Error deleting document: {str(e)}")
         except Exception as e:

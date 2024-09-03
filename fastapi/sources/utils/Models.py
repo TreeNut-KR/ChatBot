@@ -48,7 +48,7 @@ class Validators:
         except httpx.RequestError:
             raise ValueError('이미지 URL에 접근하는 중 오류가 발생했습니다.')
 
-natural_num = conint(ge=1)
+NATURAL_NUM = conint(ge=1)
 user_id_set = Field(
         examples=["shaa97102"],
         title="유저 id",
@@ -85,7 +85,6 @@ index_set = Field(
     description="int 형식"
 )
 
-
 class ChatLog_Create_Request(BaseModel):
     user_id: str = user_id_set
     id: str = id_set
@@ -108,14 +107,13 @@ class ChatLog_Create_Request(BaseModel):
         """
         return super().model_dump(**kwargs)
 
-
 class ChatLog_Update_Request(BaseModel):
     user_id: str = user_id_set
     id: str = id_set
     img_url: str = img_url_set
     input_data: str = input_data_set
     output_data: str = output_data_set
-    index: natural_num = index_set # type: ignore
+    index: NATURAL_NUM = index_set # type: ignore
     
     @field_validator('id', mode='before')
     def check_id(cls, v):
@@ -131,7 +129,7 @@ class ChatLog_Update_Request(BaseModel):
         필터링된 데이터만 반환하도록 수정할 수 있습니다.
         """
         return super().model_dump(**kwargs)
-        
+
 class ChatLog_Identifier_Request(BaseModel):
     user_id: str = user_id_set
     id: str = id_set
@@ -143,15 +141,19 @@ class ChatLog_Identifier_Request(BaseModel):
 class ChatLog_Delete_Request(BaseModel):
     user_id: str = user_id_set
     id: str = id_set
-    index: natural_num = index_set # type: ignore
+    index: NATURAL_NUM = index_set # type: ignore
     
     @field_validator('id', mode='before')
     def check_id(cls, v):
         return Validators.validate_uuid(v)
-    
+
 class ChatRoom_Delete_Request(BaseModel):
     user_id: str = user_id_set
     id: str = id_set
+    
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
 
 class ChatLog_Id_Request(BaseModel):
     user_id: str = user_id_set
