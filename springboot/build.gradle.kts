@@ -23,6 +23,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.security:spring-security-core")
+    implementation("org.springframework.security:spring-security-web")
+    implementation(kotlin("stdlib"))
 
     runtimeOnly("mysql:mysql-connector-java:8.0.33") // MySQL Connector 버전
     implementation("io.jsonwebtoken:jjwt:0.9.1")
