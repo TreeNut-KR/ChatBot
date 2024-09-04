@@ -1,3 +1,4 @@
+// SQL 쿼리를 위한 유저 모델
 package com.TreeNut.ChatBot_Backend.model
 
 import jakarta.persistence.Entity
