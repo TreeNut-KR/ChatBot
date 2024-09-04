@@ -24,15 +24,20 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
 
-    runtimeOnly("mysql:mysql-connector-java:8.0.33") // 버전 추가
+    runtimeOnly("mysql:mysql-connector-java:8.0.33") // MySQL Connector 버전
     implementation("io.jsonwebtoken:jjwt:0.9.1")
     implementation("javax.servlet:javax.servlet-api:4.0.1")
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    
+    // JAXB 관련 의존성 추가
+    implementation("javax.xml.bind:jaxb-api:2.3.1")
+    implementation("org.glassfish.jaxb:jaxb-runtime:2.3.1")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
+
 
 tasks.withType<Test> {
     useJUnitPlatform()
