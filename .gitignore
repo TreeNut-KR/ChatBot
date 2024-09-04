@@ -230,3 +230,6 @@ springboot/.nb-gradle/
 
 ### VS Code ###
 springboot/.vscode/
+springboot/gradlew
+springboot/.gradle/8.8/fileHashes/fileHashes.bin
+springboot/.gradle/8.8/fileHashes/fileHashes.lock
