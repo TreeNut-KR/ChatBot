@@ -14,11 +14,11 @@ class UserController(private val userService: UserService) {
     @PostMapping("/register")
     fun register(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val username = body["name"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Name is required"))
-        val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
+        val id = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
         
-        val user = User(username = username, userid = userid, email = email, password = password)
+        val user = User(username = username, id = id, email = email, password = password)
         val registeredUser = userService.register(user)
 
         val token = userService.generateToken(registeredUser)

@@ -13,7 +13,7 @@ import jakarta.persistence.Column
 @Table(name = "users")
 data class User(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null, // ID 필드
+    val id: String, // ID 필드
     val username: String,
     val email: String,
     val password: String,
