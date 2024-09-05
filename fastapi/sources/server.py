@@ -12,10 +12,14 @@ from utils.DB_mysql import MySQLDBHandler
 from utils.Error_handlers import (BadRequestException,
                                   InternalServerErrorException,
                                   NotFoundException, add_exception_handlers)
-from utils.Models import (ChatLog_Update_Request, ChatLog_Create_Request,
-                          ChatLog_Delete_Request, ChatRoom_Delete_Request,
-                          ChatLog_Identifier_Request, ChatLog_Id_Request,
-                          ChatData_Response, Validators)
+from utils.Models import (ChatData_Response, ChatLog_Create_Request,
+                          ChatLog_Delete_Request, ChatLog_Id_Request,
+                          ChatLog_Identifier_Request, ChatLog_Update_Request,
+                          ChatRoom_Delete_Request, 
+                          Office_ChatLog_Create_Request,Office_ChatLog_Update_Request,
+                          Office_ChatLog_Id_Request,Office_ChatLog_Identifier_Request,
+                          Office_ChatLog_Delete_Request,Office_ChatRoom_Delete_Request,
+                          Validators)
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 
@@ -69,7 +73,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -101,11 +104,9 @@ def custom_openapi():
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
-
 app.openapi = custom_openapi
 
-# MySQL 관련 라우터 정의
-mysql_router = APIRouter()
+mysql_router = APIRouter() # MySQL 관련 라우터 정의
 
 @mysql_router.get("/tables", summary="테이블 목록 가져오기")
 async def list_tables():
@@ -141,9 +142,7 @@ app.include_router(
     responses={500: {"description": "Internal Server Error"}}
 )
 
-# MongoDB 관련 라우터 정의
-mongo_router = APIRouter()
-
+mongo_router = APIRouter() # MySQL 관련 라우터 정의
 @mongo_router.get("/db", summary="데이터베이스 목록 가져오기")
 async def list_databases():
     '''
@@ -166,7 +165,128 @@ async def list_collections(db_name: str = Query(..., description="데이터베�
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
-@mongo_router.post("/chat/create", summary="유저 채팅방 ID 생성")
+office_router = APIRouter() # Office 관련 라우터 정의
+
+@office_router.post("/create", summary="유저 채팅방 ID 생성")
+async def create_chat(request: Office_ChatLog_Id_Request):
+    '''
+    새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
+    '''
+    try:
+        document_id = await mongo_handler.office_create_chatlog_collection(user_id=request.user_id)
+        return {"Document ID": document_id}
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+
+@office_router.put("/save_log", summary="유저 채팅 저장")
+async def save_chat_log(request: Office_ChatLog_Create_Request):
+    '''
+    생성된 채팅 문서에 유저의 채팅 데이터를 저장합니다.
+    '''
+    try:
+        request_data = request.model_dump()
+        filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
+        
+        response_message = await mongo_handler.office_add_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id,
+            new_data=filtered_data
+        )
+        return {"Result": response_message}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+    
+@office_router.put("/update_log", summary="유저 채팅 업데이트")
+async def update_chat_log(request: Office_ChatLog_Update_Request):
+    '''
+    기존 채팅 문서에 유저의 채팅 데이터를 수정합니다.
+    '''
+    try:
+        request_data = request.model_dump()
+        filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
+        
+        response_message = await mongo_handler.office_update_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id,
+            new_Data=filtered_data
+        )
+        return {"Result": response_message}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+    
+
+@office_router.post("/load_log", response_model=ChatData_Response, summary="유저 채팅 불러오기")
+async def load_chat_log(request: Office_ChatLog_Identifier_Request) -> ChatData_Response:
+    '''
+    생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
+    '''
+    try:
+        chat_logs = await mongo_handler.office_get_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id
+        )
+
+        response_data = ChatData_Response(
+            id=request.id,
+            value=chat_logs
+        )
+        
+        return response_data
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+    
+@office_router.delete("/delete_log", summary="유저 채팅 일부 지우기")
+async def delete_chat_log(request: Office_ChatLog_Delete_Request):
+    '''
+    최신 대화 ~ 선택된 채팅을 로그에서 삭제합니다.
+    '''
+    try:
+        response_message = await mongo_handler.office_remove_chatlog_value(
+            user_id=request.user_id,
+            document_id=request.id,
+            selected_count=request.index
+        )
+        return {"Result": response_message}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+    
+@office_router.delete("/delete_room", summary="유저 채팅 지우기")
+async def delete_chat_room(request: Office_ChatRoom_Delete_Request):
+    '''
+    유저의 채팅방을 삭제합니다.
+    '''
+    try:
+        response_message = await mongo_handler.office_remove_chatroom_value(
+            user_id=request.user_id,
+            document_id=request.id
+        )
+        return {"Result": response_message}
+    except ValidationError as e:
+        raise BadRequestException(detail=str(e))
+    except NotFoundException as e:
+        raise NotFoundException(detail=str(e))
+    except Exception as e:
+        raise InternalServerErrorException(detail=str(e))
+    
+chatbot_router = APIRouter() # Chatbot 관련 라우터 정의
+
+@chatbot_router.post("/create", summary="유저 채팅방 ID 생성")
 async def create_chat(request: ChatLog_Id_Request):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
@@ -177,7 +297,7 @@ async def create_chat(request: ChatLog_Id_Request):
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
-@mongo_router.put("/chat/save_log", summary="유저 채팅 저장")
+@chatbot_router.put("/save_log", summary="유저 채팅 저장")
 async def save_chat_log(request: ChatLog_Create_Request):
     '''
     생성된 채팅 문서에 유저의 채팅 데이터를 저장합니다.
@@ -200,7 +320,7 @@ async def save_chat_log(request: ChatLog_Create_Request):
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
     
-@mongo_router.put("/chat/update_log", summary="유저 채팅 업데이트")
+@chatbot_router.put("/update_log", summary="유저 채팅 업데이트")
 async def update_chat_log(request: ChatLog_Update_Request):
     '''
     기존 채팅 문서에 유저의 채팅 데이터를 수정합니다.
@@ -224,7 +344,7 @@ async def update_chat_log(request: ChatLog_Update_Request):
         raise InternalServerErrorException(detail=str(e))
     
 
-@mongo_router.post("/chat/load_log", response_model=ChatData_Response, summary="유저 채팅 불러오기")
+@chatbot_router.post("/load_log", response_model=ChatData_Response, summary="유저 채팅 불러오기")
 async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Response:
     '''
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
@@ -247,7 +367,7 @@ async def load_chat_log(request: ChatLog_Identifier_Request) -> ChatData_Respons
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
     
-@mongo_router.delete("/chat/delete_log", summary="유저 채팅 일부 지우기")
+@chatbot_router.delete("/delete_log", summary="유저 채팅 일부 지우기")
 async def delete_chat_log(request: ChatLog_Delete_Request):
     '''
     최신 대화 ~ 선택된 채팅을 로그에서 삭제합니다.
@@ -266,7 +386,7 @@ async def delete_chat_log(request: ChatLog_Delete_Request):
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
     
-@mongo_router.delete("/chat/delete_room", summary="유저 채팅 지우기")
+@chatbot_router.delete("/delete_room", summary="유저 채팅 지우기")
 async def delete_chat_room(request: ChatRoom_Delete_Request):
     '''
     유저의 채팅방을 삭제합니다.
@@ -284,6 +404,11 @@ async def delete_chat_room(request: ChatRoom_Delete_Request):
     except Exception as e:
         raise InternalServerErrorException(detail=str(e))
 
+# mongo_router에 세분화된 라우터 추가
+mongo_router.include_router(office_router, prefix="/office", tags=["MongoDB Router / Office Router"])
+mongo_router.include_router(chatbot_router, prefix="/chatbot", tags=["MongoDB Router / Chatbot Router"])
+
+# FastAPI 애플리케이션에 mongo_router를 추가
 app.include_router(
     mongo_router,
     prefix="/mongo",
