@@ -6,7 +6,7 @@ CREATE DATABASE IF NOT EXISTS chatbot;
 
 -- 유저
 CREATE TABLE users (
-    id INT AUTO_INCREMENT,
+    idx INT AUTO_INCREMENT,
     userid VARCHAR(50),
     username VARCHAR(50),
     email VARCHAR(100),
