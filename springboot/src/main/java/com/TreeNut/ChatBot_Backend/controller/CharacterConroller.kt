@@ -1,6 +1,6 @@
 package com.TreeNut.ChatBot_Backend.controller
 
-import com.TreeNut.ChatBot_Backend.model.User
+import com.TreeNut.ChatBot_Backend.model.Character
 import com.TreeNut.ChatBot_Backend.service.UserService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
