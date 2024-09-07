@@ -20,7 +20,7 @@ CREATE TABLE users (
 
 -- 캐릭터
 CREATE TABLE characters (
-    characters_pk CHAR(36) DEFAULT UUID(),
+    idx CHAR(36) DEFAULT UUID(),
     creater int,
     name VARCHAR(30),
     created_at DATETIME DEFAULT NOW(),
@@ -28,6 +28,8 @@ CREATE TABLE characters (
     PRIMARY KEY(characters_pk),
     FOREIGN KEY (creater) REFERENCES users(id)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
+
+
 
 -- -- 채팅방
 -- CREATE TABLE chatroom (
