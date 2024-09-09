@@ -3,6 +3,9 @@ FLUSH PRIVILEGES;
 
 CREATE DATABASE IF NOT EXISTS chatbot;
 
+USE chatbot;
+
+
 -- 유저
 CREATE TABLE users (
     idx INT AUTO_INCREMENT,
@@ -53,4 +56,3 @@ CREATE TABLE characters (
 -- ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 
-USE chatbot;
