@@ -3,31 +3,42 @@ FLUSH PRIVILEGES;
 
 CREATE DATABASE IF NOT EXISTS chatbot;
 
+USE chatbot;
+
 
 -- 유저
 CREATE TABLE users (
     idx INT AUTO_INCREMENT,
-    id VARCHAR(50),
+    userid VARCHAR(50) UNIQUE,
     username VARCHAR(50),
     email VARCHAR(100),
     password VARCHAR(255),
-    access_token text,
-    refresh_token text,
-    created_at DATETIME DEFAULT NOW(),
-    updated_at DATETIME DEFAULT NOW(),
+    access_token TEXT,
+    refresh_token TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
+
 -- 캐릭터
 CREATE TABLE characters (
-    characters_pk CHAR(36) DEFAULT UUID(),
-    creater int,
-    name VARCHAR(30),
-    created_at DATETIME DEFAULT NOW(),
-    updated_at DATETIME DEFAULT NOW(),
-    PRIMARY KEY(characters_pk),
-    FOREIGN KEY (creater) REFERENCES users(idx)
+    idx INT AUTO_INCREMENT,
+    uuid CHAR(36) UNIQUE NOT NULL,
+    useridx INT, 
+    character_name VARCHAR(30) NOT NULL,
+    character_setting VARCHAR(255),
+    description VARCHAR(255),
+    greeting TEXT,
+    accesslevel INT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(idx),
+    FOREIGN KEY (useridx) REFERENCES users(idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
+
+
+
 
 -- -- 채팅방
 -- CREATE TABLE chatroom (
@@ -40,9 +51,8 @@ CREATE TABLE characters (
 
 
 --     PRIMARY KEY(chatroom_pk),
---     FOREIGN KEY (users_idx) REFERENCES users(idx), /*외부키 설정*/
+--     FOREIGN KEY (users_idx) REFERENCES users(id), /*외부키 설정*/
 --     FOREIGN KEY (characters_pk) REFERENCES characters(characters_pk) /*외부키 설정*/
 -- ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 
-USE chatbot;
