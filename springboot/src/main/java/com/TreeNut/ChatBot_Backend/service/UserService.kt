@@ -32,7 +32,7 @@ class UserService(
 
     fun generateToken(user: User): String {
         return Jwts.builder()
-            .setSubject(user.username)
+            .setSubject(user.idx?.toString() ?: throw RuntimeException("User ID is null"))
             .setIssuedAt(Date())
             .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
             .signWith(SignatureAlgorithm.HS512, jwtSecret)
