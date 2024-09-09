@@ -2,6 +2,26 @@
 chcp 65001
 SETLOCAL
 
+echo Navigating to React Frontend directory...
+cd .\nginx\react-frontpage
+
+echo Checking if build directory exists...
+IF EXIST .\build\ (
+    echo Build directory already exists. Skipping build process.
+) ELSE (
+    echo Installing NPM packages...
+    npm i
+    echo.
+
+    echo Building React project...
+    npm run build
+    if errorlevel 1 (
+        echo npm run build failed. Exiting...
+        exit /b 1
+    )
+    echo.
+)
+
 echo Checking Docker daemon status...
 docker info >nul 2>&1
 if errorlevel 1 (
@@ -22,17 +42,21 @@ if errorlevel 1 (
 )
 echo.
 
-echo Docker Compose off...
+echo Docker Compose down...
 docker-compose down -v
+if errorlevel 1 (
+    echo Failed to execute docker-compose down. Exiting...
+    exit /b 1
+)
 echo.
 
-echo docker images remove...
+echo Removing old Docker images...
 FOR /F "tokens=*" %%i IN ('docker images -q --filter "dangling=false"') DO (
     docker rmi %%i
 )
 echo.
 
-echo Removing folders...
+echo Removing old folders...
 IF EXIST .\fastapi\sources\logs rmdir /s /q .\fastapi\sources\logs
 IF EXIST .\mysql\data rmdir /s /q .\mysql\data
 IF EXIST .\mysql\logs rmdir /s /q .\mysql\logs
@@ -46,6 +70,10 @@ FOR /d /r .\fastapi\ %%i IN (__pycache__) DO (
 )
 echo.
 
-echo Docker Compose on...
+echo Starting Docker Compose...
 docker-compose up -d
+if errorlevel 1 (
+    echo Failed to execute docker-compose up. Exiting...
+    exit /b 1
+)
 ENDLOCAL
