@@ -15,17 +15,23 @@ CREATE TABLE users (
     refresh_token text,
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW(),
-    PRIMARY KEY(id)
+    PRIMARY KEY(idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 -- 캐릭터
 CREATE TABLE characters (
-    idx CHAR(36) DEFAULT UUID(),
-    creater int,
-    name VARCHAR(30),
+    
+    idx INT AUTO_INCREMENT,
+    uuid CHAR(36) UNIQUE DEFAULT UUID(),
+    useridx VARCHAR(50),
+    character_name VARCHAR(30),
+    character_setting VARCHAR(255),
+    description VARCHAR(255),
+    greeting TEXT,
+    accesslevel int,
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW(),
-    PRIMARY KEY(characters_pk),
+    PRIMARY KEY(idx),
     FOREIGN KEY (creater) REFERENCES users(id)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 

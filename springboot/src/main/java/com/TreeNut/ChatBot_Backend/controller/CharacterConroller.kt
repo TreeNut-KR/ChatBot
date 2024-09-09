@@ -1,42 +1,30 @@
 package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.model.Character
-import com.TreeNut.ChatBot_Backend.service.UserService
 import org.springframework.http.ResponseEntity
+import com.TreeNut.ChatBot_Backend.service.CharacterService
 import org.springframework.web.bind.annotation.*
 import javax.servlet.http.HttpServletResponse
 
 @RestController
 @RequestMapping("/server/character")
-class UserController(private val userService: UserService) {
+class CharacterController(private val characterService: CharacterService) {
 
-    @PutMapping("/add")
-    fun character_add(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
-        
-        val token = userService.generateToken(registeredUser)
-        return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to registeredUser.username))
+    @PostMapping("/add")
+    fun addCharacter(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
+        // 캐릭터 추가 로직 구현
+        return ResponseEntity.ok(mapOf("message" to "캐릭터가 추가되었습니다."))
     }
 
     @PostMapping("/edit")
-    fun character_edit(@RequestBody body: Map<String, String>, response: HttpServletResponse): ResponseEntity<Map<String, Any>> {
-
-        
-        return if (user != null) {
-            val token = userService.generateToken(user)
-            ResponseEntity.ok(mapOf("token" to token, "name" to user.username))
-        } else {
-            ResponseEntity.status(401).body(mapOf("status" to 401, "message" to "Invalid credentials"))
-        }
+    fun editCharacter(@RequestBody body: Map<String, String>, response: HttpServletResponse): ResponseEntity<Map<String, Any>> {
+        // 캐릭터 추가 로직 구현
+        return ResponseEntity.ok(mapOf("message" to "캐릭터가 수정되었습니다."))
     }
 
-     @DeleteMapping("/delete")
-    fun character_delete(@RequestBody body: Map<String, String>, response: HttpServletResponse): ResponseEntity<Map<String, Any>> {
-
-        return if (user != null) {
-            val token = userService.generateToken(user)
-            ResponseEntity.ok(mapOf("token" to token, "name" to user.username))
-        } else {
-            ResponseEntity.status(401).body(mapOf("status" to 401, "message" to "Invalid credentials"))
-        }
+    @DeleteMapping("/delete")
+    fun deleteCharacter(@RequestBody body: Map<String, String>, response: HttpServletResponse): ResponseEntity<Map<String, Any>> {
+        // 캐릭터 추가 로직 구현
+        return ResponseEntity.ok(mapOf("message" to "캐릭터가 삭제되었습니다."))
     }
 }

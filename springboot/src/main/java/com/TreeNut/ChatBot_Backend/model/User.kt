@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 @Table(name = "users")
 data class User(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null, // 데이터베이스에서 자동 생성되는 ID 필드
+    val idx: Long? = null, // 데이터베이스에서 자동 생성되는 ID 필드
     val userid: String, // 클라이언트가 제공하는 ID 필드
     val username: String,
     val email: String,
