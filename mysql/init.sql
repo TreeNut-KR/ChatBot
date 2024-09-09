@@ -6,7 +6,7 @@ CREATE DATABASE IF NOT EXISTS chatbot;
 
 -- 유저
 CREATE TABLE users (
-    id INT AUTO_INCREMENT,
+    idx INT AUTO_INCREMENT,
     userid VARCHAR(50),
     username VARCHAR(50),
     email VARCHAR(100),
@@ -15,7 +15,7 @@ CREATE TABLE users (
     refresh_token text,
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW(),
-    PRIMARY KEY(id)
+    PRIMARY KEY(idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 -- 캐릭터
@@ -26,7 +26,7 @@ CREATE TABLE characters (
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW(),
     PRIMARY KEY(characters_pk),
-    FOREIGN KEY (creater) REFERENCES users(id)
+    FOREIGN KEY (creater) REFERENCES users(idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 

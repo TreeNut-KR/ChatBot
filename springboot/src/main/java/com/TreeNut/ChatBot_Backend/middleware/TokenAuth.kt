@@ -1,12 +1,17 @@
 package com.TreeNut.ChatBot_Backend.middleware
 
+import com.TreeNut.ChatBot_Backend.exceptions.*
 import io.jsonwebtoken.Claims
+import io.jsonwebtoken.ExpiredJwtException
+import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.SignatureException
 import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Value
 
 @Component
-class TokenAuth(private val jwtSecret: String) {
+class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
 
     fun authGuard(token: String): Long? {
         return try {
@@ -15,14 +20,17 @@ class TokenAuth(private val jwtSecret: String) {
                 .parseClaimsJws(token)
                 .body
 
-            // 토큰의 subject에서 idx를 반환
-            claims.subject?.toLong() // idx를 Long으로 변환하여 반환
+            claims.subject?.toLong()
+        } catch (e: ExpiredJwtException) {
+            throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
+        } catch (e: MalformedJwtException) {
+            throw TokenMalformedException("잘못된 토큰입니다.")
         } catch (e: SignatureException) {
-            // 서명 검증 실패: 예외 처리
-            null
+            throw TokenSignatureException("토큰 서명 검증에 실패했습니다.")
+        } catch (e: JwtException) {
+            throw TokenJwtException("토큰 처리 중 오류가 발생했습니다: ${e.message}")
         } catch (e: Exception) {
-            // 다른 예외 처리
-            null
+            throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
         }
     }
 }
