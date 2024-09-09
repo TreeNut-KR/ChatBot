@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import javax.servlet.http.HttpServletResponse
 
-
 @RestController
 @RequestMapping("/server/user")
 class UserController(private val userService: UserService) {
@@ -14,10 +13,11 @@ class UserController(private val userService: UserService) {
     @PostMapping("/register")
     fun register(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val username = body["name"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Name is required"))
+        val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
         
-        val user = User(username = username, email = email, password = password)
+        val user = User(userid = userid, username = username, email = email, password = password)
         val registeredUser = userService.register(user)
 
         val token = userService.generateToken(registeredUser)
@@ -26,10 +26,10 @@ class UserController(private val userService: UserService) {
 
     @PostMapping("/login")
     fun login(@RequestBody body: Map<String, String>, response: HttpServletResponse): ResponseEntity<Map<String, Any>> {
-        val id = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
+        val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
         
-        val user = userService.login(id.toLong(), password)
+        val user = userService.login(userid, password)
         return if (user != null) {
             val token = userService.generateToken(user)
             ResponseEntity.ok(mapOf("token" to token, "name" to user.username))

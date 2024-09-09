@@ -7,7 +7,7 @@ CREATE DATABASE IF NOT EXISTS chatbot;
 -- 유저
 CREATE TABLE users (
     idx INT AUTO_INCREMENT,
-    id VARCHAR(50),
+    userid VARCHAR(50),
     username VARCHAR(50),
     email VARCHAR(100),
     password VARCHAR(255),
@@ -20,7 +20,7 @@ CREATE TABLE users (
 
 -- 캐릭터
 CREATE TABLE characters (
-    characters_pk CHAR(36) DEFAULT UUID(),
+    idx CHAR(36) DEFAULT UUID(),
     creater int,
     name VARCHAR(30),
     created_at DATETIME DEFAULT NOW(),
@@ -28,6 +28,8 @@ CREATE TABLE characters (
     PRIMARY KEY(characters_pk),
     FOREIGN KEY (creater) REFERENCES users(idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
+
+
 
 -- -- 채팅방
 -- CREATE TABLE chatroom (
@@ -40,7 +42,7 @@ CREATE TABLE characters (
 
 
 --     PRIMARY KEY(chatroom_pk),
---     FOREIGN KEY (users_idx) REFERENCES users(idx), /*외부키 설정*/
+--     FOREIGN KEY (users_idx) REFERENCES users(id), /*외부키 설정*/
 --     FOREIGN KEY (characters_pk) REFERENCES characters(characters_pk) /*외부키 설정*/
 -- ) ENGINE=InnoDB CHARSET=utf8mb4;
 
