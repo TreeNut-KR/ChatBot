@@ -49,7 +49,10 @@ jobs:
           # FastAPI 관련 .env 파일 생성
           mkdir -p fastapi/sources
           echo "${{ secrets.FASTAPI_ENV }}" > ./fastapi/sources/.env
-        
+
+          # springboot 관련 application.properties 파일 생성
+          mkdir -p fastapi/sources
+          echo "${{ secrets.SPRING_ENV }}" > ./springboot/src/main/resources/application.properties
 
       - name: Build and push Nginx image
         uses: docker/build-push-action@v3
