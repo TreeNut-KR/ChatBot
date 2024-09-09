@@ -86,3 +86,12 @@ jobs:
           tags: |
             ghcr.io/treenut-kr/mongodb:latest
             ghcr.io/treenut-kr/mongodb:${{ github.ref_name }}
+
+      - name: Build and push SpringBoot image
+        uses: docker/build-push-action@v3 
+        with:
+          context: ./springboot
+          push: true
+          tags: |
+            ghcr.io/treenut-kr/springboot:latest
+            ghcr.io/treenut-kr/springboot:${{ github.ref_name }}
