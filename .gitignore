@@ -191,7 +191,7 @@ cython_debug/
 # PyCharm
 
 
-
+springboot/src/main/resources/application.properties
 springboot/gradlew
 springboot/HELP.md
 springboot/.gradle
