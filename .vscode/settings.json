@@ -1,7 +1,0 @@
-{
-    "java.compile.nullAnalysis.mode": "automatic",
-    "terminal.integrated.env.windows": {
-        "PATH": "C:\\Program Files\\Docker\\Docker\\resources\\bin"
-    }
-
-}
