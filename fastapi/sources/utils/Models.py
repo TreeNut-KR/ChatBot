@@ -49,14 +49,8 @@ class Validators:
             raise ValueError('이미지 URL에 접근하는 중 오류가 발생했습니다.')
 
 NATURAL_NUM = conint(ge=1)
-chatbot_user_id_set = Field(
-        examples=["chatbot_shaa97102"],
-        title="유저 id",
-        min_length=6, max_length=50,
-        description="유저 id 길이 제약"
-)
-office_user_id_set = Field(
-        examples=["office_shaa97102"],
+user_id_set = Field(
+        examples=["shaa97102"],
         title="유저 id",
         min_length=6, max_length=50,
         description="유저 id 길이 제약"
@@ -91,8 +85,81 @@ index_set = Field(
     description="int 형식"
 )
 
-class ChatLog_Create_Request(BaseModel):
-    user_id: str = chatbot_user_id_set
+# Public ---------------------------------------------------------------------------------------------------
+
+class Identifier_Request(BaseModel):
+    user_id: str = user_id_set
+    id: str = id_set
+    
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
+
+class Log_Delete_Request(BaseModel):
+    user_id: str = user_id_set
+    id: str = id_set
+    index: NATURAL_NUM = index_set # type: ignore
+    
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
+
+class Room_Delete_Request(BaseModel):
+    user_id: str = user_id_set
+    id: str = id_set
+    
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
+
+class Id_Request(BaseModel):
+    user_id: str = user_id_set
+
+class Response(BaseModel):
+    id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
+    value: list = Field(examples=[{}], title="채팅 로그")
+
+# Office ---------------------------------------------------------------------------------------------------
+
+class Office_Create_Request(BaseModel):
+    user_id: str = user_id_set
+    id: str = id_set
+    input_data: str = input_data_set
+    output_data: str = output_data_set
+    
+    @field_validator('id', mode='before') # mode='before'는 필드 값이 검증되기 전에 호출
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
+    
+    def model_dump(self, **kwargs):
+        """
+        Pydantic BaseModel의 dict() 메서드를 대체하는 model_dump() 메서드입니다.
+        필터링된 데이터만 반환하도록 수정할 수 있습니다.
+        """
+        return super().model_dump(**kwargs)
+
+class Office_Update_Request(BaseModel):
+    user_id: str = user_id_set
+    id: str = id_set
+    input_data: str = input_data_set
+    output_data: str = output_data_set
+    index: NATURAL_NUM = index_set # type: ignore
+    
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
+    
+    def model_dump(self, **kwargs):
+        """
+        Pydantic BaseModel의 dict() 메서드를 대체하는 model_dump() 메서드입니다.
+        필터링된 데이터만 반환하도록 수정할 수 있습니다.
+        """
+        return super().model_dump(**kwargs)
+
+# ChatBot ---------------------------------------------------------------------------------------------------
+
+class ChatBot_Create_Request(BaseModel):
+    user_id: str = user_id_set
     id: str = id_set
     img_url: str = img_url_set
     input_data: str = input_data_set
@@ -113,8 +180,8 @@ class ChatLog_Create_Request(BaseModel):
         """
         return super().model_dump(**kwargs)
 
-class ChatLog_Update_Request(BaseModel):
-    user_id: str = chatbot_user_id_set
+class ChatBot_Update_Request(BaseModel):
+    user_id: str = user_id_set
     id: str = id_set
     img_url: str = img_url_set
     input_data: str = input_data_set
@@ -135,104 +202,3 @@ class ChatLog_Update_Request(BaseModel):
         필터링된 데이터만 반환하도록 수정할 수 있습니다.
         """
         return super().model_dump(**kwargs)
-
-class ChatLog_Identifier_Request(BaseModel):
-    user_id: str = chatbot_user_id_set
-    id: str = id_set
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class ChatLog_Delete_Request(BaseModel):
-    user_id: str = chatbot_user_id_set
-    id: str = id_set
-    index: NATURAL_NUM = index_set # type: ignore
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class ChatRoom_Delete_Request(BaseModel):
-    user_id: str = chatbot_user_id_set
-    id: str = id_set
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class ChatLog_Id_Request(BaseModel):
-    user_id: str = chatbot_user_id_set
-
-class ChatData_Response(BaseModel):
-    id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
-    value: list = Field(examples=[{}], title="채팅 로그")
-
-#office_router---------------------------------------------------------------------------------------------------
-
-class Office_ChatLog_Create_Request(BaseModel):
-    user_id: str = office_user_id_set
-    id: str = id_set
-    input_data: str = input_data_set
-    output_data: str = output_data_set
-    
-    @field_validator('id', mode='before') # mode='before'는 필드 값이 검증되기 전에 호출
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-    
-    def model_dump(self, **kwargs):
-        """
-        Pydantic BaseModel의 dict() 메서드를 대체하는 model_dump() 메서드입니다.
-        필터링된 데이터만 반환하도록 수정할 수 있습니다.
-        """
-        return super().model_dump(**kwargs)
-
-class Office_ChatLog_Update_Request(BaseModel):
-    user_id: str = office_user_id_set
-    id: str = id_set
-    input_data: str = input_data_set
-    output_data: str = output_data_set
-    index: NATURAL_NUM = index_set # type: ignore
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-    
-    def model_dump(self, **kwargs):
-        """
-        Pydantic BaseModel의 dict() 메서드를 대체하는 model_dump() 메서드입니다.
-        필터링된 데이터만 반환하도록 수정할 수 있습니다.
-        """
-        return super().model_dump(**kwargs)
-
-class Office_ChatLog_Identifier_Request(BaseModel):
-    user_id: str = office_user_id_set
-    id: str = id_set
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class Office_ChatLog_Delete_Request(BaseModel):
-    user_id: str = office_user_id_set
-    id: str = id_set
-    index: NATURAL_NUM = index_set # type: ignore
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class Office_ChatRoom_Delete_Request(BaseModel):
-    user_id: str = office_user_id_set
-    id: str = id_set
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class Office_ChatLog_Id_Request(BaseModel):
-    user_id: str = office_user_id_set
-
-class Office_ChatData_Response(BaseModel):
-    id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
-    value: list = Field(examples=[{}], title="채팅 로그")
