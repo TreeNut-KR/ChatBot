@@ -12,8 +12,8 @@ import java.time.LocalDateTime
 @Table(name = "users")
 data class User(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val idx: Long? = null, // 데이터베이스에서 자동 생성되는 ID 필드
-    val userid: String, // 클라이언트가 제공하는 ID 필드
+    val idx: Long? = null,
+    val userid: String,
     val username: String,
     val email: String,
     val password: String,
@@ -23,4 +23,7 @@ data class User(
     val createdAt: LocalDateTime = LocalDateTime.now(),
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
-)
+) {
+    // 기본 생성자 추가
+    constructor() : this(null, "", "", "", "", null, null, LocalDateTime.now(), LocalDateTime.now())
+}

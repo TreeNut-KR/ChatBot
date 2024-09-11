@@ -7,6 +7,7 @@ import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
 @Service
@@ -16,6 +17,7 @@ class UserService(
 ) {
     private val passwordEncoder = BCryptPasswordEncoder()
 
+    @Transactional
     fun register(user: User): User {
         return try {
             val encodedUser = user.copy(password = passwordEncoder.encode(user.password))
@@ -25,17 +27,29 @@ class UserService(
         }
     }
 
+    @Transactional(readOnly = true)
     fun login(userid: String, password: String): User? {
-        val user = userRepository.findById(userid).orElse(null) ?: return null
+        val user = userRepository.findByUserid(userid) ?: return null
         return if (passwordEncoder.matches(password, user.password)) user else null
     }
 
     fun generateToken(user: User): String {
         return Jwts.builder()
-            .setSubject(user.idx?.toString() ?: throw RuntimeException("User ID is null"))
+            .setSubject(user.userid) // userid를 사용하여 토큰 생성
             .setIssuedAt(Date())
             .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
             .signWith(SignatureAlgorithm.HS512, jwtSecret)
             .compact()
+    }
+    
+    @Transactional
+    fun deleteUser(userid: String): Boolean {
+        val user = userRepository.findByUserid(userid)
+        return if (user != null) {
+            userRepository.deleteByUserid(userid)
+            true
+        } else {
+            false
+        }
     }
 }
