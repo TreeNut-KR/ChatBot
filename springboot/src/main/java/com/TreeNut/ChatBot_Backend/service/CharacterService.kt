@@ -21,7 +21,7 @@ class CharacterService(
                 updatedAt = LocalDateTime.now(), // 수정 시점 초기화
                 character_name = character.character_name,
                 description = character.description,
-                greetings = character.greetings,
+                greeting = character.greeting,
                 image = character.image,
                 character_setting = character.character_setting,
                 accessLevel = character.accessLevel
@@ -40,7 +40,7 @@ class CharacterService(
                 useridx = updatedCharacter.useridx,
                 character_name = updatedCharacter.character_name,
                 description = updatedCharacter.description,
-                greetings = updatedCharacter.greetings,
+                greeting = updatedCharacter.greeting,
                 image = updatedCharacter.image,
                 character_setting = updatedCharacter.character_setting,
                 accessLevel = updatedCharacter.accessLevel

@@ -16,7 +16,7 @@ data class Character(
     val useridx: Long, // 사용자의 ID
     val character_name: String, // 캐릭터 이름
     val description: String, // 캐릭터 한줄 설명
-    val greetings: String, // 첫 인사말
+    val greeting: String, // 첫 인사말
     val image: String, // 이미지 링크
     val character_setting: String, // 캐릭터 설정
     val accessLevel: Int, // 접근 가능 여부

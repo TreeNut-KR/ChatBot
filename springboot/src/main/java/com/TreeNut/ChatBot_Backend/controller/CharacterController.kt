@@ -31,8 +31,8 @@ fun addCharacter(
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character name is required"))
     val description = body["description"] as? String
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Description is required"))
-    val greetings = body["greetings"] as? String
-        ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Greetings are required"))
+    val greeting = body["greeting"] as? String
+        ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Greeting are required"))
     val image = body["image"] as? String
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image is required"))
     val characterSetting = body["character_setting"] as? String
@@ -46,7 +46,7 @@ fun addCharacter(
         useridx = useridx,
         character_name = characterName,
         description = description,
-        greetings = greetings,
+        greeting = greeting,
         image = image,
         character_setting = characterSetting,
         accessLevel = accessLevel
