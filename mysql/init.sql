@@ -30,7 +30,7 @@ CREATE TABLE characters (
     character_setting VARCHAR(255),
     description VARCHAR(255),
     greeting TEXT,
-    accesslevel INT,
+    accesslevel BOOLEAN,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(idx),

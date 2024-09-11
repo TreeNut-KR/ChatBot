@@ -37,7 +37,7 @@ fun addCharacter(
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image is required"))
     val characterSetting = body["character_setting"] as? String
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character setting is required"))
-    val accessLevel = body["accessLevel"] as? Int
+    val accessLevel = body["accessLevel"] as? Boolean
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required"))
 
     // 캐릭터 객체 생성
