@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*
 import java.util.UUID
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import javax.servlet.http.HttpServletRequest
+import java.sql.SQLException
+
 @RestController
 @RequestMapping("/server/character")
 class CharacterController(
@@ -53,12 +55,13 @@ fun addCharacter(
     return try {
         // 캐릭터 추가
         val registeredCharacter = characterService.addCharacter(newCharacter)
-
-        // 성공 응답 반환
         ResponseEntity.ok(mapOf("status" to 200, "name" to registeredCharacter.character_name))
+    } catch (e: SQLException) {
+        // SQL 관련 오류 처리
+        ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "SQL 오류: ${e.message}"))
     } catch (e: Exception) {
-        // 예외 발생 시 오류 메시지 반환
-        ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "캐릭터 추가 중 오류가 발생했습니다: ${e.message}"))
+        // 일반 오류 처리
+        ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "캐릭터 추가 중 오류가 발생했습니다: ${e}"))
     }
 }
 

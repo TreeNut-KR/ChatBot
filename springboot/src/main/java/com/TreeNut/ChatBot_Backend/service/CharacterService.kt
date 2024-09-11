@@ -33,7 +33,7 @@ class CharacterService(
         }
     }
 
-    fun editCharacter(idx: Long, updatedCharacter: Character): Character? {
+    /*fun editCharacter(idx: Long, updatedCharacter: Character): Character? {
         val existingCharacter = characterRepository.findById(idx).orElse(null) ?: return null
         return try {
             val characterToUpdate = existingCharacter.copy(
@@ -70,5 +70,5 @@ class CharacterService(
 
     fun getCharacterById(idx: Long): Character? {
         return characterRepository.findById(idx).orElse(null)
-    }
+    }*/
 }
