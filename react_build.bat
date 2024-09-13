@@ -14,6 +14,7 @@ IF EXIST .\build\ (
     echo.
 
     echo Building React project...
+    CD ./nginx\react-frontpage
     npm run build
     if errorlevel 1 (
         echo npm run build failed. Exiting...
