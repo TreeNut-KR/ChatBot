@@ -19,6 +19,7 @@ data class Character(
     val greeting: String, // 첫 인사말
     val image: String, // 이미지 링크
     val character_setting: String, // 캐릭터 설정
+    @Column(name = "accesslevel")
     val accessLevel: Boolean, // 접근 가능 여부
 
     @Column(name = "created_at", updatable = false)
