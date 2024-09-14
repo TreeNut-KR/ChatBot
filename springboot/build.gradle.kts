@@ -5,7 +5,6 @@ plugins {
     id("io.spring.dependency-management") version "1.1.6"
 }
 
-
 group = "com.TreeNut"
 version = "0.0.1-SNAPSHOT"
 
@@ -35,14 +34,16 @@ dependencies {
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
-    
+
     // JAXB 관련 의존성 추가
     implementation("javax.xml.bind:jaxb-api:2.3.1")
     implementation("org.glassfish.jaxb:jaxb-runtime:2.3.1")
 
+    // WebFlux 관련 의존성 추가
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
-
 
 tasks.withType<Test> {
     useJUnitPlatform()

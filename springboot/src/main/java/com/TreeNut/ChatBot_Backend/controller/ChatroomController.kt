@@ -19,11 +19,11 @@ class ChatroomController(
         @RequestHeader("Authorization") token: String,
         @PathVariable characterId: String
     ): RedirectView {
-        val userId = tokenAuth.authGuard(token)
+        val useridx = tokenAuth.authGuard(token)
 
         // FastAPI 서버로 채팅방 생성 요청을 보내는 로직 (예: POST 요청을 보내 MongoDB에 방 생성)
         // FastAPI 서버로부터 채팅방 고유번호를 반환받았다고 가정
-        val chatroomId = chatroomService.createChatbotRoom(characterId, userId)
+        val chatroomId = chatroomService.createChatbotRoom(characterId, useridx)
 
         // 채팅방 페이지로 리디렉션
         return RedirectView("/chatroom/c/$characterId/u/$chatroomId")
@@ -32,11 +32,9 @@ class ChatroomController(
     // 채팅방 생성 (Office GPT)
     @PostMapping("/o/gpt")
     fun createGptRoom(@RequestHeader("Authorization") token: String): RedirectView {
-        val userId = tokenAuth.authGuard(token)
-
+        val useridx = tokenAuth.authGuard(token)
         // FastAPI 서버로 GPT 채팅방 생성 요청을 보내는 로직 (예: POST 요청을 보내 MongoDB에 방 생성)
-        val chatroomId = chatroomService.createOfficeRoom(userId)
-
+        val chatroomId = chatroomService.createOfficeRoom(useridx)
         // GPT 채팅방 페이지로 리디렉션
         return RedirectView("/chatroom/o/gpt/u/$chatroomId")
     }
@@ -48,7 +46,7 @@ class ChatroomController(
         @PathVariable characterId: String,
         @PathVariable chatroomId: String
     ): ResponseEntity<String> {
-        val userId = tokenAuth.authGuard(token)
+        val useridx = tokenAuth.authGuard(token)
         // FastAPI 서버로부터 MongoDB에서 데이터를 받아오는 로직
         // ...
         return ResponseEntity.ok("chat logs for chatbot")
@@ -60,7 +58,7 @@ class ChatroomController(
         @RequestHeader("Authorization") token: String,
         @PathVariable chatroomId: String
     ): ResponseEntity<String> {
-        val userId = tokenAuth.authGuard(token)
+        val useridx = tokenAuth.authGuard(token)
         // FastAPI 서버로부터 MongoDB에서 데이터를 받아오는 로직
         // ...
         return ResponseEntity.ok("chat logs for GPT")

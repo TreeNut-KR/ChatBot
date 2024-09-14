@@ -47,6 +47,6 @@ CREATE TABLE chatroom (
     updated_at DATETIME DEFAULT NOW(),
 
     PRIMARY KEY(chatroom_pk),
-    FOREIGN KEY (users_idx) REFERENCES users(id), /*외부키 설정*/
+    FOREIGN KEY (users_idx) REFERENCES users(idx), /*외부키 설정*/
     FOREIGN KEY (characters_pk) REFERENCES characters(characters_pk) /*외부키 설정*/
 ) ENGINE=InnoDB CHARSET=utf8mb4;
