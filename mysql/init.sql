@@ -17,7 +17,7 @@ CREATE TABLE users (
     refresh_token TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY(idx)
+    PRIMARY KEY (idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 
@@ -33,8 +33,8 @@ CREATE TABLE characters (
     accesslevel BOOLEAN,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY(idx),
-    FOREIGN KEY (useridx) REFERENCES users(idx)
+    PRIMARY KEY (idx),
+    FOREIGN KEY (useridx) REFERENCES users(idx) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 -- 채팅방
@@ -45,7 +45,6 @@ CREATE TABLE chatroom (
     mongo_chatlog VARCHAR(100),
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW(),
-
 
     PRIMARY KEY(chatroom_pk),
     FOREIGN KEY (users_idx) REFERENCES users(id), /*외부키 설정*/
