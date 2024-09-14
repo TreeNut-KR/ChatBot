@@ -13,6 +13,11 @@ class WebController {
 
     @GetMapping("/login")
     fun login(): String {
-        return "login" // templates/login.html을 반환
+        return "naverLogin" // templates/login.html을 반환
+    }
+
+    @GetMapping("/callBack")
+    fun callBack(): String {
+        return "callBack" // templates/login.html을 반환
     }
 }
