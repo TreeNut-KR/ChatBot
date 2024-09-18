@@ -12,7 +12,7 @@ import java.util.HashMap
 @Service
 class ChatroomService(
     private val chatroomRepository: ChatroomRepository,
-    private val webClient: WebClient.Builder
+    private val webClient: WebClient.Builder  // 이미 주입받고 있음
 ) {
     fun createChatbotRoom(characterId: String, userId: Long): Mono<String> {
         val requestBody = mapOf("character_id" to characterId, "user_id" to userId)
