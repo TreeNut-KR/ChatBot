@@ -32,7 +32,7 @@ class SecurityConfig : WebMvcConfigurer {
             }
             .oauth2Login { oauth2Login ->
                 oauth2Login
-                    .loginPage("/login")  // 커스텀 로그인 페이지 설정
+                    .loginPage("/naverLogin")  // 커스텀 로그인 페이지 설정
                     .defaultSuccessUrl("/", true)  // 로그인 성공 시 리디렉션할 URL
                     .failureUrl("/login?error=true")  // 로그인 실패 시 리디렉션할 URL
             }
