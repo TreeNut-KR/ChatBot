@@ -25,7 +25,7 @@ CREATE TABLE users (
 CREATE TABLE characters (
     idx INT AUTO_INCREMENT,
     uuid CHAR(36) UNIQUE NOT NULL,
-    useridx INT,
+    userid VARCHAR(50), 
     character_name VARCHAR(30) NOT NULL,
     character_setting VARCHAR(255),
     description VARCHAR(255),
@@ -33,8 +33,8 @@ CREATE TABLE characters (
     accesslevel BOOLEAN,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (idx),
-    FOREIGN KEY (useridx) REFERENCES users(idx) ON DELETE CASCADE
+    PRIMARY KEY(idx),
+    FOREIGN KEY (userid) REFERENCES users(userid)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 -- 채팅방

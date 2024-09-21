@@ -27,7 +27,7 @@ class UserService(
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional//(readOnly = true)
     fun login(userid: String, password: String): User? {
         val user = userRepository.findByUserid(userid) ?: return null
         return if (passwordEncoder.matches(password, user.password)) user else null

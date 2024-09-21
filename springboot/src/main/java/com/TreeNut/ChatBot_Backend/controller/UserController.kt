@@ -35,10 +35,10 @@ class UserController(private val userService: UserService) {
     }
 
     @PostMapping("/login")
-    fun login(@RequestBody body: Map<String, String>, response: HttpServletResponse): ResponseEntity<Map<String, Any>> {
+    fun login(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
-        
+
         val user = userService.login(userid, password)
         return if (user != null) {
             val token = userService.generateToken(user)
