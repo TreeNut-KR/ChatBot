@@ -37,6 +37,9 @@ dependencies {
 
     // JWT 토큰 관련 의존성
     implementation("io.jsonwebtoken:jjwt:0.9.1")
+    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
+    implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
+    implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
     // 서블릿 API (Web 환경에서 필요할 경우 추가)
     implementation("javax.servlet:javax.servlet-api:4.0.1")
