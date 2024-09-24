@@ -233,3 +233,6 @@ springboot/.vscode/
 springboot/gradlew
 springboot/.gradle/8.8/fileHashes/fileHashes.bin
 springboot/.gradle/8.8/fileHashes/fileHashes.lock
+
+###환경변수 삭제
+springboot/src/main/resources/application.properties
