@@ -24,7 +24,7 @@ fun addCharacter(
     val token = authorization
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
 
-    val useridx = tokenAuth.authGuard(token)
+    val userid = tokenAuth.authGuard(token)
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
     val characterName = body["character_name"] as? String
@@ -43,19 +43,19 @@ fun addCharacter(
     // 캐릭터 객체 생성
     val newCharacter = Character(
         uuid = UUID.randomUUID().toString(),
-        useridx = useridx,
-        character_name = characterName,
+        userid = userid,
+        characterName = characterName,
         description = description,
         greeting = greeting,
         image = image,
-        character_setting = characterSetting,
+        characterSetting = characterSetting,
         accessLevel = accessLevel
     )
 
     return try {
         // 캐릭터 추가
         val registeredCharacter = characterService.addCharacter(newCharacter)
-        ResponseEntity.ok(mapOf("status" to 200, "name" to registeredCharacter.character_name))
+        ResponseEntity.ok(mapOf("status" to 200, "name" to registeredCharacter.characterName))
     } catch (e: SQLException) {
         // SQL 관련 오류 처리
         ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "SQL 오류: ${e.message}"))

@@ -8,27 +8,26 @@ import java.time.LocalDateTime
 data class Chatroom(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "chatroom_pk")
-    val chatroomPk: Int? = null, // 자동 증가 ID 필드
-    
-    @Column(name = "users_idx", nullable = false)
-    val usersIdx: Int, // 유저 ID
-    
-    @Column(name = "characters_pk", nullable = false)
-    val charactersPk: Int, // 캐릭터의 ID
-    
-    @Column(name = "mongo_chatlog")
-    val mongoChatlog: String? = null, // MongoDB 채팅 로그
-    
+    @Column(name = "idx")
+    val idx: Long? = null,
+
+    @Column(name = "userid", nullable = false, length = 100)
+    val userid: String, // 외래 키로 설정될 수 있음
+
+    @Column(name = "characters_idx", nullable = false)
+    val charactersIdx: Int, // 외래 키로 설정될 수 있음
+
+    @Column(name = "mongo_chatlog", length = 100)
+    val mongoChatlog: String? = null,
+
     @Column(name = "created_at", updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(), // 생성 일시
-    
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
     @Column(name = "updated_at")
-    var updatedAt: LocalDateTime = LocalDateTime.now() // 수정 일시
+    var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
     @PreUpdate
     fun onUpdate() {
-        updatedAt = LocalDateTime.now() // 수정 시점 업데이트
+        updatedAt = LocalDateTime.now()
     }
 }
-

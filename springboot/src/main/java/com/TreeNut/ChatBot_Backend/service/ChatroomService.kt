@@ -14,8 +14,8 @@ class ChatroomService(
     private val chatroomRepository: ChatroomRepository,
     private val webClient: WebClient.Builder  // 이미 주입받고 있음
 ) {
-    fun createChatbotRoom(characterId: String, userId: Long): Mono<String> {
-        val requestBody = mapOf("character_id" to characterId, "user_id" to userId)
+    fun createChatbotRoom(charactersIdx: String, userId: String): Mono<String> {
+        val requestBody = mapOf("character_id" to charactersIdx, "user_id" to userId)
 
         return webClient.build()
             .post()
@@ -26,8 +26,8 @@ class ChatroomService(
             .map { response ->
                 val chatroomId = response["chatroomId"] as? String ?: throw IllegalStateException("Chatroom ID가 생성되지 않았습니다.")
                 val chatroom = Chatroom(
-                    usersIdx = userId.toInt(),
-                    charactersPk = characterId.toInt(),
+                    userid = userId,
+                    charactersIdx = charactersIdx.toInt(),
                     mongoChatlog = chatroomId,
                     createdAt = LocalDateTime.now(),
                     updatedAt = LocalDateTime.now()
@@ -37,7 +37,7 @@ class ChatroomService(
             }
     }
 
-    fun createOfficeRoom(userId: Long): Mono<String> {
+    fun createOfficeRoom(userId: String): Mono<String> {
         val requestBody = mapOf("user_id" to userId)
 
         return webClient.build()
@@ -49,8 +49,8 @@ class ChatroomService(
             .map { response ->
                 val chatroomId = response["Document ID"] as? String ?: throw IllegalStateException("Chatroom ID가 생성되지 않았습니다.")
                 val chatroom = Chatroom(
-                    usersIdx = userId.toInt(),
-                    charactersPk = 0,
+                    userid = userId,
+                    charactersIdx = 0,
                     mongoChatlog = chatroomId,
                     createdAt = LocalDateTime.now(),
                     updatedAt = LocalDateTime.now()
@@ -60,7 +60,7 @@ class ChatroomService(
             }
     }
     
-    fun getChatbotLog(characterId: String, chatroomId: String, userId: Long): Mono<Map<String, Any>> {
+    fun getChatbotLog(characterId: String, chatroomId: String, userId: String): Mono<Map<String, Any>> {
     val requestBody = mapOf("character_id" to characterId, "user_id" to userId, "chatroom_id" to chatroomId)
 
     return webClient.build()
@@ -71,7 +71,7 @@ class ChatroomService(
         .bodyToMono(object : ParameterizedTypeReference<Map<String, Any>>() {})
     }
 
-    fun getGptLog(chatroomId: String, userId: Long): Mono<Map<String, Any>> {
+    fun getGptLog(chatroomId: String, userId: String): Mono<Map<String, Any>> {
         val requestBody = mapOf("user_id" to userId, "chatroom_id" to chatroomId)
 
         return webClient.build()

@@ -30,6 +30,7 @@ CREATE TABLE characters (
     character_setting VARCHAR(255),
     description VARCHAR(255),
     greeting TEXT,
+    image VARCHAR(255),
     accesslevel BOOLEAN,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -39,14 +40,14 @@ CREATE TABLE characters (
 
 -- 채팅방
 CREATE TABLE chatroom (
-    chatroom_pk INT AUTO_INCREMENT,
-    users_idx INT,
-    characters_pk INT,
+    idx INT AUTO_INCREMENT,
+    userid VARCHAR(100),
+    characters_idx INT,
     mongo_chatlog VARCHAR(100),
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
     
-    PRIMARY KEY(chatroom_pk),
-    FOREIGN KEY (users_idx) REFERENCES users(idx) ON DELETE CASCADE, /*외부키 설정*/
-    FOREIGN KEY (characters_pk) REFERENCES characters(idx) ON DELETE CASCADE /*외부키 설정*/
+    PRIMARY KEY(idx),
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE, /*외부키 설정*/
+    FOREIGN KEY (characters_idx) REFERENCES characters(idx) ON DELETE CASCADE /*외부키 설정*/
 ) ENGINE=InnoDB CHARSET=utf8mb4;

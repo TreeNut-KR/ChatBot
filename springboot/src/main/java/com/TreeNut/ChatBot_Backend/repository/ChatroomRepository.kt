@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ChatroomRepository : JpaRepository<Chatroom, Long> {
-    fun findByUsersIdx(usersIdx: Int): Chatroom?
+    fun findByUserid(userId: String): Chatroom? // 수정된 메소드 이름
 }
