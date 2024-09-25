@@ -17,10 +17,10 @@ data class Character(
     @Column(name = "userid", length = 50)
     val userid: String, // 외래 키로 설정될 수 있음
 
-    @Column(name = "characterName", nullable = false, length = 30)
+    @Column(name = "character_name", nullable = false, length = 30)
     val characterName: String,
 
-    @Column(name = "characterSetting", length = 255)
+    @Column(name = "character_setting", length = 255)
     val characterSetting: String? = null,
 
     @Column(name = "description", length = 255)
