@@ -8,6 +8,8 @@ import java.util.UUID
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import javax.servlet.http.HttpServletRequest
 import java.sql.SQLException
+import org.springframework.http.HttpStatus
+
 
 @RestController
 @RequestMapping("/server/character")
@@ -27,7 +29,7 @@ fun addCharacter(
     val userid = tokenAuth.authGuard(token)
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-    val characterName = body["character_name"] as? String
+    val characterName = body["characterName"] as? String
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character name is required"))
     val description = body["description"] as? String
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Description is required"))
@@ -35,7 +37,7 @@ fun addCharacter(
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Greeting are required"))
     val image = body["image"] as? String
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image is required"))
-    val characterSetting = body["character_setting"] as? String
+    val characterSetting = body["characterSetting"] as? String
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character setting is required"))
     val accessLevel = body["accessLevel"] as? Boolean
         ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required"))
@@ -65,17 +67,26 @@ fun addCharacter(
     }
 }
 
+    @PutMapping("/edit")
+    fun editCharacter(
+        @RequestParam characterName: String,
+        @RequestBody updatedCharacter: Character,
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Any> {
+        return try {
+            val character = characterService.getCharacterByName(characterName).firstOrNull()
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
 
-    // 추후 구현 예정
-    /*
-    @PostMapping("/edit")
-    fun editCharacter(@RequestBody body: Map<String, Any>): ResponseEntity<Map<String, Any>> {
-        // 구현 예정
+            ResponseEntity.ok(character)
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
+        }
     }
-
+}
+/* 
     @DeleteMapping("/delete")
     fun deleteCharacter(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         // 구현 예정
     }
-    */
-}
+    
+}*/

@@ -5,20 +5,23 @@ import com.TreeNut.ChatBot_Backend.repository.CharacterRepository
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.UUID
+import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
+import io.jsonwebtoken.Jwts
+import javax.servlet.http.HttpServletRequest
 
 @Service
 class CharacterService(
-    private val characterRepository: CharacterRepository
+    private val characterRepository: CharacterRepository,
+    private val tokenAuth: TokenAuth
 ) {
 
     fun addCharacter(character: Character): Character {
         return try {
-            // UUID를 자동 생성하여 할당하고, 다른 프로퍼티를 설정하여 새 캐릭터 생성
             val newCharacter = character.copy(
                 uuid = UUID.randomUUID().toString(),
                 userid = character.userid,
-                createdAt = LocalDateTime.now(), // 생성 시점 설정
-                updatedAt = LocalDateTime.now(), // 수정 시점 초기화
+                createdAt = LocalDateTime.now(),
+                updatedAt = LocalDateTime.now(),
                 characterName = character.characterName,
                 description = character.description,
                 greeting = character.greeting,
@@ -27,48 +30,54 @@ class CharacterService(
                 accessLevel = character.accessLevel
             )
             characterRepository.save(newCharacter)
-
         } catch (e: Exception) {
             throw RuntimeException("Error during character addition", e)
         }
     }
 
-    /*fun editCharacter(idx: Long, updatedCharacter: Character): Character? {
-        val existingCharacter = characterRepository.findById(idx).orElse(null) ?: return null
-        return try {
-            val characterToUpdate = existingCharacter.copy(
-                useridx = updatedCharacter.useridx,
-                character_name = updatedCharacter.character_name,
-                description = updatedCharacter.description,
-                greeting = updatedCharacter.greeting,
-                image = updatedCharacter.image,
-                character_setting = updatedCharacter.character_setting,
-                accessLevel = updatedCharacter.accessLevel
-            )
-            characterRepository.save(characterToUpdate)
-        } catch (e: Exception) {
-            throw RuntimeException("Error during character update", e)
+    fun editCharacter(
+        characterName: String,
+        updatedCharacter: Character,
+        userToken: String
+    ): Character {
+        val character = characterRepository.findByCharacterName(characterName)
+            .firstOrNull() ?: throw RuntimeException("Character not found")
+
+        val claims = Jwts.parser()
+            .setSigningKey("your-secret-key".toByteArray())
+            .parseClaimsJws(userToken)
+            .body
+
+        val tokenUserId = claims["userId"] as String?
+
+        if (tokenUserId != character.userid) {
+            throw RuntimeException("User is not authorized to edit this character")
         }
+
+        val editedCharacterEntity = character.copy(
+            characterName = updatedCharacter.characterName ?: character.characterName,
+            description = updatedCharacter.description ?: character.description,
+            greeting = updatedCharacter.greeting ?: character.greeting,
+            image = updatedCharacter.image ?: character.image,
+            characterSetting = updatedCharacter.characterSetting ?: character.characterSetting,
+            accessLevel = updatedCharacter.accessLevel ?: character.accessLevel
+        )
+
+        return characterRepository.save(editedCharacterEntity)
     }
 
-    fun deleteCharacter(idx: Long): Boolean {
-        return try {
-            if (characterRepository.existsById(idx)) {
-                characterRepository.deleteById(idx)
-                true
-            } else {
-                false
-            }
-        } catch (e: Exception) {
-            throw RuntimeException("Error during character deletion", e)
+    fun getCharacterById(request: HttpServletRequest, characterId: Long): Character? {
+        val token = request.getHeader("Authorization")?.substring(7)
+        val userId = token?.let { tokenAuth.authGuard(it) }
+
+        if (userId == null) {
+            throw IllegalArgumentException("유효하지 않은 토큰입니다.")
         }
+
+        return characterRepository.findById(characterId).orElse(null)
     }
 
-    fun getAllCharacters(): List<Character> {
-        return characterRepository.findAll()
+    fun getCharacterByName(characterName: String): List<Character> {
+        return characterRepository.findByCharacterName(characterName)
     }
-
-    fun getCharacterById(idx: Long): Character? {
-        return characterRepository.findById(idx).orElse(null)
-    }*/
 }
