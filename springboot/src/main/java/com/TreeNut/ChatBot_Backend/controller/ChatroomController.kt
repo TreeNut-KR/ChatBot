@@ -2,11 +2,9 @@ package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.service.ChatroomService
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
-import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.reactive.function.server.ServerResponse
 import reactor.core.publisher.Mono
-import java.net.URI
 
 @RestController
 @RequestMapping("/server/chatroom")
@@ -15,69 +13,39 @@ class ChatroomController(
     private val tokenAuth: TokenAuth
 ) {
 
-    @PostMapping("/c/{characterId}")
-    fun createChatbotRoom(
-        @RequestHeader("Authorization") token: String,
-        @PathVariable characterId: String
-    ): Mono<ServerResponse> {
-        val userId = tokenAuth.authGuard(token) ?: return ServerResponse.badRequest().build()
+    @GetMapping("/test")
+    fun testRoom(
+        @RequestHeader("Authorization") authorization: String?
+    ): ResponseEntity<Map<Any, Any>> {
+        val token = authorization
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
+        
+        val userId = tokenAuth.authGuard(token)
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-        return chatroomService.createChatbotRoom(characterId, userId)
-            .flatMap { chatroomId -> 
-                ServerResponse.temporaryRedirect(URI("/chatroom/c/$characterId/u/$chatroomId")).build()
+        return ResponseEntity.ok(mapOf("status" to 200, "user_id" to userId))
+    }
+    @GetMapping("/gpt")
+    fun createGptRoom(
+        @RequestHeader("Authorization") authorization: String?
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
+
+        // FastAPI 서버에 요청하고 결과를 받아 채팅방을 생성하는 로직
+        return chatroomService.createChatroom(userId)
+            .map { response ->
+                // 응답을 그대로 반환
+                ResponseEntity.ok(mapOf(
+                    "status" to 200,
+                    "message" to "채팅방이 성공적으로 생성되었습니다.",
+                    "chatroom" to response // FastAPI에서 받은 응답
+                ))
             }
-            .onErrorResume {
-                ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-            }
+            .defaultIfEmpty(ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "채팅방 생성에 실패했습니다.")))
     }
 
-    @PostMapping("/o/gpt")
-    fun createGptRoom(@RequestHeader("Authorization") token: String): Mono<ServerResponse> {
-        val userId = tokenAuth.authGuard(token) ?: return ServerResponse.badRequest().build()
-
-        return chatroomService.createOfficeRoom(userId)
-            .flatMap { chatroomId -> 
-                ServerResponse.temporaryRedirect(URI("/chatroom/o/gpt/u/$chatroomId")).build()
-            }
-            .onErrorResume {
-                ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-            }
-    }
-
-    // 채팅 로드 (Chatbot)
-    @GetMapping("/c/{characterId}/u/{chatroomId}")
-    fun getChatbotLog(
-        @RequestHeader("Authorization") token: String,
-        @PathVariable characterId: String,
-        @PathVariable chatroomId: String
-    ): Mono<ServerResponse> {
-        val userId = tokenAuth.authGuard(token) ?: return ServerResponse.badRequest().build()
-
-        // FastAPI 서버로부터 MongoDB에서 데이터를 받아오는 로직
-        return chatroomService.getChatbotLog(characterId, chatroomId, userId)
-            .flatMap { chatLogs ->
-                ServerResponse.ok().bodyValue(chatLogs)
-            }
-            .onErrorResume {
-                ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-            }
-    }
-
-    // 채팅 로드 (Office GPT)
-    @GetMapping("/o/gpt/u/{chatroomId}")
-    fun getGptLog(
-        @RequestHeader("Authorization") token: String,
-        @PathVariable chatroomId: String
-    ): Mono<ServerResponse> {
-        val userId = tokenAuth.authGuard(token) ?: return ServerResponse.badRequest().build()
-
-        // FastAPI 서버로부터 MongoDB에서 데이터를 받아오는 로직
-        return chatroomService.getGptLog(chatroomId, userId)
-            .flatMap { chatLogs ->
-                ServerResponse.ok().bodyValue(chatLogs)
-            }
-            .onErrorResume {
-                ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-            }
-    }
 }

@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.0.20" // 최신 안정 버전으로 업데이트
-    kotlin("plugin.spring") version "2.0.20" // 동일하게 업데이트
+    kotlin("jvm") version "1.9.10" // 한 단계 낮은 안정 버전
+    kotlin("plugin.spring") version "1.9.10"
     id("org.springframework.boot") version "3.3.3"
     id("io.spring.dependency-management") version "1.1.6"
 }

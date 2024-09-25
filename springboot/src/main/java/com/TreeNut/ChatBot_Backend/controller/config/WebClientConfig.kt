@@ -10,5 +10,6 @@ class WebClientConfig {
     @Bean
     fun webClientBuilder(): WebClient.Builder {
         return WebClient.builder()
+            .baseUrl("http://localhost:8000") // 기본 URL 설정
     }
 }
