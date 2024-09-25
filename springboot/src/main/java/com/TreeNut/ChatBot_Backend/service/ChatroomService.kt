@@ -14,14 +14,14 @@ class ChatroomService(
 ) {
 
     fun createChatroom(userid: String): Mono<Map<*, *>> {
-        // FastAPI 서버에 보낼 요청 데이터 수정
+        // FastAPI 서버에 보낼 요청 데이터
         val requestBody = mapOf(
             "user_id" to userid
         )
 
         return webClient.build()
             .post()
-            .uri("/mongo/office/create")
+            .uri("/mongo/office/create") // 경로만 지정
             .contentType(MediaType.APPLICATION_JSON) // Content-Type 명시
             .bodyValue(requestBody)  // 요청 데이터 전송
             .retrieve()

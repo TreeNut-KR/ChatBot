@@ -52,7 +52,7 @@ NATURAL_NUM = conint(ge=1)
 user_id_set = Field(
         examples=["shaa97102"],
         title="유저 id",
-        min_length=6, max_length=50,
+        min_length=1, max_length=50,
         description="유저 id 길이 제약"
 )
 id_set = Field(
