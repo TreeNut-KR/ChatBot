@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 
 @Service
-class ChatroomService(
+class RoomService(
     private val chatroomRepository: ChatroomRepository,
     private val officeroomRepository: OfficeroomRepository, // OfficeroomRepository 추가
     private val webClient: WebClient.Builder
@@ -24,6 +24,29 @@ class ChatroomService(
         return webClient.build()
             .post()
             .uri("/mongo/office/create")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+    }
+
+    fun addOfficeroom(
+            userid: String,
+            documentId: String,
+            input_data_set: String,
+            output_data_set: String = "TESTING⚠️TESTING⚠️TESTING" // AI Model 도입 전임으로 임시로 설정
+        ): Mono<Map<*, *>> {
+
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to documentId,
+            "input_data" to input_data_set,
+            "output_data" to output_data_set
+        )
+
+        return webClient.build()
+            .put()
+            .uri("/mongo/office/save_log")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
