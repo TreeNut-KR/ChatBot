@@ -12,7 +12,7 @@ data class Character(
     val idx: Long? = null,
 
     @Column(name = "uuid", unique = true, nullable = false, length = 36)
-    val uuid: String = UUID.randomUUID().toString(),
+    val uuid: String? = UUID.randomUUID().toString(),
 
     @Column(name = "userid", length = 50)
     val userid: String, // 외래 키로 설정될 수 있음
