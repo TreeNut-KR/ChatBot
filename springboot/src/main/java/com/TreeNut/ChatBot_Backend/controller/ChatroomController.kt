@@ -36,7 +36,7 @@ class ChatroomController(
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
 
         // FastAPI 서버에 요청하고 결과를 받아 채팅방을 생성하는 로직
-        return chatroomService.createChatroom(userId)
+        return chatroomService.createOfficeroom(userId)
             .map { response ->
                 // 응답을 그대로 반환
                 ResponseEntity.ok(mapOf(
@@ -45,7 +45,12 @@ class ChatroomController(
                     "chatroom" to response // FastAPI에서 받은 응답
                 ))
             }
-            .defaultIfEmpty(ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "채팅방 생성에 실패했습니다.")))
+            .defaultIfEmpty(
+                ResponseEntity.status(500).body(mapOf(
+                    "status" to 500,
+                    "message" to "채팅방 생성에 실패했습니다."
+                ))
+            )
     }
 
 }

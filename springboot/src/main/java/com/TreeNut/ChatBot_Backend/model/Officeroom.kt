@@ -4,8 +4,8 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "chatroom")
-data class Chatroom(
+@Table(name = "officeroom")
+data class Officeroom(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idx")
@@ -13,9 +13,6 @@ data class Chatroom(
 
     @Column(name = "userid", nullable = false, length = 100)
     val userid: String, // 외래 키로 설정될 수 있음
-
-    @Column(name = "characters_idx", nullable = false)
-    val charactersIdx: Int, // 외래 키로 설정될 수 있음
 
     @Column(name = "mongo_chatlog", length = 100)
     val mongoChatlog: String? = null,

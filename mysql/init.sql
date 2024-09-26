@@ -38,7 +38,7 @@ CREATE TABLE characters (
     FOREIGN KEY (userid) REFERENCES users(userid)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
--- 채팅방
+-- 채팅방 (캐릭터 채팅)
 CREATE TABLE chatroom (
     idx INT AUTO_INCREMENT,
     userid VARCHAR(100),
@@ -50,4 +50,16 @@ CREATE TABLE chatroom (
     PRIMARY KEY(idx),
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE, /*외부키 설정*/
     FOREIGN KEY (characters_idx) REFERENCES characters(idx) ON DELETE CASCADE /*외부키 설정*/
+) ENGINE=InnoDB CHARSET=utf8mb4;
+
+-- 채팅방 (GPT 채팅)
+CREATE TABLE officeroom (
+    idx INT AUTO_INCREMENT,
+    userid VARCHAR(100),
+    mongo_chatlog VARCHAR(100),
+    created_at DATETIME DEFAULT NOW(),
+    updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
+    
+    PRIMARY KEY(idx),
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE, /*외부키 설정*/
 ) ENGINE=InnoDB CHARSET=utf8mb4;
