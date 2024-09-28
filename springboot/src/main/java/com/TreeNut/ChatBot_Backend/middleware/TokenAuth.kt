@@ -19,7 +19,6 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
                 .setSigningKey(jwtSecret)
                 .parseClaimsJws(token)
                 .body
-    
             claims.subject
         } catch (e: ExpiredJwtException) {
             throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
@@ -33,6 +32,7 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
             throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
         }
     }
-    
-    
+        fun getJwtSecret(): String {
+        return jwtSecret
+    }    
 }

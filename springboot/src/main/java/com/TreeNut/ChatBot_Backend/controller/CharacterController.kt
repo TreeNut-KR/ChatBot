@@ -10,13 +10,15 @@ import javax.servlet.http.HttpServletRequest
 import java.sql.SQLException
 import org.springframework.http.HttpStatus
 import io.jsonwebtoken.Jwts
+import org.springframework.beans.factory.annotation.Value
 
 
 @RestController
 @RequestMapping("/server/character")
 class CharacterController(
     private val characterService: CharacterService,
-    private val tokenAuth: TokenAuth
+    private val tokenAuth: TokenAuth,
+    @Value("\${jwt.secret}") private val jwtSecret: String
 ) {
 
     @PostMapping("/add")
@@ -78,10 +80,10 @@ class CharacterController(
             // 현재 캐릭터 찾기
             val character = characterService.getCharacterByName(characterName).firstOrNull()
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
-
+                
             // 사용자 토큰에서 userid 추출
             val claims = Jwts.parser()
-                .setSigningKey("your-secret-key".toByteArray())
+                .setSigningKey(jwtSecret.toByteArray())
                 .parseClaimsJws(userToken)
                 .body
             val tokenUserId = claims["userId"] as String? ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User ID is required"))

@@ -15,10 +15,10 @@ data class Character(
     val uuid: String? = UUID.randomUUID().toString(),
 
     @Column(name = "userid", length = 50)
-    val userid: String, // 외래 키로 설정될 수 있음
+    val userid: String = "", // 기본 생성자에서 빈 문자열로 초기화
 
     @Column(name = "character_name", nullable = false, length = 30)
-    val characterName: String,
+    val characterName: String = "", // 기본 생성자에서 빈 문자열로 초기화
 
     @Column(name = "character_setting", length = 255)
     val characterSetting: String? = null,
@@ -41,6 +41,20 @@ data class Character(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
+    constructor() : this( // 기본 생성자 추가
+        idx = null,
+        uuid = null,
+        userid = "",
+        characterName = "",
+        characterSetting = null,
+        description = null,
+        greeting = null,
+        accessLevel = null,
+        image = null,
+        createdAt = LocalDateTime.now(),
+        updatedAt = LocalDateTime.now()
+    )
+
     @PreUpdate
     fun onUpdate() {
         updatedAt = LocalDateTime.now()
