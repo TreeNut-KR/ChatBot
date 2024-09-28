@@ -73,3 +73,8 @@ services:
       - "8080:8080"
     depends_on:
       - mysql  # MySQL 서비스에 의존
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS_JSON=/app/JSON_KEY.json  # 컨테이너 내 경로 설정
+    volumes:
+      - C:\Users\91dlw\Downloads\chatbot-character-image-6905e8098226.json:/app/JSON_KEY.json  # 호스트에서 컨테이너로 파일 매핑
+      #JSON_KEY 파일 경로:/app/JSON_KEY.json 형식으로 변경 후 사용

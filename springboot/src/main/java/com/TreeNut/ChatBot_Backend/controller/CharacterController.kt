@@ -2,18 +2,23 @@ package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.model.Character
 import com.TreeNut.ChatBot_Backend.service.CharacterService
+import com.TreeNut.ChatBot_Backend.service.GoogleDriveService
 import org.springframework.http.ResponseEntity
+import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.bind.annotation.*
+
 import java.util.UUID
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import javax.servlet.http.HttpServletRequest
 import java.sql.SQLException
+import java.io.File
 
 @RestController
 @RequestMapping("/server/character")
 class CharacterController(
     private val characterService: CharacterService,
-    private val tokenAuth: TokenAuth
+    private val tokenAuth: TokenAuth,
+    private val googleDriveService: GoogleDriveService
 ) {
 
     @PostMapping("/add")
@@ -65,6 +70,36 @@ fun addCharacter(
     }
 }
 
+
+    @PostMapping("/addimage")
+fun addCharacterImage(
+    @RequestParam("file") file: MultipartFile,
+    @RequestHeader("Authorization") authorization : String?
+    ): ResponseEntity<Map<String, Any>> {
+        val token = authorization
+        ?:return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
+
+    // 임시 파일 생성
+    val tempFile = File.createTempFile("upload", file.originalFilename)
+    ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image File is required"))
+
+    // 파일을 임시 파일로 복사
+    file.inputStream.use { inputStream ->
+        tempFile.outputStream().use { outputStream ->
+            inputStream.copyTo(outputStream)
+        }
+    }
+
+    return try {
+        // GCS에 이미지 업로드
+        val imageUrl = googleDriveService.uploadImageAndGetLink(tempFile.absolutePath)
+        // 임시 파일 삭제
+        tempFile.delete()
+        ResponseEntity.ok(mapOf("status" to "success", "url" to imageUrl))
+    } catch (e: Exception) {
+        ResponseEntity.status(500).body(mapOf("status" to "error", "message" to (e.message ?: "An error occurred")))
+    }
+}
 
     // 추후 구현 예정
     /*
