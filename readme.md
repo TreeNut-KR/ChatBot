@@ -1,3 +1,6 @@
+# 구성도
+![image](https://github.com/user-attachments/assets/03921907-2512-4f6b-bd51-fbdd3783bedb)
+
 ### 도커 컨테이너 및 이미지 모두 삭제 후 자동 재빌드
 
 #### 1. Linux, Mac OS
