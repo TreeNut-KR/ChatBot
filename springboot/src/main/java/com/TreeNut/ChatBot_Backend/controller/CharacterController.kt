@@ -11,6 +11,7 @@ import java.sql.SQLException
 import org.springframework.http.HttpStatus
 import io.jsonwebtoken.Jwts
 import org.springframework.beans.factory.annotation.Value
+import java.time.LocalDateTime
 
 
 @RestController
@@ -26,25 +27,28 @@ class CharacterController(
         @RequestBody body: Map<String, Any>,
         @RequestHeader("Authorization") authorization: String?
     ): ResponseEntity<Map<String, Any>> {
-        val token = authorization
+        // 토큰 확인
+        val token = authorization?.substringAfter("Bearer ") 
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
-
+    
+        // JWT에서 사용자 ID 추출
         val userid = tokenAuth.authGuard(token)
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
-
+    
+        // 요청 본문에서 캐릭터 속성 추출
         val characterName = body["character_name"] as? String
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character name is required"))
         val description = body["description"] as? String
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Description is required"))
         val greeting = body["greeting"] as? String
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Greeting are required"))
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Greeting is required"))
         val image = body["image"] as? String
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image is required"))
         val characterSetting = body["character_setting"] as? String
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character setting is required"))
         val accessLevel = body["accessLevel"] as? Boolean
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required"))
-
+    
         // 캐릭터 객체 생성
         val newCharacter = Character(
             uuid = UUID.randomUUID().toString(),
@@ -54,19 +58,16 @@ class CharacterController(
             greeting = greeting,
             image = image,
             characterSetting = characterSetting,
-            accessLevel = accessLevel
+            accessLevel = accessLevel,
+            createdAt = LocalDateTime.now(),
+            updatedAt = LocalDateTime.now()
         )
-
+    
         return try {
-            // 캐릭터 추가
             val registeredCharacter = characterService.addCharacter(newCharacter)
             ResponseEntity.ok(mapOf("status" to 200, "name" to registeredCharacter.characterName))
-        } catch (e: SQLException) {
-            // SQL 관련 오류 처리
-            ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "SQL 오류: ${e.message}"))
         } catch (e: Exception) {
-            // 일반 오류 처리
-            ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "캐릭터 추가 중 오류가 발생했습니다: ${e}"))
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("status" to 500, "message" to "Error during character addition"))
         }
     }
 
@@ -83,7 +84,7 @@ class CharacterController(
                 
             // 사용자 토큰에서 userid 추출
             val claims = Jwts.parser()
-                .setSigningKey(jwtSecret.toByteArray())
+                .setSigningKey(tokenAuth.getJwtSecret())  // tokenAuth에서 jwtSecret 가져오기
                 .parseClaimsJws(userToken)
                 .body
             val tokenUserId = claims["userId"] as String? ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User ID is required"))

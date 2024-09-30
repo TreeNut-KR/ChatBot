@@ -12,13 +12,13 @@ data class Character(
     val idx: Long? = null,
 
     @Column(name = "uuid", unique = true, nullable = false, length = 36)
-    val uuid: String? = UUID.randomUUID().toString(),
+    val uuid: String = UUID.randomUUID().toString(),
 
     @Column(name = "userid", length = 50)
-    val userid: String = "", // 기본 생성자에서 빈 문자열로 초기화
+    val userid: String, // 외래 키로 설정될 수 있음
 
     @Column(name = "character_name", nullable = false, length = 30)
-    val characterName: String = "", // 기본 생성자에서 빈 문자열로 초기화
+    val characterName: String,
 
     @Column(name = "character_setting", length = 255)
     val characterSetting: String? = null,
@@ -40,10 +40,9 @@ data class Character(
 
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
-) {
+)  {
     constructor() : this( // 기본 생성자 추가
         idx = null,
-        uuid = null,
         userid = "",
         characterName = "",
         characterSetting = null,
