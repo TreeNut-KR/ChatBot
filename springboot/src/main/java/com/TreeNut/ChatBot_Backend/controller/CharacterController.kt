@@ -81,13 +81,18 @@ class CharacterController(
             // 현재 캐릭터 찾기
             val character = characterService.getCharacterByName(characterName).firstOrNull()
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
-                
+            println("character : $character\n")
+
             // 사용자 토큰에서 userid 추출
             val claims = Jwts.parser()
                 .setSigningKey(tokenAuth.getJwtSecret())  // tokenAuth에서 jwtSecret 가져오기
                 .parseClaimsJws(userToken)
                 .body
-            val tokenUserId = claims["userId"] as String? ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User ID is required"))
+            println("claims : $claims\n")
+
+            // val tokenUserId = claims["userId"] as String? ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User ID is required"))
+            val tokenUserId = claims["sub"] as String? ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User ID is required"))
+            println("tokenUserId : $tokenUserId\n")
 
             // 캐릭터를 업데이트하기 위한 객체 생성
             val editedCharacterEntity = character.copy(
@@ -99,12 +104,15 @@ class CharacterController(
                 accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
                 userid = tokenUserId // 직접 가져온 userid로 설정
             )
-
+            println("charactername : $characterName")
+            println("editedCharacterEntity : $editedCharacterEntity")
+            println("userToken : $userToken")
+            
             // 업데이트 수행
             characterService.editCharacter(characterName, editedCharacterEntity, userToken)
-
             ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
         } catch (e: Exception) {
+            e.printStackTrace()
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
