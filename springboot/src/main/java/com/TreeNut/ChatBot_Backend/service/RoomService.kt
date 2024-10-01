@@ -32,14 +32,14 @@ class RoomService(
 
     fun addOfficeroom(
             userid: String,
-            documentId: String,
+            mongo_chatroomid: String,
             input_data_set: String,
             output_data_set: String = "TESTING⚠️TESTING⚠️TESTING" // AI Model 도입 전임으로 임시로 설정
         ): Mono<Map<*, *>> {
 
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to documentId,
+            "id" to mongo_chatroomid,
             "input_data" to input_data_set,
             "output_data" to output_data_set
         )
@@ -53,20 +53,35 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun saveOfficeroom(userid: String, documentId: String): Officeroom {
+    fun saveOfficeroom(userid: String, mongo_chatroomid: String): Officeroom {
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongoChatlog = documentId
+            mongo_chatroomid = mongo_chatroomid
         )
         return officeroomRepository.save(newOfficeroom) // OfficeroomRepository를 사용하여 저장
     }
 
-    fun saveChatroom(userid: String, charactersIdx: Int = 0, documentId: String): Chatroom {
+    fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
         val newChatroom = Chatroom(
             userid = userid,
             charactersIdx = charactersIdx,
-            mongoChatlog = documentId
+            mongo_chatroomid = mongo_chatroomid
         )
         return chatroomRepository.save(newChatroom) // ChatroomRepository를 사용하여 저장
+    }
+
+    fun loadOfficeroomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid
+        )
+
+        return webClient.build()
+            .post()
+            .uri("/mongo/office/load_log")  // FastAPI 서버에서 로그를 불러오는 엔드포인트
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
     }
 }

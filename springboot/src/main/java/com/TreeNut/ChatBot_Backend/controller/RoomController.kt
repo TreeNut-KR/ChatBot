@@ -62,4 +62,34 @@ class RoomController(
                 ))
             )
     }
+
+    @PostMapping("/load_logs")
+    fun loadChatLogs(
+        @RequestHeader("Authorization") authorization: String?,
+        @RequestBody requestData: Map<String, String>
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
+
+        val mongoChatroomId = requestData["id"] ?: return Mono.just(
+            ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "mongo_chatroomid가 필요합니다."))
+        )
+
+        return roomService.loadOfficeroomLogs(userId, mongoChatroomId)
+            .map { logs ->
+                ResponseEntity.ok(mapOf(
+                    "status" to 200,
+                    "logs" to logs
+                ))
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(400).body(mapOf(
+                    "status" to 400,
+                    "message" to "로그를 찾을 수 없습니다."
+                ))
+            )
+    }
 }
