@@ -43,13 +43,16 @@ class CharacterService(
         val character = characterRepository.findByCharacterName(characterName)
             .firstOrNull() ?: throw RuntimeException("Character not found")
 
-        // JWT 사용자 ID 추출
-        val claims = Jwts.parser()
-            .setSigningKey(tokenAuth.getJwtSecret().toByteArray())  // tokenAuth에서 jwtSecret 가져오기
-            .parseClaimsJws(userToken)
-            .body
+        val token = userToken
+        val tokenUserId = tokenAuth.authGuard(token)
 
-        val tokenUserId = claims.subject // subject를 사용하여 사용자 ID 가져오기
+        // // JWT 사용자 ID 추출
+        // val claims = Jwts.parser()
+        //     .setSigningKey(tokenAuth.getJwtSecret().toByteArray())  // tokenAuth에서 jwtSecret 가져오기
+        //     .parseClaimsJws(userToken)
+        //     .body
+
+        // val tokenUserId = claims.subject // subject를 사용하여 사용자 ID 가져오기
 
         // 사용자 ID 검증
         if (tokenUserId != character.userid) {

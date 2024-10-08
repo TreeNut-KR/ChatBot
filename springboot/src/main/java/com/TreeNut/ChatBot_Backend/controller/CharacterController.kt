@@ -74,40 +74,30 @@ class CharacterController(
     @PutMapping("/edit")
     fun editCharacter(
         @RequestParam characterName: String,
-        @RequestBody updatedCharacter: Character,
+        @RequestBody body: Map<String, Any>,
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
         return try {
             // 현재 캐릭터 찾기
             val character = characterService.getCharacterByName(characterName).firstOrNull()
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
-            println("character : $character\n")
-
-            // 사용자 토큰에서 userid 추출
-            val claims = Jwts.parser()
-                .setSigningKey(tokenAuth.getJwtSecret())  // tokenAuth에서 jwtSecret 가져오기
-                .parseClaimsJws(userToken)
-                .body
-            println("claims : $claims\n")
-
-            // val tokenUserId = claims["userId"] as String? ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User ID is required"))
-            val tokenUserId = claims["sub"] as String? ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User ID is required"))
-            println("tokenUserId : $tokenUserId\n")
+            // 토큰 확인
+            val token = userToken
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
+            // JWT에서 사용자 ID 추출
+            val tokenUserId = tokenAuth.authGuard(token)
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
             // 캐릭터를 업데이트하기 위한 객체 생성
             val editedCharacterEntity = character.copy(
-                characterName = updatedCharacter.characterName ?: character.characterName,
-                description = updatedCharacter.description ?: character.description,
-                greeting = updatedCharacter.greeting ?: character.greeting,
-                image = updatedCharacter.image ?: character.image,
-                characterSetting = updatedCharacter.characterSetting ?: character.characterSetting,
-                accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
-                userid = tokenUserId // 직접 가져온 userid로 설정
+                characterName       = body["character_name"] as? String     ?: character.characterName,
+                description         = body["description"] as? String        ?: character.description,
+                greeting            = body["greeting"] as? String           ?: character.greeting,
+                image               = body["image"] as? String              ?: character.image,
+                characterSetting    = body["character_setting"] as? String  ?: character.characterSetting,
+                accessLevel         = body["accessLevel"] as? Boolean       ?: character.accessLevel,
+                userid              = tokenUserId // 직접 가져온 userid로 설정
             )
-            println("charactername : $characterName")
-            println("editedCharacterEntity : $editedCharacterEntity")
-            println("userToken : $userToken")
-            
             // 업데이트 수행
             characterService.editCharacter(characterName, editedCharacterEntity, userToken)
             ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
