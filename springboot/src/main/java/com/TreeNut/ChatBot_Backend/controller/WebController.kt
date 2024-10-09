@@ -13,17 +13,18 @@ import org.springframework.web.util.UriComponentsBuilder
 @Controller
 class WebController {
 
-    @Value("\${naver.client.id}")
+   
+    @Value("\${spring.security.oauth2.client.registration.naver.client-id}")
     lateinit var naverClientId: String
 
-    @Value("\${naver.client.secret}")
+    @Value("\${spring.security.oauth2.client.registration.naver.client-secret}")
     lateinit var naverClientSecret: String
 
-    @Value("\${google.client.id}")
+    @Value("\${spring.security.oauth2.client.registration.google.client-id}")
     lateinit var googleClientId: String
 
-    @Value("\${google.client.secret}")
-    lateinit var googleClientSecret: String
+    @Value("\${spring.security.oauth2.client.registration.google.client-secret}")
+    lateinit var googleClientSecret: String  
 
     @GetMapping("/")
     fun home(): String {
