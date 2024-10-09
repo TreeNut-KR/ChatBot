@@ -16,7 +16,7 @@ class LoginController(private val authService: AuthService) {
     lateinit var googleClientId: String
 
     @GetMapping("/api/v1/oauth2/code/google")
-    fun loginByGoogle(): String {  // 함수 이름 변경
+    fun loginByGoogle(): String {
         val reqUrl = "https://accounts.google.com/o/oauth2/v2/auth?client_id=$googleClientId" +
                      "&redirect_uri=http://localhost/api/v1/oauth2/google/callback&response_type=code&scope=email%20profile%20openid&access_type=offline"
         return "redirect:$reqUrl"  // 구글 OAuth URL로 리다이렉트
@@ -25,8 +25,10 @@ class LoginController(private val authService: AuthService) {
     @GetMapping("/api/v1/oauth2/google/callback")
     fun googleCallback(@RequestParam("code") code: String, model: Model): String {
         // 받은 code로 사용자 정보를 가져오기
+        println("Received authorization code: $code")
         val userInfo = authService.loginByGoogle(code)
-
+        println("User Info: $userInfo")
+        
         // 사용자 정보를 Model에 추가
         model.addAttribute("name", userInfo["name"])
         model.addAttribute("email", userInfo["email"])
