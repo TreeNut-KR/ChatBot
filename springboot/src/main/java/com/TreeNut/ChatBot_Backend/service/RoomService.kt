@@ -32,14 +32,14 @@ class RoomService(
 
     fun addOfficeroom(
             userid: String,
-            mongo_chatroomid: String,
+            mongo_officeroomid: String,
             input_data_set: String,
             output_data_set: String = "TESTING⚠️TESTING⚠️TESTING" // AI Model 도입 전임으로 임시로 설정
         ): Mono<Map<*, *>> {
 
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_chatroomid,
+            "id" to mongo_officeroomid,
             "input_data" to input_data_set,
             "output_data" to output_data_set
         )
@@ -53,10 +53,10 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun saveOfficeroom(userid: String, mongo_chatroomid: String): Officeroom {
+    fun saveOfficeroom(userid: String, mongo_officeroomid: String): Officeroom {
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongo_chatroomid = mongo_chatroomid
+            mongo_officeroomid = mongo_officeroomid
         )
         return officeroomRepository.save(newOfficeroom) // OfficeroomRepository를 사용하여 저장
     }

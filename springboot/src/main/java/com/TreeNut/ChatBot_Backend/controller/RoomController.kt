@@ -26,7 +26,7 @@ class RoomController(
         return ResponseEntity.ok(mapOf("status" to 200, "user_id" to userId))
     }
 
-    @PostMapping("/gpt")
+    @PostMapping("/office")
     fun createGptRoom(
         @RequestHeader("Authorization") authorization: String?,
         @RequestBody inputData: Map<String, String> // 수정된 부분
@@ -63,10 +63,10 @@ class RoomController(
             )
     }
 
-    @PostMapping("/load_logs")
+    @PostMapping("/office/load_logs/{id}")
     fun loadChatLogs(
         @RequestHeader("Authorization") authorization: String?,
-        @RequestBody requestData: Map<String, String>
+        @PathVariable id: String // PathVariable로 mongo_chatroomid 받음
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
@@ -74,11 +74,7 @@ class RoomController(
         val userId = tokenAuth.authGuard(token)
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
 
-        val mongoChatroomId = requestData["id"] ?: return Mono.just(
-            ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "mongo_chatroomid가 필요합니다."))
-        )
-
-        return roomService.loadOfficeroomLogs(userId, mongoChatroomId)
+        return roomService.loadOfficeroomLogs(userId, id) // id는 mongo_chatroomid에 해당
             .map { logs ->
                 ResponseEntity.ok(mapOf(
                     "status" to 200,
