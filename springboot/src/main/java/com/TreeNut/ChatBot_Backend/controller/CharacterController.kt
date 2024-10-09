@@ -137,4 +137,22 @@ class CharacterController(
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
+
+    @GetMapping("/OpenCharacterList")
+    fun getOpenCharacterList(
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<List<Map<String, Any>>> {
+        return try {
+            // 토큰 확인
+            val tokenUserId = tokenAuth.authGuard(userToken)
+                ?: return ResponseEntity.badRequest().body(emptyList())
+
+            // 접근 가능한 캐릭터의 이름 목록 가져오기
+            val accessibleCharacterNames = characterService.openCharacterList()
+            ResponseEntity.ok(accessibleCharacterNames)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(emptyList())
+        }
+    }
 }
