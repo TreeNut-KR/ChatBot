@@ -77,4 +77,12 @@ class CharacterService(
     fun getCharacterByName(characterName: String): List<Character> {
         return characterRepository.findByCharacterName(characterName)
     }
+
+    fun deleteCharacter(characterName: String) {
+    val character = characterRepository.findByCharacterName(characterName)
+        .firstOrNull() ?: throw RuntimeException("Character not found")
+
+    // 캐릭터 삭제
+    characterRepository.delete(character)
+}
 }

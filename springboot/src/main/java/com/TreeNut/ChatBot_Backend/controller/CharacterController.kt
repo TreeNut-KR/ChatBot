@@ -106,11 +106,35 @@ class CharacterController(
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
-}
-/* 
     @DeleteMapping("/delete")
-    fun deleteCharacter(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
-        // 구현 예정
+    fun deleteCharacter(
+        @RequestParam characterName: String,
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Any> {
+        return try {
+            // 현재 캐릭터 찾기
+            val character = characterService.getCharacterByName(characterName).firstOrNull()
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
+
+            // 토큰 확인
+            val token = userToken
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
+
+            // JWT에서 사용자 ID 추출
+            val tokenUserId = tokenAuth.authGuard(token)
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
+
+            // 사용자 ID 검증
+            if (tokenUserId != character.userid) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("status" to 403, "message" to "User is not authorized to delete this character"))
+            }
+
+            // 캐릭터 삭제 수행
+            characterService.deleteCharacter(characterName)
+            ResponseEntity.ok(mapOf("status" to 200, "message" to "Character deleted successfully"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
+        }
     }
-    
-}*/
+}
