@@ -51,7 +51,7 @@ class CharacterController(
     
         // 캐릭터 객체 생성
         val newCharacter = Character(
-            uuid = UUID.randomUUID().toString(),
+            uuid = UUID.randomUUID().toString().replace("-", ""),
             userid = userid,
             characterName = characterName,
             description = description,

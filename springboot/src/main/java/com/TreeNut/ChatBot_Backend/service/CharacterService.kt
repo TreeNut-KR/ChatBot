@@ -18,7 +18,7 @@ class CharacterService(
     fun addCharacter(character: Character): Character {
         return try {
             val newCharacter = character.copy(
-                uuid = UUID.randomUUID().toString(),
+                uuid = UUID.randomUUID().toString().replace("-", ""),
                 userid = character.userid,
                 createdAt = LocalDateTime.now(),
                 updatedAt = LocalDateTime.now(),
@@ -45,14 +45,6 @@ class CharacterService(
 
         val token = userToken
         val tokenUserId = tokenAuth.authGuard(token)
-
-        // // JWT 사용자 ID 추출
-        // val claims = Jwts.parser()
-        //     .setSigningKey(tokenAuth.getJwtSecret().toByteArray())  // tokenAuth에서 jwtSecret 가져오기
-        //     .parseClaimsJws(userToken)
-        //     .body
-
-        // val tokenUserId = claims.subject // subject를 사용하여 사용자 ID 가져오기
 
         // 사용자 ID 검증
         if (tokenUserId != character.userid) {
