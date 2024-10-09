@@ -2,12 +2,13 @@ package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.service.AuthService
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Controller
+import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
 
-@RestController
+@Controller  // @RestController -> @Controller로 변경
 @CrossOrigin("*")
 class LoginController(private val authService: AuthService) {
 
@@ -22,9 +23,16 @@ class LoginController(private val authService: AuthService) {
     }
 
     @GetMapping("/api/v1/oauth2/google/callback")
-    fun googleCallback(@RequestParam("code") code: String): Map<String, Any> {
+    fun googleCallback(@RequestParam("code") code: String, model: Model): String {
         // 받은 code로 사용자 정보를 가져오기
         val userInfo = authService.loginByGoogle(code)
-        return userInfo  // 사용자 정보를 JSON 형태로 반환
+
+        // 사용자 정보를 Model에 추가
+        model.addAttribute("name", userInfo["name"])
+        model.addAttribute("email", userInfo["email"])
+        model.addAttribute("picture", userInfo["picture"])
+
+        // index.html 템플릿을 반환
+        return "index"
     }
 }

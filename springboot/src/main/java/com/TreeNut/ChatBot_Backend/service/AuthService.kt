@@ -28,6 +28,7 @@ class AuthService(
     fun loginByGoogle(authorizationCode: String): Map<String, Any> {
         val googleToken = getGoogleToken(authorizationCode)
         val googleUserInfo = getGoogleUserInfo(googleToken.access_token)
+        println("구글 액세스 토큰 : ${googleToken.access_token}")
 
         return mapOf(
             "email" to googleUserInfo.email,

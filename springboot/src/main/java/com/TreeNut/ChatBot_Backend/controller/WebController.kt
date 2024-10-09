@@ -95,7 +95,7 @@ class WebController {
             .queryParam("code", code)
             .queryParam("client_id", googleClientId)
             .queryParam("client_secret", googleClientSecret)
-            .queryParam("redirect_uri", "http://localhost/callBack") // Google redirect URI
+            .queryParam("redirect_uri", "https://localhost/api/v1/oauth2/google/callback") // Google redirect URI
             .queryParam("grant_type", "authorization_code")
             .toUriString()
 
