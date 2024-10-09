@@ -84,4 +84,17 @@ class RoomService(
             .retrieve()
             .bodyToMono(Map::class.java)
     }
+
+    fun deleteOfficeroom(userid: String, mongo_officeroomid: String): Mono<Map<*, *>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_officeroomid
+        )
+
+        return webClient.build()
+            .delete()
+            .uri("/mongo/office/delete_room")
+            .retrieve()
+            .bodyToMono(Map::class.java)
+    }
 }

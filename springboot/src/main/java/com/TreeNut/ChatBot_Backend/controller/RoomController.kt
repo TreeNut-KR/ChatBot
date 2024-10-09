@@ -66,7 +66,7 @@ class RoomController(
     @PostMapping("/office/load_logs/{id}")
     fun loadChatLogs(
         @RequestHeader("Authorization") authorization: String?,
-        @PathVariable id: String // PathVariable로 mongo_chatroomid 받음
+        @PathVariable id: String 
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
@@ -86,6 +86,27 @@ class RoomController(
                     "status" to 400,
                     "message" to "로그를 찾을 수 없습니다."
                 ))
+            )
+    }
+
+     @DeleteMapping("/office/delete_room/{id}")
+    fun deleteChatRoom(
+        @RequestHeader("Authorization") authorization: String?,
+        @PathVariable id: String
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
+
+        // FastAPI로 DELETE 요청 전송
+        return roomService.deleteOfficeroom(userId, id)
+            .map { response ->
+                ResponseEntity.ok(mapOf("status" to 200, "message" to "채팅방이 성공적으로 삭제되었습니다.", "response" to response))
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(400).body(mapOf("status" to 400, "message" to "채팅방 삭제 실패"))
             )
     }
 }
