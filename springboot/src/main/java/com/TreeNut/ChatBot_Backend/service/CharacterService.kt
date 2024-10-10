@@ -98,4 +98,18 @@ class CharacterService(
             )
         } // characterName, userid, description만 선택하여 반환
     }
+
+    fun myCharacterList(tokenUserId: String): List<Map<String, Any>> {
+    // 모든 캐릭터를 가져온 후, AccessLevel이 True인 캐릭터의 characterName만 필터링
+        return characterRepository.findAll()
+            .filter {it.userid == tokenUserId}
+            .map {
+                mapOf(
+                "characterName" to (it.characterName ?: ""),
+                "userid" to (it.userid ?: ""),
+                "description" to (it.description ?: ""),
+                "image" to (it.image ?: "")
+            )
+        } // characterName, userid, description만 선택하여 반환
+    }
 }

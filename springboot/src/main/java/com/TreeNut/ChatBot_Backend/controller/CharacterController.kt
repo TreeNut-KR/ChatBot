@@ -140,19 +140,36 @@ class CharacterController(
 
     @GetMapping("/OpenCharacterList")
     fun getOpenCharacterList(
-        @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<List<Map<String, Any>>> {
         return try {
-            // 토큰 확인
-            val tokenUserId = tokenAuth.authGuard(userToken)
-                ?: return ResponseEntity.badRequest().body(emptyList())
-
             // 접근 가능한 캐릭터의 이름 목록 가져오기
             val accessibleCharacterNames = characterService.openCharacterList()
             ResponseEntity.ok(accessibleCharacterNames)
         } catch (e: Exception) {
             e.printStackTrace()
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(emptyList())
+        }
+    }
+
+    @GetMapping("/MyCharacterList")
+    fun getOpenCharacterList(
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Any> {
+        return try {
+            // 토큰 확인
+            val token = userToken
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
+
+            // JWT에서 사용자 ID 추출
+            val tokenUserId = tokenAuth.authGuard(token)
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
+
+            // 접근 가능한 캐릭터의 이름 목록 가져오기
+            val myCharacterNames = characterService.myCharacterList(tokenUserId)
+            ResponseEntity.ok(myCharacterNames)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
 }
