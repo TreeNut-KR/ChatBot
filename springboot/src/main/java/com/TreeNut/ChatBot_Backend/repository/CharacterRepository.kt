@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository
 @Repository
 interface CharacterRepository : JpaRepository<Character, Long> {
     fun findByCharacterName(characterName: String): List<Character>
+    fun findByCharacterNameContaining(characterName: String): List<Character>
 }

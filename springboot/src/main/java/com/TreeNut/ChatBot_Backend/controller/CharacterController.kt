@@ -164,7 +164,7 @@ class CharacterController(
             val tokenUserId = tokenAuth.authGuard(token)
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-            // 접근 가능한 캐릭터의 이름 목록 가져오기
+            // 접근 가능한 캐릭터의 이름 목록 가져오기  
             val myCharacterNames = characterService.myCharacterList(tokenUserId)
             ResponseEntity.ok(myCharacterNames)
         } catch (e: Exception) {
@@ -172,8 +172,9 @@ class CharacterController(
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
+    
     @GetMapping("/search")
-    fun searchCharacter(@RequestParam("name") characterName: String): ResponseEntity<List<Map<String, Any>>> {
+    fun searchCharacter(@RequestParam("characterName") characterName: String): ResponseEntity<List<Map<String, Any>>> {
         val characters = characterService.searchCharacterByName(characterName)
         return if (characters.isNotEmpty()) {
             ResponseEntity.ok(characters)
