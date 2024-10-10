@@ -112,4 +112,18 @@ class CharacterService(
             )
         } // characterName, userid, description만 선택하여 반환
     }
+
+    fun searchCharacterByName(characterName: String): List<Map<String, Any>> {
+    // 캐릭터 이름으로 검색하고, accessLevel이 true인 캐릭터만 필터링
+    return characterRepository.findByCharacterName(characterName)
+        .filter { it.accessLevel == true } // accessLevel이 true인 캐릭터만 선택
+        .map {
+            mapOf(
+                "characterName" to (it.characterName ?: ""),
+                "userid" to (it.userid ?: ""),
+                "description" to (it.description ?: ""),
+                "image" to (it.image ?: "")
+            )
+        }
+    }
 }

@@ -172,4 +172,13 @@ class CharacterController(
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
+    @GetMapping("/search")
+    fun searchCharacter(@RequestParam("name") characterName: String): ResponseEntity<List<Map<String, Any>>> {
+        val characters = characterService.searchCharacterByName(characterName)
+        return if (characters.isNotEmpty()) {
+            ResponseEntity.ok(characters)
+        } else {
+            ResponseEntity.ok(emptyList()) // 검색 결과가 없을 경우 빈 리스트 반환
+        }
+    }
 }
