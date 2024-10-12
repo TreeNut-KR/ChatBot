@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @CrossOrigin("*")
 class LoginController(private val authService: AuthService) {
 
-    @Value("\${google.client.id}")
+    @Value("\${spring.security.oauth2.client.registration.google.client-id}")
     lateinit var googleClientId: String
 
     @GetMapping("/api/v1/oauth2/code/google")
