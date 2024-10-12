@@ -24,11 +24,21 @@ class UserController(private val userService: UserService) {
         return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to registeredUser.username))
     }
 
+    @DeleteMapping("/delete/{userid}")
+    fun deleteUser(@PathVariable userid: String): ResponseEntity<Map<String, Any>> {
+        val isDeleted = userService.deleteUser(userid)
+        return if (isDeleted) {
+            ResponseEntity.ok(mapOf("status" to 200, "message" to "User deleted successfully"))
+        } else {
+            ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User not found"))
+        }
+    }
+
     @PostMapping("/login")
-    fun login(@RequestBody body: Map<String, String>, response: HttpServletResponse): ResponseEntity<Map<String, Any>> {
+    fun login(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
-        
+
         val user = userService.login(userid, password)
         return if (user != null) {
             val token = userService.generateToken(user)

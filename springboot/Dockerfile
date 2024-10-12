@@ -1,27 +1,25 @@
-# 1단계: Gradle 빌드를 위한 이미지
 FROM gradle:8.0-jdk17 AS build
 
-# 작업 디렉토리 설정
 WORKDIR /app
 
-# Gradle Wrapper 및 build.gradle.kts 파일 복사
-COPY gradlew . 
-COPY gradlew.bat . 
-COPY build.gradle.kts . 
+COPY gradlew .
+COPY gradlew.bat .
+COPY build.gradle.kts .
 COPY gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.jar
 COPY gradle/wrapper/gradle-wrapper.properties gradle/wrapper/gradle-wrapper.properties
-
-# 소스 파일 복사
 COPY src ./src
 
-# Gradle 빌드 실행 (테스트 건너뜀)
 RUN ./gradlew build -x test --no-daemon
 
-# 2단계: 최종 이미지
 FROM openjdk:17-jdk-slim
 
-# 빌드된 JAR 파일 복사
-COPY --from=build /app/build/libs/*.jar app.jar
+# Netcat 설치
+RUN apt-get update && apt-get install -y netcat
 
-# 애플리케이션 실행
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+# wait-for-it.sh 복사 및 실행 권한 부여
+COPY wait-for-it.sh /wait-for-it
+RUN sed -i 's/\r$//' /wait-for-it && chmod +x /wait-for-it
+
+COPY --from=build /app/build/libs/*.jar /app.jar
+
+ENTRYPOINT ["./wait-for-it", "mysql:3306", "--", "java", "-jar", "/app.jar"]

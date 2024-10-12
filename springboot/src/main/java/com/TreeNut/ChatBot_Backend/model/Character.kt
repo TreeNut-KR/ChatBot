@@ -7,24 +7,55 @@ import java.util.UUID
 @Entity
 @Table(name = "characters")
 data class Character(
-    @Id @Column(name = "idx", columnDefinition = "CHAR(36)")
-    val idx: Long? = null, // UUID로 자동 생성되는 ID 필드
-    val uuid : String,
-    val useridx: Int, // 사용자의 ID
-    val character_name: String, // 캐릭터 이름
-    val description : String, //캐릭터 한줄 설명
-    val greetings : String, //첫 인사말
-    val image : String, //이미지 링크
-    val character_setting : String, //캐릭터 설정
-    val accessLevel : String, //접근 가능 여부
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val idx: Long? = null,
+
+    @Column(name = "uuid", unique = true, nullable = false, length = 36)
+    val uuid: String = UUID.randomUUID().toString(),
+
+    @Column(name = "userid", length = 50)
+    val userid: String, // 외래 키로 설정될 수 있음
+
+    @Column(name = "character_name", nullable = false, length = 30)
+    val characterName: String,
+
+    @Column(name = "character_setting", length = 255)
+    val characterSetting: String? = null,
+
+    @Column(name = "description", length = 255)
+    val description: String? = null,
+
+    @Column(name = "greeting", columnDefinition = "TEXT")
+    val greeting: String? = null,
+
+    @Column(name = "accesslevel")
+    val accessLevel: Boolean? = null,
+
+    @Column(name = "image")
+    val image: String? = null,
+
     @Column(name = "created_at", updatable = false)
-    val createdAt: LocalDateTime = LocalDateTime.now(), // 생성 일시
+    val createdAt: LocalDateTime = LocalDateTime.now(),
+
     @Column(name = "updated_at")
-    var updatedAt: LocalDateTime = LocalDateTime.now() // 수정 일시
-) {
-    // 추가적인 메서드나 로직이 필요하면 여기에 작성
+    var updatedAt: LocalDateTime = LocalDateTime.now()
+)  {
+    constructor() : this( // 기본 생성자 추가
+        idx = null,
+        userid = "",
+        characterName = "",
+        characterSetting = null,
+        description = null,
+        greeting = null,
+        accessLevel = null,
+        image = null,
+        createdAt = LocalDateTime.now(),
+        updatedAt = LocalDateTime.now()
+    )
+
     @PreUpdate
     fun onUpdate() {
-    updatedAt = LocalDateTime.now() // 수정 시점 업데이트
+        updatedAt = LocalDateTime.now()
     }
 }

@@ -29,6 +29,17 @@ services:
       "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"
       ]
 
+  springboot:
+    restart: always
+    build:
+      context: ./springboot
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    command: ["./gradlew build -x test --no-daemon"] # 테스트를 건너뛰고 빌드
+    depends_on:
+      - mysql  # MySQL 서비스에 의존
+
   mysql:
     restart: unless-stopped
     build:
@@ -62,14 +73,3 @@ services:
       - ./mongo/data:/data/db
       - ./mongo/log:/var/log/mongodb
       - ./mongo/.env:/docker-entrypoint-initdb.d/.env
-
-  springboot:
-    restart: always
-    build:
-      context: ./springboot
-      dockerfile: Dockerfile
-    command: ./gradlew build -x test --no-daemon  # 테스트를 건너뛰고 빌드
-    ports:
-      - "8080:8080"
-    depends_on:
-      - mysql  # MySQL 서비스에 의존
