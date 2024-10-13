@@ -63,7 +63,7 @@ class RoomController(
             )
     }
 
-    @PostMapping("/office/load_logs/{id}")
+    @PostMapping("/office/{id}/load_logs")
     fun loadChatLogs(
         @RequestHeader("Authorization") authorization: String?,
         @PathVariable id: String 
@@ -89,7 +89,7 @@ class RoomController(
             )
     }
 
-     @DeleteMapping("/office/delete_room/{id}")
+     @DeleteMapping("/office/{id}/delete_room")
     fun deleteChatRoom(
         @RequestHeader("Authorization") authorization: String?,
         @PathVariable id: String
@@ -109,4 +109,37 @@ class RoomController(
                 ResponseEntity.status(400).body(mapOf("status" to 400, "message" to "채팅방 삭제 실패"))
             )
     }
+
+    @PutMapping("/office/{id}/save_log")
+    fun saveChatLog(
+        @RequestHeader("Authorization") authorization: String?,
+        @PathVariable id: String, // MongoDB에서 사용되는 document ID
+        @RequestBody inputData: Map<String, String> // 입력 데이터
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
+
+        val inputDataSet = inputData["input_data_set"]
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "input_data_set이 필요합니다.")))
+
+        val outputDataSet = "TESTING⚠️TESTING⚠️TESTING"
+
+        return roomService.addOfficeroom(userId, id, inputDataSet)
+            .map { response ->
+                ResponseEntity.ok(mapOf(
+                    "status" to 200,
+                    "message" to "채팅 로그가 성공적으로 저장되었습니다.",
+                    "response" to response
+                ))
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(500).body(mapOf(
+                    "status" to 500,
+                    "message" to "채팅 로그 저장에 실패했습니다."
+                ))
+            )
+        }
 }

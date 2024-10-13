@@ -8,6 +8,7 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import org.springframework.http.HttpMethod
 
 @Service
 class RoomService(
@@ -86,15 +87,17 @@ class RoomService(
     }
 
     fun deleteOfficeroom(userid: String, mongo_officeroomid: String): Mono<Map<*, *>> {
-        val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_officeroomid
-        )
+    val requestBody = mapOf(
+        "user_id" to userid,
+        "id" to mongo_officeroomid
+    )
 
-        return webClient.build()
-            .delete()
-            .uri("/mongo/office/delete_room")
-            .retrieve()
-            .bodyToMono(Map::class.java)
+    return webClient.build()
+        .method(HttpMethod.DELETE)
+        .uri("/mongo/office/delete_room")
+        .contentType(MediaType.APPLICATION_JSON)  // 여기에서 contentType 설정
+        .bodyValue(requestBody)
+        .retrieve()
+        .bodyToMono(Map::class.java)
     }
 }
