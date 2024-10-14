@@ -2,8 +2,11 @@ package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.model.Character
 import com.TreeNut.ChatBot_Backend.service.CharacterService
+import com.TreeNut.ChatBot_Backend.service.GoogleDriveService
 import org.springframework.http.ResponseEntity
+import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.bind.annotation.*
+
 import java.util.UUID
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import javax.servlet.http.HttpServletRequest
@@ -13,13 +16,15 @@ import io.jsonwebtoken.Jwts
 import org.springframework.beans.factory.annotation.Value
 import java.time.LocalDateTime
 
+import java.io.File
 
 @RestController
 @RequestMapping("/server/character")
 class CharacterController(
     private val characterService: CharacterService,
     private val tokenAuth: TokenAuth,
-    @Value("\${jwt.secret}") private val jwtSecret: String
+    @Value("\${jwt.secret}") private val jwtSecret: String,
+    private val googleDriveService: GoogleDriveService
 ) {
 
     @PostMapping("/add")
@@ -28,7 +33,7 @@ class CharacterController(
         @RequestHeader("Authorization") authorization: String?
     ): ResponseEntity<Map<String, Any>> {
         // 토큰 확인
-        val token = authorization?.substringAfter("Bearer ") 
+        val token = authorization?.substringAfter("Bearer ")
             ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
     
         // JWT에서 사용자 ID 추출
@@ -68,6 +73,36 @@ class CharacterController(
             ResponseEntity.ok(mapOf("status" to 200, "name" to registeredCharacter.characterName))
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("status" to 500, "message" to "Error during character addition"))
+        }
+    }
+
+    @PostMapping("/addimage")
+    fun addCharacterImage(
+        @RequestParam("file") file: MultipartFile,
+        @RequestHeader("Authorization") authorization : String?
+        ): ResponseEntity<Map<String, Any>> {
+            val token = authorization
+            ?:return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
+
+        // 임시 파일 생성
+        val tempFile = File.createTempFile("upload", file.originalFilename)
+        ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image File is required"))
+
+        // 파일을 임시 파일로 복사
+        file.inputStream.use { inputStream ->
+            tempFile.outputStream().use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+
+        return try {
+            // GCS에 이미지 업로드
+            val imageUrl = googleDriveService.uploadImageAndGetLink(tempFile.absolutePath)
+            // 임시 파일 삭제
+            tempFile.delete()
+            ResponseEntity.ok(mapOf("status" to "success", "url" to imageUrl))
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("status" to "error", "message" to (e.message ?: "An error occurred")))
         }
     }
 
@@ -164,7 +199,7 @@ class CharacterController(
             val tokenUserId = tokenAuth.authGuard(token)
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-            // 접근 가능한 캐릭터의 이름 목록 가져오기  
+            // 접근 가능한 캐릭터의 이름 목록 가져오기
             val myCharacterNames = characterService.myCharacterList(tokenUserId)
             ResponseEntity.ok(myCharacterNames)
         } catch (e: Exception) {

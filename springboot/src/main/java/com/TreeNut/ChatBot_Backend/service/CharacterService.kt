@@ -5,6 +5,19 @@ import com.TreeNut.ChatBot_Backend.repository.CharacterRepository
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.UUID
+
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
+import com.google.api.client.json.gson.GsonFactory
+import com.google.api.services.drive.Drive
+import com.google.api.services.drive.model.File as DriveFile
+import com.google.api.services.drive.model.Permission
+import com.google.auth.http.HttpCredentialsAdapter
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.api.client.http.FileContent
+import java.io.ByteArrayInputStream
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.charset.StandardCharsets
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.jsonwebtoken.Jwts
 import javax.servlet.http.HttpServletRequest
@@ -125,5 +138,53 @@ class CharacterService(
                 "image" to (it.image ?: "")
             )
         }
+    }
+}
+//이미지 업로드 서비스를 위한 클래스
+@Service
+class GoogleDriveService{
+    private val APPLICATION_NAME = "Chatbot Character Image"
+    //Drive 객체 초기화
+    private val driveService: Drive by lazy {
+        val jsonKeyFilePath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+            ?: throw RuntimeException("Environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON is not set")
+        val jsonKey = Files.readString(Paths.get(jsonKeyFilePath))
+        
+        val credentials: GoogleCredentials = try {
+            // JSON 문자열을 InputStream으로 변환
+            val stream = ByteArrayInputStream(jsonKey.toByteArray(StandardCharsets.UTF_8))
+
+            // GoogleCredentials 객체 생성
+            GoogleCredentials.fromStream(stream).createScoped(listOf("https://www.googleapis.com/auth/drive.file"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw RuntimeException("Failed to create GoogleCredentials", e)
+        }
+
+        Drive.Builder(
+            GoogleNetHttpTransport.newTrustedTransport(), 
+            GsonFactory.getDefaultInstance(), 
+            HttpCredentialsAdapter(credentials))
+            .setApplicationName(APPLICATION_NAME)
+            .build()
+    }
+
+    fun uploadImageAndGetLink(imagePath: String): String {
+        val fileMetadata = DriveFile().apply {
+            name = "uploaded_image.jpg" // 원하는 파일 이름
+            mimeType = "image/jpeg"
+        }
+
+        val filePath = java.io.File(imagePath)
+        val mediaContent = FileContent("image/jpeg", filePath)
+
+        val file: DriveFile = driveService.files().create(fileMetadata, mediaContent)
+            .setFields("id")
+            .execute()
+
+        // 파일 공유 설정 (모두에게 읽기 권한 부여)
+        driveService.permissions().create(file.id, com.google.api.services.drive.model.Permission().setType("anyone").setRole("reader")).execute()
+
+        return "https://drive.google.com/uc?id=${file.id}"
     }
 }

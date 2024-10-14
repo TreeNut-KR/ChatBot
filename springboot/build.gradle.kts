@@ -52,6 +52,11 @@ dependencies {
     implementation("javax.xml.bind:jaxb-api:2.3.1")
     implementation("org.glassfish.jaxb:jaxb-runtime:2.3.1")
 
+    implementation("com.google.api-client:google-api-client:1.30.10")
+    implementation("com.google.apis:google-api-services-drive:v3-rev197-1.25.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.25.0")
+    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0")
     // 테스트 관련 의존성
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
