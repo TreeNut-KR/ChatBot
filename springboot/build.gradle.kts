@@ -31,6 +31,7 @@ dependencies {
     // WebFlux 의존성 (Reactive 프로그래밍 및 WebClient)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("io.projectreactor:reactor-core:3.5.0")
 
     // MySQL Connector 버전
     runtimeOnly("mysql:mysql-connector-java:8.0.33")

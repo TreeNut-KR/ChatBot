@@ -29,7 +29,7 @@ class RoomController(
     @PostMapping("/office")
     fun createGptRoom(
         @RequestHeader("Authorization") authorization: String?,
-        @RequestBody inputData: Map<String, String> // 수정된 부분
+        @RequestBody inputData: Map<String, String>
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
@@ -37,22 +37,24 @@ class RoomController(
         val userId = tokenAuth.authGuard(token)
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
 
-        val inputDataSet = inputData["input_data_set"] // JSON의 "input_data_set" 키 값 사용
+        val inputDataSet = inputData["input_data_set"]
 
-        // createOfficeroom으로 documentId 생성
         return roomService.createOfficeroom(userId)
             .flatMap { response ->
                 val documentId = response["Document ID"] as? String
                     ?: return@flatMap Mono.just(ResponseEntity.status(500).body(mapOf<String, Any>("status" to 500, "message" to "documentId 생성 실패")))
 
-                // documentId 생성 후 addOfficeroom 호출
                 roomService.addOfficeroom(userId, documentId, inputDataSet ?: "")
-                    .map { addResponse ->
-                        ResponseEntity.ok(mapOf(
-                            "status" to 200,
-                            "message" to "채팅방이 성공적으로 생성되었고 로그가 저장되었습니다.",
-                            "add_log_response" to addResponse
-                        ))
+                    .flatMap { addResponse ->
+                        roomService.saveOfficeroomToMySQL(userId, documentId)
+                            .map { savedOfficeroom ->
+                                ResponseEntity.ok(mapOf(
+                                    "status" to 200,
+                                    "message" to "채팅방이 성공적으로 생성되었고 로그가 저장되었습니다.",
+                                    "add_log_response" to addResponse,
+                                    "mysql_officeroom" to savedOfficeroom
+                                ))
+                            }
                     }
             }
             .defaultIfEmpty(

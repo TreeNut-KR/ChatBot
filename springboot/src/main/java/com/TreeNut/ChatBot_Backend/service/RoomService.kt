@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 import org.springframework.http.HttpMethod
+import reactor.core.scheduler.Schedulers
 
 @Service
 class RoomService(
@@ -139,5 +140,14 @@ class RoomService(
         .bodyValue(requestBody)
         .retrieve()
         .bodyToMono(Map::class.java)
+    }
+
+    fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {
+        val newOfficeroom = Officeroom(
+            userid = userid,
+            mongo_officeroomid = mongo_chatroomid
+        )
+        return Mono.fromCallable { officeroomRepository.save(newOfficeroom) }
+            .subscribeOn(Schedulers.boundedElastic())
     }
 }
