@@ -100,4 +100,44 @@ class RoomService(
         .retrieve()
         .bodyToMono(Map::class.java)
     }
+
+    fun updateOfficeroomLog(
+        userid: String,
+        mongo_officeroomid: String,
+        index: Int,  // 수정할 로그의 인덱스
+        input_data_set: String,
+        output_data_set: String = "TESTING⚠️TESTING⚠️TESTING" // AI Model 도입 전임으로 임시 설정
+    ): Mono<Map<*, *>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_officeroomid,
+            "index" to index,  // 수정할 인덱스 전달
+            "input_data" to input_data_set,
+            "output_data" to output_data_set
+        )
+
+        return webClient.build()
+            .put()
+            .uri("/mongo/office/update_log")  // FastAPI 서버로 수정 요청
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+    }
+
+    fun deleteOfficeroomLog(userid: String, mongo_officeroomid: String, index: Int): Mono<Map<*, *>> {
+    val requestBody = mapOf(
+        "user_id" to userid,
+        "id" to mongo_officeroomid,
+        "index" to index  // 삭제할 로그의 인덱스를 전달
+    )
+
+    return webClient.build()
+        .method(HttpMethod.DELETE)
+        .uri("/mongo/office/delete_log")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .retrieve()
+        .bodyToMono(Map::class.java)
+    }
 }

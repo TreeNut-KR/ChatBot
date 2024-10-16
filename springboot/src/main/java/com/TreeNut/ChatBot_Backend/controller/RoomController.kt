@@ -89,7 +89,7 @@ class RoomController(
             )
     }
 
-     @DeleteMapping("/office/{id}/delete_room")
+    @DeleteMapping("/office/{id}/delete_room")
     fun deleteChatRoom(
         @RequestHeader("Authorization") authorization: String?,
         @PathVariable id: String
@@ -142,4 +142,56 @@ class RoomController(
                 ))
             )
         }
+
+    @PutMapping("/office/{id}/update_log")
+    fun updateChatLog(
+        @RequestHeader("Authorization") authorization: String?,
+        @PathVariable id: String,
+        @RequestBody requestData: Map<String, Any> // 요청 데이터는 Map 형태로 받음
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
+
+        val index = requestData["index"] as? Int
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인덱스 값이 필요합니다.")))
+
+        val inputDataSet = requestData["input_data_set"] as? String
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "input_data_set 값이 필요합니다.")))
+
+        return roomService.updateOfficeroomLog(userId, id, index, inputDataSet)
+            .map { response ->
+                ResponseEntity.ok(mapOf(
+                    "status" to 200,
+                    "message" to "채팅 로그가 성공적으로 수정되었습니다.",
+                    "response" to response
+                ))
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(400).body(mapOf("status" to 400, "message" to "채팅 로그 수정 실패"))
+            )
+    }
+
+    @DeleteMapping("/office/{id}/delete_log")
+    fun deleteOfficeroomLog(
+        @RequestHeader("Authorization") authorization: String?,
+        @PathVariable id: String,
+        @RequestParam index: Int // 요청 파라미터로 index를 받음
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
+
+        return roomService.deleteOfficeroomLog(userId, id, index)
+            .map { response ->
+                ResponseEntity.ok(mapOf("status" to 200, "message" to "해당 로그가 성공적으로 삭제되었습니다.", "response" to response))
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(400).body(mapOf("status" to 400, "message" to "로그 삭제 실패"))
+            )
+    }
 }
