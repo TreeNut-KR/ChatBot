@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.9.10" // 최신 안정 버전으로 업데이트
-    kotlin("plugin.spring") version "1.9.10" // 동일하게 업데이트
+    kotlin("jvm") version "1.9.10" // 한 단계 낮은 안정 버전
+    kotlin("plugin.spring") version "1.9.10"
     id("org.springframework.boot") version "3.3.3"
     id("io.spring.dependency-management") version "1.1.6"
 }
@@ -31,6 +31,7 @@ dependencies {
     // WebFlux 의존성 (Reactive 프로그래밍 및 WebClient)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("io.projectreactor:reactor-core:3.5.0")
 
     // MySQL Connector 버전
     runtimeOnly("mysql:mysql-connector-java:8.0.33")
