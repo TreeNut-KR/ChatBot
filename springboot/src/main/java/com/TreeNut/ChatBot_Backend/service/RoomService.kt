@@ -32,7 +32,7 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    // Llama 모델로 input_data_set을 보내고 응답 받는 함수
+    // Llama 모델로 input_data_set을 보내고 스트리밍 응답을 받는 함수
     private fun getLlamaResponse(inputDataSet: String): Mono<String> {
         val llamaRequestBody = mapOf(
             "input_data" to inputDataSet
@@ -40,15 +40,17 @@ class RoomService(
 
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/Llama_stream")
+            .uri("http://192.168.219.100:8000/Llama_stream")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(llamaRequestBody)
             .retrieve()
-            .bodyToMono(Map::class.java)
+            .bodyToFlux(String::class.java)  // 스트리밍 응답 받기
+            .reduce { accumulated, chunk -> accumulated + chunk }  // 스트림을 하나의 문자열로 합치기
             .map { response ->
-                response["output_data"] as? String ?: "Llama 응답 실패"
+                response.ifEmpty { "Llama 응답 실패" }
             }
     }
+
 
     fun addOfficeroom(
         userid: String,
