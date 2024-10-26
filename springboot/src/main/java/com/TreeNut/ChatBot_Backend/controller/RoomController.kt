@@ -68,7 +68,7 @@ class RoomController(
     @PostMapping("/office/{id}/load_logs")
     fun loadChatLogs(
         @RequestHeader("Authorization") authorization: String?,
-        @PathVariable id: String 
+        @PathVariable id: String
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음")))
@@ -127,8 +127,6 @@ class RoomController(
         val inputDataSet = inputData["input_data_set"]
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "input_data_set이 필요합니다.")))
 
-        val outputDataSet = "TESTING⚠️TESTING⚠️TESTING"
-
         return roomService.addOfficeroom(userId, id, inputDataSet)
             .map { response ->
                 ResponseEntity.ok(mapOf(
@@ -143,7 +141,7 @@ class RoomController(
                     "message" to "채팅 로그 저장에 실패했습니다."
                 ))
             )
-        }
+    }
 
     @PutMapping("/office/{id}/update_log")
     fun updateChatLog(

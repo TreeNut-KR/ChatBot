@@ -50,6 +50,14 @@ FOR /d /r .\fastapi\ %%i IN (__pycache__) DO (
 )
 echo.
 
+echo Docker Compose build...
+docker-compose build --parallel
+if errorlevel 1 (
+    echo Failed to execute docker-compose build. Exiting...
+    exit /b 1
+)
+echo.
+
 echo Starting Docker Compose...
 docker-compose up -d
 if errorlevel 1 (

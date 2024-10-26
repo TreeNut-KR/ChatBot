@@ -14,7 +14,7 @@ import reactor.core.scheduler.Schedulers
 @Service
 class RoomService(
     private val chatroomRepository: ChatroomRepository,
-    private val officeroomRepository: OfficeroomRepository, // OfficeroomRepository 추가
+    private val officeroomRepository: OfficeroomRepository,
     private val webClient: WebClient.Builder
 ) {
 
@@ -32,27 +32,50 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun addOfficeroom(
-            userid: String,
-            mongo_officeroomid: String,
-            input_data_set: String,
-            output_data_set: String = "TESTING⚠️TESTING⚠️TESTING" // AI Model 도입 전임으로 임시로 설정
-        ): Mono<Map<*, *>> {
-
-        val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_officeroomid,
-            "input_data" to input_data_set,
-            "output_data" to output_data_set
+    // Llama 모델로 input_data_set을 보내고 스트리밍 응답을 받는 함수
+    private fun getLlamaResponse(inputDataSet: String): Mono<String> {
+        val llamaRequestBody = mapOf(
+            "input_data" to inputDataSet
         )
 
         return webClient.build()
-            .put()
-            .uri("/mongo/office/save_log")
+            .post()
+            .uri("http://192.168.219.100:8000/Llama_stream")
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
+            .bodyValue(llamaRequestBody)
             .retrieve()
-            .bodyToMono(Map::class.java)
+            .bodyToFlux(String::class.java)  // 스트리밍 응답 받기
+            .reduce { accumulated, chunk -> accumulated + chunk }  // 스트림을 하나의 문자열로 합치기
+            .map { response ->
+                response.ifEmpty { "Llama 응답 실패" }
+            }
+    }
+
+
+    fun addOfficeroom(
+        userid: String,
+        mongo_officeroomid: String,
+        input_data_set: String
+    ): Mono<Map<*, *>> {
+
+        // Llama 모델에 input_data_set을 보내고 응답을 받음
+        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
+
+            val requestBody = mapOf(
+                "user_id" to userid,
+                "id" to mongo_officeroomid,
+                "input_data" to input_data_set,
+                "output_data" to output_data_set
+            )
+
+            webClient.build()
+                .put()
+                .uri("/mongo/office/save_log")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map::class.java)
+        }
     }
 
     fun saveOfficeroom(userid: String, mongo_officeroomid: String): Officeroom {
@@ -60,7 +83,7 @@ class RoomService(
             userid = userid,
             mongo_officeroomid = mongo_officeroomid
         )
-        return officeroomRepository.save(newOfficeroom) // OfficeroomRepository를 사용하여 저장
+        return officeroomRepository.save(newOfficeroom)
     }
 
     fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
@@ -69,7 +92,7 @@ class RoomService(
             charactersIdx = charactersIdx,
             mongo_chatroomid = mongo_chatroomid
         )
-        return chatroomRepository.save(newChatroom) // ChatroomRepository를 사용하여 저장
+        return chatroomRepository.save(newChatroom)
     }
 
     fun loadOfficeroomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
@@ -80,7 +103,7 @@ class RoomService(
 
         return webClient.build()
             .post()
-            .uri("/mongo/office/load_log")  // FastAPI 서버에서 로그를 불러오는 엔드포인트
+            .uri("/mongo/office/load_log")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
@@ -88,58 +111,62 @@ class RoomService(
     }
 
     fun deleteOfficeroom(userid: String, mongo_officeroomid: String): Mono<Map<*, *>> {
-    val requestBody = mapOf(
-        "user_id" to userid,
-        "id" to mongo_officeroomid
-    )
-
-    return webClient.build()
-        .method(HttpMethod.DELETE)
-        .uri("/mongo/office/delete_room")
-        .contentType(MediaType.APPLICATION_JSON)  // 여기에서 contentType 설정
-        .bodyValue(requestBody)
-        .retrieve()
-        .bodyToMono(Map::class.java)
-    }
-
-    fun updateOfficeroomLog(
-        userid: String,
-        mongo_officeroomid: String,
-        index: Int,  // 수정할 로그의 인덱스
-        input_data_set: String,
-        output_data_set: String = "TESTING⚠️TESTING⚠️TESTING" // AI Model 도입 전임으로 임시 설정
-    ): Mono<Map<*, *>> {
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_officeroomid,
-            "index" to index,  // 수정할 인덱스 전달
-            "input_data" to input_data_set,
-            "output_data" to output_data_set
+            "id" to mongo_officeroomid
         )
 
         return webClient.build()
-            .put()
-            .uri("/mongo/office/update_log")  // FastAPI 서버로 수정 요청
+            .method(HttpMethod.DELETE)
+            .uri("/mongo/office/delete_room")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
     }
 
-    fun deleteOfficeroomLog(userid: String, mongo_officeroomid: String, index: Int): Mono<Map<*, *>> {
-    val requestBody = mapOf(
-        "user_id" to userid,
-        "id" to mongo_officeroomid,
-        "index" to index  // 삭제할 로그의 인덱스를 전달
-    )
+    fun updateOfficeroomLog(
+        userid: String,
+        mongo_officeroomid: String,
+        index: Int,
+        input_data_set: String
+    ): Mono<Map<*, *>> {
 
-    return webClient.build()
-        .method(HttpMethod.DELETE)
-        .uri("/mongo/office/delete_log")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(requestBody)
-        .retrieve()
-        .bodyToMono(Map::class.java)
+        // Llama 모델에 input_data_set을 보내고 응답을 받음
+        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
+
+            val requestBody = mapOf(
+                "user_id" to userid,
+                "id" to mongo_officeroomid,
+                "index" to index,
+                "input_data" to input_data_set,
+                "output_data" to output_data_set
+            )
+
+            webClient.build()
+                .put()
+                .uri("/mongo/office/update_log")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map::class.java)
+        }
+    }
+
+    fun deleteOfficeroomLog(userid: String, mongo_officeroomid: String, index: Int): Mono<Map<*, *>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_officeroomid,
+            "index" to index
+        )
+
+        return webClient.build()
+            .method(HttpMethod.DELETE)
+            .uri("/mongo/office/delete_log")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
     }
 
     fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {
