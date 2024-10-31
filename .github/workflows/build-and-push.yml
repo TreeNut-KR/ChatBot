@@ -54,6 +54,11 @@ jobs:
           mkdir -p ./springboot/src/main/resources
           echo "${{ secrets.SPRING_ENV }}" > ./springboot/src/main/resources/application.properties
 
+      - name: Copy chatbot-character JSON key
+        run: |
+          mkdir -p ./fastapi  # fastapi 폴더가 없으면 생성
+          echo "${{ secrets.CHATBOT_JSON_KEY }}" > ./fastapi/chatbot-character-image-6b2ea50ecd70.json
+
       - name: Build and push Nginx image
         uses: docker/build-push-action@v3
         with:
