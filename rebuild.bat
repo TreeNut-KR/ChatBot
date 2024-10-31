@@ -2,26 +2,6 @@
 chcp 65001
 SETLOCAL
 
-echo Navigating to React Frontend directory...
-cd .\nginx\react-frontpage
-
-echo Checking if build directory exists...
-IF EXIST .\build\ (
-    echo Build directory already exists. Skipping build process.
-) ELSE (
-    echo Installing NPM packages...
-    npm i
-    echo.
-
-    echo Building React project...
-    npm run build
-    if errorlevel 1 (
-        echo npm run build failed. Exiting...
-        exit /b 1
-    )
-    echo.
-)
-
 echo Checking Docker daemon status...
 docker info >nul 2>&1
 if errorlevel 1 (
@@ -67,6 +47,14 @@ echo.
 echo Removing __pycache__ folders in ./fastapi...
 FOR /d /r .\fastapi\ %%i IN (__pycache__) DO (
     if exist "%%i" rmdir /s /q "%%i"
+)
+echo.
+
+echo Docker Compose build...
+docker-compose build --parallel
+if errorlevel 1 (
+    echo Failed to execute docker-compose build. Exiting...
+    exit /b 1
 )
 echo.
 

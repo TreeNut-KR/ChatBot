@@ -13,14 +13,13 @@ import org.springframework.beans.factory.annotation.Value
 @Component
 class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
 
-    fun authGuard(token: String): Long? {
+    fun authGuard(token: String): String? {
         return try {
             val claims: Claims = Jwts.parser()
                 .setSigningKey(jwtSecret)
                 .parseClaimsJws(token)
                 .body
-
-            claims.subject?.toLong()
+            claims.subject
         } catch (e: ExpiredJwtException) {
             throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
         } catch (e: MalformedJwtException) {
@@ -33,4 +32,7 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
             throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
         }
     }
+        fun getJwtSecret(): String {
+        return jwtSecret
+    }    
 }

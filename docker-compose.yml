@@ -29,6 +29,17 @@ services:
       "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"
       ]
 
+  springboot:
+    restart: always
+    build:
+      context: ./springboot
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    command: ["./gradlew build -x test --no-daemon"] # 테스트를 건너뛰고 빌드
+    depends_on:
+      - mysql  # MySQL 서비스에 의존
+
   mysql:
     restart: unless-stopped
     build:
@@ -58,18 +69,9 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD}
       MONGO_DATABASE: ${MONGO_DATABASE}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/JSON_KEY.json  # 환경 변수 설정
     volumes:
       - ./mongo/data:/data/db
       - ./mongo/log:/var/log/mongodb
       - ./mongo/.env:/docker-entrypoint-initdb.d/.env
-
-  springboot:
-    restart: always
-    build:
-      context: ./springboot
-      dockerfile: Dockerfile
-    command: ./gradlew build -x test --no-daemon  # 테스트를 건너뛰고 빌드
-    ports:
-      - "8080:8080"
-    depends_on:
-      - mysql  # MySQL 서비스에 의존
+      - ./chatbot-character-image-6b2ea50ecd70.json:/app/JSON_KEY.json  # 호스트에서 컨테이너로 파일 매핑
