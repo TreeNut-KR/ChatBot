@@ -1,0 +1,19 @@
+
+.topbar {
+    width: 100%;
+    height: 2vh; /* 높이를 뷰포트 높이의 20%로 조정 */
+    background-color: #999090;
+    position: relative; /* position 속성 추가 */
+     /* z-index 추가 */
+    margin-bottom: 0;
+}
+
+/* 부모 요소에 position: relative 추가 */
+.topbarWrapper {
+    height: 100%;
+    padding: 0 1vw;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative; /* 부모 요소에 relative 설정 */
+}

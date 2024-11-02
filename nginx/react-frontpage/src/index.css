@@ -5,6 +5,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100%; /* body의 높이를 100%로 설정 */
+  overflow: hidden; /* 스크롤 숨김 */
 }
 
 code {

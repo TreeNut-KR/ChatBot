@@ -1,5 +1,11 @@
 .App {
   text-align: center;
+  height: 100%; /* App의 높이를 100%로 설정 */
+}
+
+.container {
+  display: flex; /* Flexbox 설정 추가 */
+  height: 100%; /* Container의 높이를 100%로 설정 */
 }
 
 .App-logo {
@@ -15,7 +21,7 @@
 
 .App-header {
   background-color: #282c34;
-  min-height: 100vh;
+  min-height: 100vh; /* 최소 높이를 100vh로 설정 */
   display: flex;
   flex-direction: column;
   align-items: center;
