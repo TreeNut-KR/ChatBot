@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.10" // 한 단계 낮은 안정 버전
+    kotlin("jvm") version "1.9.10"
     kotlin("plugin.spring") version "1.9.10"
     id("org.springframework.boot") version "3.3.3"
     id("io.spring.dependency-management") version "1.1.6"
@@ -31,7 +31,8 @@ dependencies {
     // WebFlux 의존성 (Reactive 프로그래밍 및 WebClient)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("io.projectreactor:reactor-core:3.5.0")
+    implementation("io.projectreactor:reactor-core")
+    implementation("io.projectreactor.netty:reactor-netty:1.1.6") // 정확한 버전 명시
 
     // MySQL Connector 버전
     runtimeOnly("mysql:mysql-connector-java:8.0.33")
@@ -47,7 +48,7 @@ dependencies {
 
     // Kotlin 관련 의존성
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10")
 
     // JAXB 관련 의존성 추가 (XML 처리 시 필요할 경우)
     implementation("javax.xml.bind:jaxb-api:2.3.1")
@@ -57,7 +58,7 @@ dependencies {
     implementation("com.google.apis:google-api-services-drive:v3-rev197-1.25.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.25.0")
     implementation("com.google.code.gson:gson:2.11.0")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0")
+    
     // 테스트 관련 의존성
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
