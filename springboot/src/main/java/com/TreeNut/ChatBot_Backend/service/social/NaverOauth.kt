@@ -9,7 +9,7 @@ class NaverOauth : SocialOauth {
     }
 
     override fun requestAccessToken(code: String): String? {
-        return null
+        return "access_token"
     }
 }
 

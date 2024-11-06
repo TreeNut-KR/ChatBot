@@ -12,23 +12,18 @@ interface SocialOauth {
     /**
      * API Server로부터 받은 code를 활용하여 사용자 인증 정보 요청
      * @param code API Server 에서 받아온 code
-     * @return API 서버로 부터 응답받은 Json 형태의 결과를 string으로 반
+     * @return API 서버로 부터 응답받은 Json 형태의 결과를 string으로 반환
      */
     fun requestAccessToken(code: String): String
 
+    /**
+     * 소셜 로그인 타입을 반환
+     */
     fun type(): SocialLoginType? {
-    return if (this is GoogleOauth) {
-        SocialLoginType.GOOGLE
-    } else if (this is NaverOauth) {
-        SocialLoginType.NAVER
-    } else /* if (this is FacebookOauth) */ {
-        // SocialLoginType.FACEBOOK
-        null
-    } else /* if (this is KakaoOauth) */ {
-        // SocialLoginType.KAKAO
-        null
-    } else {
-        null
+        return when (this) {
+            is GoogleOauth -> SocialLoginType.GOOGLE
+            is NaverOauth -> SocialLoginType.NAVER
+            else -> null  // Default case when no type matches
+        }
     }
-}}
-//완
+}

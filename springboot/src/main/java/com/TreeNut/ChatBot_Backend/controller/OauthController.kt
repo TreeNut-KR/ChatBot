@@ -1,5 +1,8 @@
 import org.springframework.web.bind.annotation.*
 import org.slf4j.LoggerFactory
+import com.TreeNut.ChatBot_Backend.service.OauthService
+import com.TreeNut.ChatBot_Backend.helper.*
+import com.TreeNut.ChatBot_Backend.helper.constants.SocialLoginType  // SocialLoginType도 import 추가
 
 @RestController
 @CrossOrigin
