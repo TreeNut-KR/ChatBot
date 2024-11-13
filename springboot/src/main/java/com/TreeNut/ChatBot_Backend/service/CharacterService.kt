@@ -2,6 +2,8 @@ package com.TreeNut.ChatBot_Backend.service
 
 import com.TreeNut.ChatBot_Backend.model.Character
 import com.TreeNut.ChatBot_Backend.repository.CharacterRepository
+import com.TreeNut.ChatBot_Backend.repository.ChatroomRepository
+import com.TreeNut.ChatBot_Backend.model.Chatroom
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.UUID
@@ -21,11 +23,14 @@ import java.nio.charset.StandardCharsets
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.jsonwebtoken.Jwts
 import javax.servlet.http.HttpServletRequest
+import reactor.core.publisher.Mono
 
 @Service
 class CharacterService(
     private val characterRepository: CharacterRepository,
-    private val tokenAuth: TokenAuth
+    private val chatroomRepository: ChatroomRepository,
+    private val tokenAuth: TokenAuth,
+    private val roomService: RoomService 
 ) {
 
     fun addCharacter(character: Character): Character {
@@ -46,6 +51,35 @@ class CharacterService(
         } catch (e: Exception) {
             throw RuntimeException("Error during character addition", e)
         }
+    }
+
+    fun addCharacterWithLlamaIntegration(character: Character): Mono<Character> {
+        // 캐릭터 데이터베이스에 저장
+        val savedCharacter = characterRepository.save(character)
+
+        // Llama 모델에 필요한 데이터 구성
+        val inputDataSet = mapOf(
+            "character_name" to character.characterName,
+            "description" to character.description,
+            "greeting" to character.greeting,
+            "image" to character.image,
+            "character_setting" to character.characterSetting,
+            "access_level" to character.accessLevel
+        ).toString()
+
+        // Llama API 호출 및 Chatroom 저장
+        return roomService.getLlamaResponse(inputDataSet)
+            .flatMap { llamaResponse ->
+                // Chatroom 엔티티 생성
+                val chatroom = Chatroom(
+                    userid = character.userid,
+                    charactersIdx = savedCharacter.idx?.toInt() ?: 0,
+                    mongo_chatroomid = llamaResponse
+                )
+                // Chatroom 저장 후 savedCharacter 반환
+                Mono.fromCallable { chatroomRepository.save(chatroom) }
+                    .thenReturn(savedCharacter)
+            }
     }
 
     fun editCharacter(

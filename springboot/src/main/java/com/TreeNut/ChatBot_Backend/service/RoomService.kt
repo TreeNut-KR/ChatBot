@@ -22,7 +22,7 @@ class RoomService(
     // streamingComplete 변수 초기화
     private val streamingComplete = AtomicBoolean(true)
 
-    private fun getLlamaResponse(inputDataSet: String): Mono<String> {
+    fun getLlamaResponse(inputDataSet: String): Mono<String> {
         return Mono.just(streamingComplete.get()).flatMap {
             streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
 

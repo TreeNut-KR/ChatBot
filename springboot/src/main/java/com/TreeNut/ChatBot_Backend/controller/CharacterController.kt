@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus
 import io.jsonwebtoken.Jwts
 import org.springframework.beans.factory.annotation.Value
 import java.time.LocalDateTime
+import reactor.core.publisher.Mono
 
 import java.io.File
 
@@ -31,29 +32,29 @@ class CharacterController(
     fun addCharacter(
         @RequestBody body: Map<String, Any>,
         @RequestHeader("Authorization") authorization: String?
-    ): ResponseEntity<Map<String, Any>> {
+    ): Mono<ResponseEntity<Map<String, Any>>> {
         // 토큰 확인
         val token = authorization?.substringAfter("Bearer ")
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
-    
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음" as Any)))
+
         // JWT에서 사용자 ID 추출
         val userid = tokenAuth.authGuard(token)
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
-    
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다." as Any)))
+
         // 요청 본문에서 캐릭터 속성 추출
         val characterName = body["character_name"] as? String
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character name is required"))
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character name is required" as Any)))
         val description = body["description"] as? String
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Description is required"))
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Description is required" as Any)))
         val greeting = body["greeting"] as? String
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Greeting is required"))
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Greeting is required" as Any)))
         val image = body["image"] as? String
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image is required"))
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image is required" as Any)))
         val characterSetting = body["character_setting"] as? String
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character setting is required"))
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character setting is required" as Any)))
         val accessLevel = body["accessLevel"] as? Boolean
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required"))
-    
+            ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required" as Any)))
+
         // 캐릭터 객체 생성
         val newCharacter = Character(
             uuid = UUID.randomUUID().toString().replace("-", ""),
@@ -67,13 +68,14 @@ class CharacterController(
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )
-    
-        return try {
-            val registeredCharacter = characterService.addCharacter(newCharacter)
-            ResponseEntity.ok(mapOf("status" to 200, "name" to registeredCharacter.characterName))
-        } catch (e: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("status" to 500, "message" to "Error during character addition"))
-        }
+
+        return characterService.addCharacterWithLlamaIntegration(newCharacter)
+            .map { savedCharacter ->
+                ResponseEntity.ok(mapOf("status" to 200 as Any, "name" to savedCharacter.characterName as Any))
+            }
+            .onErrorResume { e ->
+                Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("status" to 500 as Any, "message" to "Error during character addition: ${e.message}" as Any)))
+            }
     }
 
     @PostMapping("/addimage")
