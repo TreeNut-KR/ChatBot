@@ -69,7 +69,7 @@ class CharacterController(
             updatedAt = LocalDateTime.now()
         )
 
-        return characterService.addCharacterWithLlamaIntegration(newCharacter)
+        return characterService.addCharacterWithBllossomIntegration(newCharacter)
             .map { savedCharacter ->
                 ResponseEntity.ok(mapOf("status" to 200 as Any, "name" to savedCharacter.characterName as Any))
             }

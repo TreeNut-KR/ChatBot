@@ -48,6 +48,32 @@ class RoomService(
         }
     }
 
+        fun getBllossomResponse(inputDataSet: String): Mono<String> {
+        return Mono.just(streamingComplete.get()).flatMap {
+            streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
+
+            val bllossomRequestBody = mapOf(
+                "input_data" to inputDataSet
+            )
+
+            webClient.build()
+                .post()
+                .uri("http://192.168.219.100:8000/Llama_stream")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(bllossomRequestBody)
+                .retrieve()
+                .bodyToFlux(String::class.java)
+                .collectList() // 전체 스트리밍 데이터를 모아서 처리
+                .map { it.joinToString("") } // 각 조각을 이어서 최종 응답 생성
+                .doOnTerminate {
+                    streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
+                }
+                .map { response ->
+                    response.ifEmpty { "Bllossom 응답 실패" }
+                }
+        }
+    }
+
 /*
 Office 라우터 관련 service ->
 */
