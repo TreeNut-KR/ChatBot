@@ -23,19 +23,19 @@ export default function SideBar() {
         </div>
         <div className="sidebarListItem">
           <div className="SidebarText" onClick={handleHomeClick}>
-            Home
+            홈
           </div>    
         </div>
 
         <div className="sidebarListItem">
           <div className="SidebarText">
-            Character Chat
+            캐릭터 채팅
           </div>
         </div>
 
         <div className="sidebarListItem">
           <div className="SidebarText" onClick={handleHomeChatClick}>
-            Character Create
+            캐릭터 생성
           </div>
         </div>
 

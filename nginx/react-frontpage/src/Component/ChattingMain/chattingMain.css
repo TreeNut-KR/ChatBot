@@ -1,4 +1,4 @@
-.Text {
+.TextMain {
     width: 55%;
     height: 10vh; /* 뷰포트 높이의 50%로 설정 */
     max-height: 50vh; /* 최대 높이를 설정하여 공간이 늘어나지 않도록 함 */

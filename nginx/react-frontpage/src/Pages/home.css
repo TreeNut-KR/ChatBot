@@ -7,7 +7,7 @@
     /*background-image: url('./logo_main.png'); /* 이미지 경로를 적절히 수정하세요 */
     /*background-size: cover; /* 배경 이미지가 전체 영역을 덮도록 설정 */
     background-position: center; /* 배경 이미지의 위치를 중앙으로 설정 */
-    height: 100vh; /* 전체 화면 높이로 설정 */
+    height: 100VH; /* 전체 화면 높이로 설정 */
     width: 90vw; /* 전체 너비로 설정 */
     margin-left: 0vw;
     overflow-x: hidden;

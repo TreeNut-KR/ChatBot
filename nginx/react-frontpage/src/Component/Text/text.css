@@ -1,10 +1,11 @@
 .Text {
-    width: 95%;
-    height: 80vh; /* 뷰포트 높이의 50%로 설정 */
-    /*background-color: rgba(84, 84, 84, 0.7);*/
+    width: 55%;
+    height: 50vh; /* 뷰포트 높이의 50%로 설정 */
+    max-height: 50vh; /* 최대 높이를 설정하여 공간이 늘어나지 않도록 함 */
+    background-color: rgba(84, 84, 84, 0.5);
     position: relative;
-    margin-left: 1.5%;
-    margin-top: 2%;
+    margin-top: 5vh;
+    margin-left: 20%;
     display: flex;
     flex-direction: column;
     align-items: center;
