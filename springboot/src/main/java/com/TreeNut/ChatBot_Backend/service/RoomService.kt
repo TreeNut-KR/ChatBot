@@ -57,8 +57,9 @@ class RoomService(
             )
 
             webClient.build()
+            
                 .post()
-                .uri("http://192.168.219.100:8000/Llama_stream")
+                .uri("http://192.168.219.100:8000/Bllossom_stream")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(bllossomRequestBody)
                 .retrieve()
@@ -69,6 +70,8 @@ class RoomService(
                     streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
                 }
                 .map { response ->
+                    println("Bllossom Response Length: ${response.length}")
+                    val truncatedResponse = response.take(512)
                     response.ifEmpty { "Bllossom 응답 실패" }
                 }
         }

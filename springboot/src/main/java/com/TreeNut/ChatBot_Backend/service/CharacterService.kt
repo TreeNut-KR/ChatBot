@@ -53,7 +53,7 @@ class CharacterService(
         }
     }
 
-    fun addCharacterWithBllossomIntegration(character: Character): Mono<Character> {
+    fun BllossomIntegration(character: Character): Mono<Character> {
         // 캐릭터 데이터베이스에 저장
         val savedCharacter = characterRepository.save(character)
 
@@ -70,11 +70,11 @@ class CharacterService(
         // Llama API 호출 및 Chatroom 저장
         return roomService.getBllossomResponse(inputDataSet)
             .flatMap { bllossomResponse ->
+                val truncatedResponse = bllossomResponse.take(255)
                 // Chatroom 엔티티 생성
                 val chatroom = Chatroom(
                     userid = character.userid,
                     charactersIdx = savedCharacter.idx?.toInt() ?: 0,
-                    mongo_chatroomid = bllossomResponse
                 )
                 // Chatroom 저장 후 savedCharacter 반환
                 Mono.fromCallable { chatroomRepository.save(chatroom) }

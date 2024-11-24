@@ -43,7 +43,7 @@ CREATE TABLE chatroom (
     idx INT AUTO_INCREMENT,
     userid VARCHAR(100),
     characters_idx INT,
-    mongo_chatroomid VARCHAR(100),
+    mongo_chatroomid VARCHAR(512),
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
     
