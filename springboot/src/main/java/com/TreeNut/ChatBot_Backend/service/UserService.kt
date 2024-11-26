@@ -20,10 +20,30 @@ class UserService(
     @Transactional
     fun register(user: User): User {
         return try {
-            val encodedUser = user.copy(password = passwordEncoder.encode(user.password))
+            val encodedUser = user.copy(
+                password = passwordEncoder.encode(user.password),
+                loginType = "local" // 기본 회원가입은 'local'로 구분
+            )
             userRepository.save(encodedUser)
         } catch (e: Exception) {
             throw RuntimeException("Error during user registration", e)
+        }
+    }
+
+    @Transactional
+    fun loginWithKakao(kakaoId: String, username: String, email: String): User {
+        val user = userRepository.findByUserid("KAKAO_$kakaoId")
+        return if (user != null) {
+            user // 이미 존재하면 그대로 반환
+        } else {
+            val newUser = User(
+                userid = "KAKAO_$kakaoId",
+                loginType = "KAKAO",
+                username = username,
+                email = email,
+                password = null // 소셜 로그인은 비밀번호 없음
+            )
+            userRepository.save(newUser) // 신규 사용자 저장
         }
     }
 
