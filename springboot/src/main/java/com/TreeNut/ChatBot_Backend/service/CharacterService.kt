@@ -64,17 +64,26 @@ class CharacterService(
             "greeting" to character.greeting,
             "image" to character.image,
             "character_setting" to character.characterSetting,
-            "access_level" to character.accessLevel
-        ).toString()
+            "access_level" to character.accessLevel,
+            "tone" to character.tone,
+            "energy_level" to character.energyLevel,
+            "politeness" to character.politeness,
+            "humor" to character.humor,
+            "assertiveness" to character.assertiveness
+        )
+
+        // JSON 변환 (Jackson ObjectMapper 활용)
+        val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
+        val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
         // Llama API 호출 및 Chatroom 저장
-        return roomService.getBllossomResponse(inputDataSet)
+        return roomService.getBllossomResponse(inputDataSetJson)
             .flatMap { bllossomResponse ->
-                val truncatedResponse = bllossomResponse.take(255)
+                val truncatedResponse = bllossomResponse.take(255) // 필요 시 활용 가능
                 // Chatroom 엔티티 생성
                 val chatroom = Chatroom(
                     userid = character.userid,
-                    charactersIdx = savedCharacter.idx?.toInt() ?: 0,
+                    charactersIdx = savedCharacter.idx?.toInt() ?: 0
                 )
                 // Chatroom 저장 후 savedCharacter 반환
                 Mono.fromCallable { chatroomRepository.save(chatroom) }
@@ -82,31 +91,37 @@ class CharacterService(
             }
     }
 
-    fun editCharacter(
-        characterName: String,
-        updatedCharacter: Character,
-        userToken: String
-    ): Character {
+    fun editCharacter(characterName: String, updatedCharacter: Character, userToken: String): Character {
+        // 기존 캐릭터 조회
         val character = characterRepository.findByCharacterName(characterName)
             .firstOrNull() ?: throw RuntimeException("Character not found")
 
-        val token = userToken
-        val tokenUserId = tokenAuth.authGuard(token)
+        // 사용자 토큰에서 userid 추출
+        val tokenUserId = tokenAuth.authGuard(userToken)
+            ?: throw RuntimeException("유효하지 않은 토큰입니다.")
 
         // 사용자 ID 검증
         if (tokenUserId != character.userid) {
             throw RuntimeException("User is not authorized to edit this character")
         }
 
+        // 기존 캐릭터 데이터를 새로운 데이터로 복사
         val editedCharacterEntity = character.copy(
             characterName = updatedCharacter.characterName ?: character.characterName,
             description = updatedCharacter.description ?: character.description,
             greeting = updatedCharacter.greeting ?: character.greeting,
             image = updatedCharacter.image ?: character.image,
             characterSetting = updatedCharacter.characterSetting ?: character.characterSetting,
-            accessLevel = updatedCharacter.accessLevel ?: character.accessLevel
+            tone = updatedCharacter.tone ?: character.tone,
+            energyLevel = updatedCharacter.energyLevel ?: character.energyLevel,
+            politeness = updatedCharacter.politeness ?: character.politeness,
+            humor = updatedCharacter.humor ?: character.humor,
+            assertiveness = updatedCharacter.assertiveness ?: character.assertiveness,
+            accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
+            updatedAt = LocalDateTime.now() // 업데이트 시간 갱신
         )
 
+        // 수정된 캐릭터 저장
         return characterRepository.save(editedCharacterEntity)
     }
 

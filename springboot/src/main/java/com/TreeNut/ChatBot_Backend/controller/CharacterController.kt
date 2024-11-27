@@ -55,6 +55,12 @@ class CharacterController(
         val accessLevel = body["accessLevel"] as? Boolean
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required" as Any)))
 
+        val tone = body["tone"] as? String
+        val energyLevel = (body["energy_level"] as? Number)?.toInt()
+        val politeness = (body["politeness"] as? Number)?.toInt()
+        val humor = (body["humor"] as? Number)?.toInt()
+        val assertiveness = (body["assertiveness"] as? Number)?.toInt()
+
         // 캐릭터 객체 생성
         val newCharacter = Character(
             uuid = UUID.randomUUID().toString().replace("-", ""),
@@ -64,6 +70,11 @@ class CharacterController(
             greeting = greeting,
             image = image,
             characterSetting = characterSetting,
+            tone = tone,
+            energyLevel = energyLevel,
+            politeness = politeness,
+            humor = humor,
+            assertiveness = assertiveness,
             accessLevel = accessLevel,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
@@ -118,23 +129,27 @@ class CharacterController(
             // 현재 캐릭터 찾기
             val character = characterService.getCharacterByName(characterName).firstOrNull()
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
-            // 토큰 확인
-            val token = userToken
-                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
+
             // JWT에서 사용자 ID 추출
-            val tokenUserId = tokenAuth.authGuard(token)
+            val tokenUserId = tokenAuth.authGuard(userToken)
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
             // 캐릭터를 업데이트하기 위한 객체 생성
             val editedCharacterEntity = character.copy(
-                characterName       = body["character_name"] as? String     ?: character.characterName,
-                description         = body["description"] as? String        ?: character.description,
-                greeting            = body["greeting"] as? String           ?: character.greeting,
-                image               = body["image"] as? String              ?: character.image,
-                characterSetting    = body["character_setting"] as? String  ?: character.characterSetting,
-                accessLevel         = body["accessLevel"] as? Boolean       ?: character.accessLevel,
-                userid              = tokenUserId // 직접 가져온 userid로 설정
+                characterName = body["character_name"] as? String ?: character.characterName,
+                description = body["description"] as? String ?: character.description,
+                greeting = body["greeting"] as? String ?: character.greeting,
+                image = body["image"] as? String ?: character.image,
+                characterSetting = body["character_setting"] as? String ?: character.characterSetting,
+                tone = body["tone"] as? String ?: character.tone,
+                energyLevel = (body["energy_level"] as? Number)?.toInt() ?: character.energyLevel,
+                politeness = (body["politeness"] as? Number)?.toInt() ?: character.politeness,
+                humor = (body["humor"] as? Number)?.toInt() ?: character.humor,
+                assertiveness = (body["assertiveness"] as? Number)?.toInt() ?: character.assertiveness,
+                accessLevel = body["accessLevel"] as? Boolean ?: character.accessLevel,
+                userid = tokenUserId // 직접 가져온 userid로 설정
             )
+
             // 업데이트 수행
             characterService.editCharacter(characterName, editedCharacterEntity, userToken)
             ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
