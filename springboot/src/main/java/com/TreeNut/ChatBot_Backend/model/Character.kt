@@ -44,8 +44,8 @@ data class Character(
     @Column(name = "greeting", columnDefinition = "TEXT")
     val greeting: String? = null,
 
-    @Column(name = "access_level")
-    val accessLevel: Boolean? = null,
+    @Column(name = "accessLevel")
+    val accessLevel: Boolean? = true, // 공개여부 미선택 시 공개
 
     @Column(name = "image")
     val image: String? = null,
