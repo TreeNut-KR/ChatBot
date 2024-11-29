@@ -7,6 +7,10 @@ import com.TreeNut.ChatBot_Backend.model.Chatroom
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.UUID
+import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
+import reactor.core.scheduler.Schedulers
+
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
@@ -54,10 +58,8 @@ class CharacterService(
     }
 
     fun BllossomIntegration(character: Character): Mono<Character> {
-        // 캐릭터 데이터베이스에 저장
         val savedCharacter = characterRepository.save(character)
 
-        // Llama 모델에 필요한 데이터 구성
         val inputDataSet = mapOf(
             "character_name" to character.characterName,
             "description" to character.description,
@@ -72,40 +74,52 @@ class CharacterService(
             "assertiveness" to character.assertiveness
         )
 
-        // JSON 변환 (Jackson ObjectMapper 활용)
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
         val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
-        // Llama API 호출 및 Chatroom 저장
         return roomService.getBllossomResponse(inputDataSetJson)
             .flatMap { bllossomResponse ->
-                val truncatedResponse = bllossomResponse.take(255) // 필요 시 활용 가능
-                // Chatroom 엔티티 생성
+                val truncatedResponse = bllossomResponse.take(255)
+
                 val chatroom = Chatroom(
                     userid = character.userid,
-                    charactersIdx = savedCharacter.idx?.toInt() ?: 0
+                    charactersIdx = savedCharacter.idx?.toInt() ?: 0,
+                    mongo_chatroomid = truncatedResponse
                 )
-                // Chatroom 저장 후 savedCharacter 반환
+
                 Mono.fromCallable { chatroomRepository.save(chatroom) }
+                    .subscribeOn(Schedulers.boundedElastic())
                     .thenReturn(savedCharacter)
             }
     }
 
-    fun editCharacter(characterName: String, updatedCharacter: Character, userToken: String): Character {
-        // 기존 캐릭터 조회
+    fun editCharacter(
+        characterName: String,
+        updatedCharacter: Character,
+        userToken: String
+    ): Mono<ResponseEntity<Map<String, Any>>> {
         val character = characterRepository.findByCharacterName(characterName)
-            .firstOrNull() ?: throw RuntimeException("Character not found")
+            .firstOrNull() ?: return Mono.just(
+            ResponseEntity.badRequest().body(
+                mapOf<String, Any>("status" to 404, "message" to "Character not found")
+            )
+        )
 
-        // 사용자 토큰에서 userid 추출
         val tokenUserId = tokenAuth.authGuard(userToken)
-            ?: throw RuntimeException("유효하지 않은 토큰입니다.")
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf<String, Any>("status" to 401, "message" to "유효한 토큰이 필요합니다.")
+                )
+            )
 
-        // 사용자 ID 검증
         if (tokenUserId != character.userid) {
-            throw RuntimeException("User is not authorized to edit this character")
+            return Mono.just(
+                ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                    mapOf<String, Any>("status" to 403, "message" to "User is not authorized to edit this character")
+                )
+            )
         }
 
-        // 기존 캐릭터 데이터를 새로운 데이터로 복사
         val editedCharacterEntity = character.copy(
             characterName = updatedCharacter.characterName ?: character.characterName,
             description = updatedCharacter.description ?: character.description,
@@ -118,11 +132,61 @@ class CharacterService(
             humor = updatedCharacter.humor ?: character.humor,
             assertiveness = updatedCharacter.assertiveness ?: character.assertiveness,
             accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
-            updatedAt = LocalDateTime.now() // 업데이트 시간 갱신
+            updatedAt = LocalDateTime.now()
         )
 
-        // 수정된 캐릭터 저장
-        return characterRepository.save(editedCharacterEntity)
+        val savedCharacter = characterRepository.save(editedCharacterEntity)
+
+        val inputDataSet = mapOf(
+            "character_name" to savedCharacter.characterName,
+            "description" to savedCharacter.description,
+            "greeting" to savedCharacter.greeting,
+            "image" to savedCharacter.image,
+            "character_setting" to savedCharacter.characterSetting,
+            "access_level" to savedCharacter.accessLevel,
+            "tone" to savedCharacter.tone,
+            "energy_level" to savedCharacter.energyLevel,
+            "politeness" to savedCharacter.politeness,
+            "humor" to savedCharacter.humor,
+            "assertiveness" to savedCharacter.assertiveness
+        )
+
+        val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
+        val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
+
+        return roomService.getBllossomResponse(inputDataSetJson)
+            .flatMap { bllossomResponse ->
+                val chatroom = chatroomRepository.findByUserid(savedCharacter.userid)
+                    ?: Chatroom(
+                        userid = savedCharacter.userid,
+                        charactersIdx = savedCharacter.idx?.toInt() ?: 0
+                    )
+
+                val updatedChatroom = chatroom.copy(
+                    mongo_chatroomid = bllossomResponse.take(255)
+                )
+
+                Mono.fromCallable { chatroomRepository.save(updatedChatroom) }
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .thenReturn(
+                        ResponseEntity.ok(
+                            mapOf<String, Any>(
+                                "status" to 200,
+                                "message" to "Character updated and integrated with Bllossom successfully"
+                            )
+                        )
+                    )
+            }
+            .onErrorResume { e ->
+                Mono.just(
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                        mapOf<String, Any>(
+                            "status" to 500,
+                            "message" to "Error during character update: ${e.message}"
+                        )
+                    )
+                )
+            }
     }
 
     fun getCharacterById(request: HttpServletRequest, characterId: Long): Character? {

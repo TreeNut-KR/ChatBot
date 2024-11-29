@@ -44,7 +44,7 @@ data class Character(
     @Column(name = "greeting", columnDefinition = "TEXT")
     val greeting: String? = null,
 
-    @Column(name = "accesslevel")
+    @Column(name = "access_level")
     val accessLevel: Boolean? = null,
 
     @Column(name = "image")

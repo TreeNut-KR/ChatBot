@@ -52,7 +52,7 @@ class CharacterController(
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image is required" as Any)))
         val characterSetting = body["character_setting"] as? String
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Character setting is required" as Any)))
-        val accessLevel = body["accessLevel"] as? Boolean
+        val accessLevel = body["access_level"] as? Boolean
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required" as Any)))
 
         val tone = body["tone"] as? String
@@ -146,7 +146,7 @@ class CharacterController(
                 politeness = (body["politeness"] as? Number)?.toInt() ?: character.politeness,
                 humor = (body["humor"] as? Number)?.toInt() ?: character.humor,
                 assertiveness = (body["assertiveness"] as? Number)?.toInt() ?: character.assertiveness,
-                accessLevel = body["accessLevel"] as? Boolean ?: character.accessLevel,
+                accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
                 userid = tokenUserId // 직접 가져온 userid로 설정
             )
 
