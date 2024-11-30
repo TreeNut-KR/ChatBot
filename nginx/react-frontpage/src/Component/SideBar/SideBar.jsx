@@ -6,7 +6,11 @@ export default function SideBar() {
   const navigate = useNavigate(); // useNavigate 훅을 사용하여 navigate 함수 생성
 
   const handleLoginClick = () => {
-    navigate('/userProfile'); // 로그인 페이지로 이동
+    navigate('/login'); // 로그인 페이지로 이동
+  };
+
+  const handleResisterClick = () => {
+    navigate('/resister'); // 로그인 페이지로 이동
   };
 
   const handleHomeChatClick = () => {
@@ -40,10 +44,17 @@ export default function SideBar() {
         </div>
 
         <div className="sidebarListItem">
-          <button className="SidebarButton" onClick={handleLoginClick}>
-            Login
-          </button>
+          <div className="SidebarText" onClick={handleLoginClick}>
+            로그인
+          </div>
         </div>
+
+        <div className="sidebarListItem">
+          <div className="SidebarText" onClick={handleResisterClick}>
+            회원가입
+          </div>
+        </div>
+
       </div>
     </div>
   )

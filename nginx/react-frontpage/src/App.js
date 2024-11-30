@@ -7,6 +7,7 @@ import './App.css';
 import Topbar from './Component/TopBar/TopBar';
 import Login from './Component/Login';
 import UserProfile from './Pages/UserProfile';
+import Resister from './Component/Resister';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
               <Route path="/homechat" element={<HomeChat />} />
               <Route path="/login" element={<Login />} /> {/* 로그인 페이지 라우트 추가 */}
               <Route path="/userProfile" element={<UserProfile />} />
+              <Route path="/resister" element={<Resister />} />
               {/* 다른 라우트 추가 가능 */}
             </Routes>
           </div>
