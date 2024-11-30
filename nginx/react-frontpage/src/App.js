@@ -22,7 +22,7 @@ function App() {
             console.log("사용자 정보", res);
             
             // 백엔드로 카카오 사용자 정보 전송
-            fetch("http://localhost:8080/server/user/kakao-login", {
+            fetch("http://localhost:8080/server/user/social/kakao", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

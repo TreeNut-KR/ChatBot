@@ -62,6 +62,8 @@ dependencies {
     implementation("com.google.auth:google-auth-library-oauth2-http:1.25.0")
     implementation("com.google.code.gson:gson:2.11.0")
     
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.2")
+    
     // 테스트 관련 의존성
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

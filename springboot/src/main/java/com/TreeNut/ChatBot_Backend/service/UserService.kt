@@ -34,7 +34,7 @@ class UserService(
     fun loginWithKakao(kakaoId: String, username: String, email: String): User {
         val user = userRepository.findByUserid("KAKAO_$kakaoId")
         return if (user != null) {
-            user // 이미 존재하면 그대로 반환
+            user // 기존 사용자 반환
         } else {
             val newUser = User(
                 userid = "KAKAO_$kakaoId",
