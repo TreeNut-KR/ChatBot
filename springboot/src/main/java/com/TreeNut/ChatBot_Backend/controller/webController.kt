@@ -15,20 +15,20 @@ import org.springframework.web.client.RestTemplate
 @Controller
 class WebController {
 
-    // @Value("\${spring.security.oauth2.client.registration.naver.client-id}")
-    // lateinit var naverClientId: String
+    @Value("\${spring.security.oauth2.client.registration.naver.client-id}")
+    lateinit var naverClientId: String
 
-    // @Value("\${spring.security.oauth2.client.registration.naver.client-secret}")
-    // lateinit var naverClientSecret: String
+    @Value("\${spring.security.oauth2.client.registration.naver.client-secret}")
+    lateinit var naverClientSecret: String
 
-    // @Value("\${spring.security.oauth2.client.registration.google.client-id}")
-    // lateinit var googleClientId: String
+    @Value("\${spring.security.oauth2.client.registration.google.client-id}")
+    lateinit var googleClientId: String
 
-    // @Value("\${spring.security.oauth2.client.registration.google.client-secret}")
-    // lateinit var googleClientSecret: String
+    @Value("\${spring.security.oauth2.client.registration.google.client-secret}")
+    lateinit var googleClientSecret: String
 
-    // @Value("\${spring.security.oauth2.client.registration.google.redirect-uri}")
-    // lateinit var googleRedirectUri: String
+    @Value("\${spring.security.oauth2.client.registration.google.redirect-uri}")
+    lateinit var googleRedirectUri: String
 
     @GetMapping("/")
     fun home(): String = "index"
@@ -45,54 +45,54 @@ class WebController {
         return "callBack"
     }
 
-    // @GetMapping("/login/oauth2/code/google/callback")
-    // fun googleCallback(@RequestParam code: String, model: Model): String {
-    //     val tokenUri = "https://oauth2.googleapis.com/token"
-    //     val userInfoUri = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
+    @GetMapping("/login/oauth2/code/google/callback")
+    fun googleCallback(@RequestParam code: String, model: Model): String {
+        val tokenUri = "https://oauth2.googleapis.com/token"
+        val userInfoUri = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
 
-    //     // 1. 액세스 토큰 요청
-    //     val tokenRequestBody = mapOf(
-    //         "code" to code,
-    //         "client_id" to googleClientId,
-    //         "client_secret" to googleClientSecret,
-    //         "redirect_uri" to googleRedirectUri,
-    //         "grant_type" to "authorization_code"
-    //     )
+        // 1. 액세스 토큰 요청
+        val tokenRequestBody = mapOf(
+            "code" to code,
+            "client_id" to googleClientId,
+            "client_secret" to googleClientSecret,
+            "redirect_uri" to googleRedirectUri,
+            "grant_type" to "authorization_code"
+        )
 
-    //     val headers = HttpHeaders().apply {
-    //         contentType = org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED
-    //     }
+        val headers = HttpHeaders().apply {
+            contentType = org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED
+        }
 
-    //     val restTemplate = RestTemplate()
-    //     val tokenResponse: ResponseEntity<Map<String, Any>> = restTemplate.exchange(
-    //         tokenUri,
-    //         HttpMethod.POST,
-    //         HttpEntity(tokenRequestBody, headers),
-    //         object : ParameterizedTypeReference<Map<String, Any>>() {}
-    //     )
+        val restTemplate = RestTemplate()
+        val tokenResponse: ResponseEntity<Map<String, Any>> = restTemplate.exchange(
+            tokenUri,
+            HttpMethod.POST,
+            HttpEntity(tokenRequestBody, headers),
+            object : ParameterizedTypeReference<Map<String, Any>>() {}
+        )
 
-    //     val accessToken = tokenResponse.body?.get("access_token") as? String
-    //         ?: throw RuntimeException("Access token not found in response")
+        val accessToken = tokenResponse.body?.get("access_token") as? String
+            ?: throw RuntimeException("Access token not found in response")
 
-    //     // 2. 사용자 정보 요청
-    //     val userInfoHeaders = HttpHeaders().apply {
-    //         set("Authorization", "Bearer $accessToken")
-    //     }
+        // 2. 사용자 정보 요청
+        val userInfoHeaders = HttpHeaders().apply {
+            set("Authorization", "Bearer $accessToken")
+        }
 
-    //     val userInfoResponse: ResponseEntity<Map<String, Any>> = restTemplate.exchange(
-    //         userInfoUri,
-    //         HttpMethod.GET,
-    //         HttpEntity<String>(userInfoHeaders),
-    //         object : ParameterizedTypeReference<Map<String, Any>>() {}
-    //     )
+        val userInfoResponse: ResponseEntity<Map<String, Any>> = restTemplate.exchange(
+            userInfoUri,
+            HttpMethod.GET,
+            HttpEntity<String>(userInfoHeaders),
+            object : ParameterizedTypeReference<Map<String, Any>>() {}
+        )
 
-    //     val userInfo = userInfoResponse.body ?: throw RuntimeException("Failed to fetch user info")
+        val userInfo = userInfoResponse.body ?: throw RuntimeException("Failed to fetch user info")
 
-    //     // 3. 사용자 정보를 모델에 추가
-    //     model.addAttribute("name", userInfo["name"] ?: "Unknown")
-    //     model.addAttribute("email", userInfo["email"] ?: "Unknown")
-    //     model.addAttribute("picture", userInfo["picture"] ?: "")
+        // 3. 사용자 정보를 모델에 추가
+        model.addAttribute("name", userInfo["name"] ?: "Unknown")
+        model.addAttribute("email", userInfo["email"] ?: "Unknown")
+        model.addAttribute("picture", userInfo["picture"] ?: "")
 
-    //     return "userInfo"
-    // }
+        return "userInfo"
+    }
 }
