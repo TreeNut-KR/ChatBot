@@ -217,7 +217,7 @@ class CharacterService(
             .filter { it.accessLevel == true }
             .map {
                 mapOf(
-                "characterName" to (it.characterName ?: ""),
+                "character_name" to (it.characterName ?: ""),
                 "userid" to (it.userid ?: ""),
                 "description" to (it.description ?: ""),
                 "image" to (it.image ?: "")
@@ -231,7 +231,7 @@ class CharacterService(
             .filter {it.userid == tokenUserId}
             .map {
                 mapOf(
-                "characterName" to (it.characterName ?: ""),
+                "character_name" to (it.characterName ?: ""),
                 "userid" to (it.userid ?: ""),
                 "description" to (it.description ?: ""),
                 "image" to (it.image ?: "")
@@ -245,7 +245,7 @@ class CharacterService(
         .filter { it.accessLevel == true } // accessLevel이 true인 캐릭터만 선택
         .map {
             mapOf(
-                "characterName" to (it.characterName ?: ""),
+                "character_name" to (it.characterName ?: ""),
                 "userid" to (it.userid ?: ""),
                 "description" to (it.description ?: ""),
                 "image" to (it.image ?: "")

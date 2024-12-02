@@ -94,7 +94,7 @@ class CharacterController(
     }
     }
 
-    @PostMapping("/addimage")
+    @PostMapping("/add_image")
     fun addCharacterImage(
         @RequestParam("file") file: MultipartFile,
         @RequestHeader("Authorization") authorization : String?
@@ -126,13 +126,13 @@ class CharacterController(
 
     @PutMapping("/edit")
     fun editCharacter(
-        @RequestParam characterName: String,
+        @RequestParam character_name: String,
         @RequestBody body: Map<String, Any>,
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
         return try {
             // 현재 캐릭터 찾기
-            val character = characterService.getCharacterByName(characterName).firstOrNull()
+            val character = characterService.getCharacterByName(character_name).firstOrNull()
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
 
             // JWT에서 사용자 ID 추출
@@ -156,7 +156,7 @@ class CharacterController(
             )
 
             // 업데이트 수행
-            characterService.editCharacter(characterName, editedCharacterEntity, userToken)
+            characterService.editCharacter(character_name, editedCharacterEntity, userToken)
             ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
         } catch (e: Exception) {
             e.printStackTrace()
@@ -165,12 +165,12 @@ class CharacterController(
     }
     @DeleteMapping("/delete")
     fun deleteCharacter(
-        @RequestParam characterName: String,
+        @RequestParam character_name: String,
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
         return try {
             // 현재 캐릭터 찾기
-            val character = characterService.getCharacterByName(characterName).firstOrNull()
+            val character = characterService.getCharacterByName(character_name).firstOrNull()
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
 
             // 토큰 확인
@@ -187,7 +187,7 @@ class CharacterController(
             }
 
             // 캐릭터 삭제 수행
-            characterService.deleteCharacter(characterName)
+            characterService.deleteCharacter(character_name)
             ResponseEntity.ok(mapOf("status" to 200, "message" to "Character deleted successfully"))
         } catch (e: Exception) {
             e.printStackTrace()
@@ -195,7 +195,7 @@ class CharacterController(
         }
     }
 
-    @GetMapping("/OpenCharacterList")
+    @GetMapping("/open_character_list")
     fun getOpenCharacterList(
     ): ResponseEntity<List<Map<String, Any>>> {
         return try {
@@ -208,7 +208,7 @@ class CharacterController(
         }
     }
 
-    @GetMapping("/MyCharacterList")
+    @GetMapping("/my_character_list")
     fun getOpenCharacterList(
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
@@ -231,7 +231,7 @@ class CharacterController(
     }
     
     @GetMapping("/search")
-    fun searchCharacter(@RequestParam("characterName") characterName: String): ResponseEntity<List<Map<String, Any>>> {
+    fun searchCharacter(@RequestParam("character_name") characterName: String): ResponseEntity<List<Map<String, Any>>> {
         val characters = characterService.searchCharacterByName(characterName)
         return if (characters.isNotEmpty()) {
             ResponseEntity.ok(characters)
