@@ -252,6 +252,25 @@ class CharacterService(
             )
         }
     }
+
+    fun add_like_count(like_character: Character): String {
+        // 캐릭터 이름을 추출
+        val characterName = like_character.characterName
+
+        // 캐릭터를 이름으로 검색 (List<Character> 반환)
+        val characters = characterRepository.findByCharacterName(characterName)
+
+        // 주어진 이름과 일치하는 첫 번째 캐릭터 찾기
+        val character = characters.firstOrNull() ?: return "Character not found"
+
+        // like_count 증가
+        character.like_count = (character.like_count ?: 0) + 1
+
+        // 변경된 캐릭터 정보를 DB에 저장
+        characterRepository.save(character)
+
+        return "Like count updated successfully for character: $characterName"
+    }
 }
 //이미지 업로드 서비스를 위한 클래스
 @Service

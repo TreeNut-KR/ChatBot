@@ -50,6 +50,9 @@ data class Character(
     @Column(name = "image")
     val image: String? = null,
 
+    @Column(name = "like_count")
+    var like_count: Int = 0,
+
     @Column(name = "created_at", updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
