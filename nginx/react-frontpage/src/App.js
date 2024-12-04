@@ -5,9 +5,9 @@ import HomeChat from './Pages/HomeChat';
 import SideBar from './Component/SideBar/SideBar';
 import './App.css';
 import Topbar from './Component/TopBar/TopBar';
-import Login from './Component/Login';
 import UserProfile from './Pages/UserProfile';
-import Resister from './Component/Resister';
+import Resister from './Component/Resister/Resister';
+import Login from './Component/Login/Login';
 
 function App() {
   return (

@@ -34,58 +34,58 @@ const Resister = () => {
   };
 
   return (
-    <div className="login-container">
+    <div className="resister-container">
       <h2>회원가입</h2>
-      <form onSubmit={handleSubmit} className="login-form">
+      <form onSubmit={handleSubmit} className="resister-form">
         <div className="inputGroup">
-          <label htmlFor="username">이름:</label>
           <input
             type="text"
             id="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            className="login-input"
+            className="resister-input"
+            placeholder="이름"
           />
         </div>
 
         <div className="inputGroup">
-          <label htmlFor="Id">아이디:</label>
           <input
             type="text"
             id="Id"
             value={Id}
             onChange={(e) => setId(e.target.value)}
             required
-            className="login-input"
+            className="resister-input"
+            placeholder="아이디"
           />
         </div>
 
         <div className="inputGroup">
-          <label htmlFor="password">비밀번호:</label>
           <input
             type="password"
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="login-input"
+            className="resister-input"
+            placeholder="비밀번호"
           />
         </div>
 
         <div className="inputGroup">
-          <label htmlFor="email">이메일:</label>
           <input
             type="email"
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="login-input"
+            className="resister-input"
+            placeholder="이메일"
           />
         </div>
 
-        <button type="submit" className="login-button">회원가입</button>
+        <button type="submit" className="resister-button">회원가입</button>
       </form>
 
       {error && <p className="error-message">{error}</p>} {/* 에러 메시지 표시 */}

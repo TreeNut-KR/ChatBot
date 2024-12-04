@@ -36,7 +36,6 @@ const Login = () => {
       <h2>로그인</h2>
       <form onSubmit={handleSubmit} className="login-form">
         <div className="inputGroup">
-          <label htmlFor="Id">아이디:</label>
           <input
             type="text"
             id="Id"
@@ -44,10 +43,10 @@ const Login = () => {
             onChange={(e) => setId(e.target.value)}
             required
             className="login-input"
+            placeholder="아이디"
           />
         </div>
         <div className="inputGroup">
-          <label htmlFor="password">비밀번호:</label>
           <input
             type="password"
             id="password"
@@ -55,6 +54,7 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="login-input"
+            placeholder="비밀번호"
           />
         </div>
         <button type="submit" className="login-button">로그인</button>

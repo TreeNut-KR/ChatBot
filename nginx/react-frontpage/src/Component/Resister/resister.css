@@ -1,30 +1,33 @@
 /* src/components/Login.css */
-.login-container {
+.resister-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100vh;
     background-color: #f0f0f0;
-} 
+    width: 400%;
+}
 
-.login-form {
+.resister-form {
     background-color: white;
     padding: 50px;
     padding-right: 70px;
     border-radius: 5px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: left; /* 텍스트 정렬을 좌측으로 설정 */
 }
 
-.login-input {
+.resister-input {
     margin-bottom: 15px;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     width: 100%;
+    opacity: 0.7; /* 약간 투명하게 설정 */
 }
 
-.login-button {
+.resister-button {
     padding: 10px;
     margin-right: 20px;
     background-color: #007bff;
@@ -32,8 +35,9 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    width: 110%;
 }
 
-.login-button:hover {
+.resister-button:hover {
     background-color: #0056b3;
 }
