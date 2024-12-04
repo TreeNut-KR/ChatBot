@@ -253,7 +253,7 @@ class CharacterService(
         }
     }
 
-    fun add_like_count(like_character: Character): String {
+    fun add_like_count(like_character: Character, userid: String): String {
         // 캐릭터 이름을 추출
         val characterName = like_character.characterName
 
@@ -263,8 +263,19 @@ class CharacterService(
         // 주어진 이름과 일치하는 첫 번째 캐릭터 찾기
         val character = characters.firstOrNull() ?: return "Character not found"
 
+        // 이미 좋아요를 누른 유저인지 확인
+        val likedUsers = like_character.liked_users?.split(",")?.toMutableList() ?: mutableListOf()
+
+        if (likedUsers.contains(userid)) {
+            return "You have already liked this character"
+        }
+
         // like_count 증가
         character.like_count = (character.like_count ?: 0) + 1
+
+        likedUsers.add(userid)
+        // 쉼표로 구분하여 문자열로 변환
+        character.liked_users = likedUsers.joinToString(",")
 
         // 변경된 캐릭터 정보를 DB에 저장
         characterRepository.save(character)

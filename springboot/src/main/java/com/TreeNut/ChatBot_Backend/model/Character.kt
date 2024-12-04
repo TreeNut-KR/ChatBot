@@ -53,6 +53,9 @@ data class Character(
     @Column(name = "like_count")
     var like_count: Int = 0,
 
+    @Column(name = "liked_users", columnDefinition = "TEXT") // liked_users 추가
+    var liked_users: String? = null, // 좋아요를 누른 유저의 ID를 저장할 변수
+
     @Column(name = "created_at", updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 

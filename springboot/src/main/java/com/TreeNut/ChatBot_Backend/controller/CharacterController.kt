@@ -258,14 +258,10 @@ class CharacterController(
             val tokenUserId = tokenAuth.authGuard(token)
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-            // 사용자 ID 검증
-            if (tokenUserId != character.userid) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("status" to 403, "message" to "User is not authorized to delete this character"))
-            }
 
             // 캐릭터 좋아요 추가 수행 수행
-            characterService.add_like_count(character)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to "Character deleted successfully"))
+            characterService.add_like_count(character, tokenUserId)
+            ResponseEntity.ok(mapOf("status" to 200, "message" to "Character add like successfully"))
         } catch (e: Exception) {
             e.printStackTrace()
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))

@@ -38,6 +38,7 @@ CREATE TABLE characters (
     humor INT,
     assertiveness INT,
     like_count int DEFAULT 0,
+    liked_users TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(idx),
