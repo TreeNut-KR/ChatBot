@@ -1,12 +1,11 @@
-/* src/components/Login.css */
 .resister-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+    align-items: center; /* 가로 중앙 정렬 */
+    justify-content: center; /* 세로 중앙 정렬 */
+    width: 89vw;
+    height: 100vh; /* 화면 전체 높이 */
     background-color: #f0f0f0;
-    width: 400%;
 }
 
 .resister-form {
@@ -15,29 +14,57 @@
     padding-right: 70px;
     border-radius: 5px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    text-align: left; /* 텍스트 정렬을 좌측으로 설정 */
+    text-align: left;
+    width: 400px; /* 폼의 가로 크기 고정 */
+}
+
+.inputGroup {
+    margin-bottom: 15px; /* 입력 그룹 사이의 여백 */
+}
+
+.input-label {
+    font-size: 14px; /* 라벨 텍스트 크기 */
+    color: #333; /* 텍스트 색상 */
+    margin-bottom: 5px; /* 라벨 아래 마진 추가 */
 }
 
 .resister-input {
-    margin-bottom: 15px;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: none; /* 테두리 제거 */
+    border-bottom: 2px solid #ccc; /* 하단 밑줄 추가 */
     width: 100%;
-    opacity: 0.7; /* 약간 투명하게 설정 */
+    opacity: 0.7;
+    height: 2.8vh;
+    outline: none; /* 포커스 시 테두리 제거 */
+}
+
+.resister-input:focus {
+    border-bottom: 2px solid #007bff; /* 포커스 시 색상 변경 */
 }
 
 .resister-button {
     padding: 10px;
-    margin-right: 20px;
-    background-color: #007bff;
+    background-color: rgb(76, 175, 80);
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    width: 110%;
+    width: 100%; /* 버튼의 너비를 폼 너비에 맞춤 */
+    margin-top: 15px;
 }
 
 .resister-button:hover {
     background-color: #0056b3;
+}
+
+.error-message {
+    color: red;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.success-message {
+    color: green;
+    margin-top: 10px;
+    font-size: 14px;
 }

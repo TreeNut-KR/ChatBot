@@ -1,7 +1,10 @@
 import React from "react";
 import './sidebar.css';
 import { useNavigate } from 'react-router-dom';
+import TreeNut_Logo from './TreeNut_Logo.png';
 
+import TreeNut_Logo2 from './TreeNut_Logo2.png';
+import TreeNut_Logo3 from './TreeNut_Logo3.png';
 export default function SideBar() {
   const navigate = useNavigate(); // useNavigate 훅을 사용하여 navigate 함수 생성
 
@@ -23,7 +26,11 @@ export default function SideBar() {
     <div className="sidebar">
       <div className="sidebarWrapper">
         <div className="SidebarLogo">
-          <div className="SidebarLogoText">TreeNut</div>
+          <div className="SidebarLogoText">
+          {<img src={TreeNut_Logo3} width={100} alt="Naver Logo" ></img>}
+          {/*<img src={TreeNut_Logo2} width={100} alt="Naver Logo" />*/}
+          
+          </div>
         </div>
         <div className="sidebarListItem">
           <div className="SidebarText" onClick={handleHomeClick}>
