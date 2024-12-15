@@ -1,11 +1,11 @@
 
 .topbar {
     width: 100%;
-    height: 2vh; /* 높이를 뷰포트 높이의 20%로 조정 */
-    background-color: #999090;
+    height: 2vh; /* 높이를 뷰포트 높이의 2%로 조정 */
+    background-color: #2E2E3A;
     position: relative; /* position 속성 추가 */
-     /* z-index 추가 */
     margin-bottom: 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 하단에 옅은 그림자 */
 }
 
 /* 부모 요소에 position: relative 추가 */

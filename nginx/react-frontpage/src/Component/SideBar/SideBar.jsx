@@ -1,10 +1,8 @@
 import React from "react";
 import './sidebar.css';
 import { useNavigate } from 'react-router-dom';
-import TreeNut_Logo from './TreeNut_Logo.png';
+import TreeNut_Logo from './TreeNut_logo.png';
 
-import TreeNut_Logo2 from './TreeNut_Logo2.png';
-import TreeNut_Logo3 from './TreeNut_Logo3.png';
 export default function SideBar() {
   const navigate = useNavigate(); // useNavigate 훅을 사용하여 navigate 함수 생성
 
@@ -13,24 +11,26 @@ export default function SideBar() {
   };
 
   const handleResisterClick = () => {
-    navigate('/resister'); // 로그인 페이지로 이동
+    navigate('/resister'); // 회원가입 페이지로 이동
   };
 
   const handleHomeChatClick = () => {
-    navigate('/HomeChat'); // 로그인 페이지로 이동
+    navigate('/HomeChat'); // 캐릭터 생성 페이지로 이동
   };
+  
   const handleHomeClick = () => {
-    navigate('/'); // 로그인 페이지로 이동
+    navigate('/'); // 홈 페이지로 이동
   };
+
   return (
     <div className="sidebar">
       <div className="sidebarWrapper">
         <div className="SidebarLogo">
-          <div className="SidebarLogoText">
-          {<img src={TreeNut_Logo3} width={100} alt="Naver Logo" ></img>}
-          {/*<img src={TreeNut_Logo2} width={100} alt="Naver Logo" />*/}
-          
-          </div>
+          <img 
+            src={TreeNut_Logo} 
+            alt="TreeNut Logo" 
+            className="SideAvatar"
+          />
         </div>
         <div className="sidebarListItem">
           <div className="SidebarText" onClick={handleHomeClick}>
@@ -61,7 +61,6 @@ export default function SideBar() {
             회원가입
           </div>
         </div>
-
       </div>
     </div>
   )

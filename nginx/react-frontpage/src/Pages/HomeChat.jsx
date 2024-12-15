@@ -17,9 +17,9 @@ export default function HomeChat() {
     };
 
     return( 
-        <div className="home">
+        <div className="HomeChat">
             <div className="chat-container">
-                <div className="HomeText">TreeNut</div>
+                <div className="HomeChatText">TreeNut</div>
                 
                 <ChattingMain onSend={handleSendMessage} />
             </div>  

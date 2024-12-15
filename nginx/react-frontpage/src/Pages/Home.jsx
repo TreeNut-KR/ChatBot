@@ -18,8 +18,7 @@ export default function Home() {
     return( 
         <div className="home">
             <div className="chat-container">
-                <div className="HomeText"></div>
-                <Text messages={messages} /> {/* 메시지를 Text 컴포넌트에 전달 */}
+                <div className></div>
                 <Chatting messages={messages} onSend={handleSendMessage} /> {/* 메시지를 Chatting 컴포넌트에 전달 */}
             </div>  
         </div>
