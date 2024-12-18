@@ -15,6 +15,7 @@ CREATE TABLE users (
     password VARCHAR(255),
     access_token TEXT,
     refresh_token TEXT,
+    manager_boolean BOOLEAN,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (idx)
