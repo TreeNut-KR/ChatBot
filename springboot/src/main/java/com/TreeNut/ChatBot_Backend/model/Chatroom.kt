@@ -17,7 +17,7 @@ data class Chatroom(
     @Column(name = "characters_idx", nullable = false)
     val charactersIdx: Int, // 외래 키로 설정될 수 있음
 
-    @Column(name = "mongo_chatroomid", length = 100)
+    @Column(name = "mongo_chatroomid", length = 512)
     val mongo_chatroomid: String? = null,
 
     @Column(name = "created_at", updatable = false)

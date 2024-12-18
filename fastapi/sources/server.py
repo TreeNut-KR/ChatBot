@@ -171,6 +171,10 @@ async def save_chat_log(request: ChatModel.Office_Create_Request):
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
         
+        # output_data가 비어있거나 None인 경우 대체 문장 설정
+        if not filtered_data.get("output_data"):
+            filtered_data["output_data"] = "서버 에러가 있습니다. 다시 시도해주세요."
+        
         response_message = await mongo_handler.add_office_log(
             user_id=request.user_id,
             document_id=request.id,
@@ -192,6 +196,10 @@ async def update_chat_log(request: ChatModel.Office_Update_Request):
     try:
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
+        
+        # output_data가 비어있거나 None인 경우 대체 문장 설정
+        if not filtered_data.get("output_data"):
+            filtered_data["output_data"] = "서버 에러가 있습니다. 다시 시도해주세요."
         
         response_message = await mongo_handler.update_office_log(
             user_id=request.user_id,
@@ -297,6 +305,10 @@ async def save_chat_log(request: ChatModel.ChatBot_Create_Request):
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
         
+        # output_data가 비어있거나 None인 경우 대체 문장 설정
+        if not filtered_data.get("output_data"):
+            filtered_data["output_data"] = "서버 에러가 있습니다. 다시 시도해주세요."
+        
         response_message = await mongo_handler.add_chatbot_log(
             user_id=request.user_id,
             document_id=request.id,
@@ -319,6 +331,10 @@ async def update_chat_log(request: ChatModel.ChatBot_Update_Request):
         await ChatModel.Validators().url_status(request.img_url)  # 이미지 URL 확인
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
+    
+        # output_data가 비어있거나 None인 경우 대체 문장 설정
+        if not filtered_data.get("output_data"):
+            filtered_data["output_data"] = "서버 에러가 있습니다. 다시 시도해주세요."
         
         response_message = await mongo_handler.update_chatbot_log(
             user_id=request.user_id,
