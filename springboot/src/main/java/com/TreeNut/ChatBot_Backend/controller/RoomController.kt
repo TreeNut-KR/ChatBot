@@ -37,16 +37,16 @@ class RoomController(
         val userId = tokenAuth.authGuard(token)
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
 
-        val inputDataSet = inputData["input_data_set"]
+        val inputDataSet = inputData["input_data_set"] ?: "" // 명시적으로 초기화
 
         return roomService.createOfficeroom(userId)
             .flatMap { response ->
-                val documentId = response["Document ID"] as? String
-                    ?: return@flatMap Mono.just(ResponseEntity.status(500).body(mapOf<String, Any>("status" to 500, "message" to "documentId 생성 실패")))
+                val id = response["Document ID"] as? String
+                    ?: return@flatMap Mono.just(ResponseEntity.status(500).body(mapOf<String, Any>("status" to 500, "message" to "id 생성 실패")))
 
-                roomService.addOfficeroom(userId, documentId, inputDataSet ?: "")
+                roomService.addOfficeroom(userId, id, inputDataSet)
                     .flatMap { addResponse ->
-                        roomService.saveOfficeroomToMySQL(userId, documentId)
+                        roomService.saveOfficeroomToMySQL(userId, id)
                             .map { savedOfficeroom ->
                                 ResponseEntity.ok(mapOf(
                                     "status" to 200,
@@ -128,12 +128,16 @@ class RoomController(
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "input_data_set이 필요합니다.")))
 
         return roomService.addOfficeroom(userId, id, inputDataSet)
-            .map { response ->
-                ResponseEntity.ok(mapOf(
-                    "status" to 200,
-                    "message" to "채팅 로그가 성공적으로 저장되었습니다.",
-                    "response" to response
-                ))
+                    .flatMap { addResponse ->
+                        roomService.saveOfficeroomToMySQL(userId, id)
+                            .map { savedOfficeroom ->
+                                ResponseEntity.ok(mapOf(
+                                    "status" to 200,
+                                    "message" to "채팅방이 성공적으로 생성되었고 로그가 저장되었습니다.",
+                                    "add_log_response" to addResponse,
+                                    "mysql_officeroom" to savedOfficeroom
+                                ))
+                            }
             }
             .defaultIfEmpty(
                 ResponseEntity.status(500).body(mapOf(
