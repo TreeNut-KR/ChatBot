@@ -2,7 +2,7 @@
 .sidebar {
     flex: 0;
     height: 100vh; /* 화면 높이 */
-    background-color: #f4f4f4;
+    background-color: #2B2E47;
     display: flex; /* 추가: 자식 요소 중앙 정렬 */
     flex-direction: column; /* 자식 요소 수직 배치 */
     align-items: center; /* 가로 중앙 정렬 */
@@ -51,7 +51,7 @@
     font-weight: 1000;
     white-space: nowrap;
     margin-top: 20px;
-    color: #333333;
+    color: #848484;
 }
 
 .SidebarLogoText {

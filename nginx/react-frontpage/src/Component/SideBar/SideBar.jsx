@@ -1,7 +1,7 @@
 import React from "react";
 import './sidebar.css';
 import { useNavigate } from 'react-router-dom';
-import TreeNut_Logo from './TreeNut_logo.png';
+import TreeNut_Logo from './TreeNut_Logo.png';
 
 export default function SideBar() {
   const navigate = useNavigate(); // useNavigate 훅을 사용하여 navigate 함수 생성
