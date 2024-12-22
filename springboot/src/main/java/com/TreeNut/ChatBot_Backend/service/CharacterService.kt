@@ -282,6 +282,17 @@ class CharacterService(
 
         return "Like count updated successfully for character: $characterName"
     }
+
+    fun getCharacterDetailsByName(name: String): Map<String, Any>? {
+        val character = characterRepository.findByCharacterName(name).firstOrNull() ?: return null
+        return mapOf<String, Any>(
+            "character_name" to (character.characterName ?: "Unknown"), // null 처리
+            "description" to (character.description ?: "No description available"), // null 처리
+            "image" to (character.image ?: "default_image.png"), // null 처리
+            "userid" to (character.userid ?: "Unknown"), // null 처리
+            "like_count" to (character.like_count ?: 0) // null 처리
+        )
+    }
 }
 //이미지 업로드 서비스를 위한 클래스
 @Service

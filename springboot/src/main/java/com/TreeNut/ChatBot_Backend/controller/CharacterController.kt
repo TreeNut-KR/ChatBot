@@ -314,4 +314,11 @@ class CharacterController(
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
+
+    @GetMapping("/details/{name}")
+    fun getCharacterDetailsByName(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
+        val character = characterService.getCharacterDetailsByName(name)
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("message" to "Character not found"))
+        return ResponseEntity.ok(character)
+    }
 }
