@@ -11,10 +11,7 @@ data class User(
     val idx: Long? = null,
 
     @Column(name = "userid", unique = true, nullable = false, length = 50)
-    val userid: String, // 플랫폼 ID 포함 (예: KAKAO_123456)
-
-    @Column(name = "login_type", nullable = false, length = 50)
-    val loginType: String, // 플랫폼 구분 (KAKAO, GOOGLE 등)
+    val userid: String,
 
     @Column(name = "username", length = 50)
     val username: String,
@@ -22,8 +19,8 @@ data class User(
     @Column(name = "email", length = 100)
     val email: String,
 
-    @Column(name = "password", length = 255, nullable = true)
-    val password: String? = null, // 소셜 로그인은 NULL 가능
+    @Column(name = "password", length = 255)
+    val password: String? = null,
 
     @Column(name = "access_token", columnDefinition = "TEXT")
     val accessToken: String? = null,
@@ -31,14 +28,26 @@ data class User(
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     val refreshToken: String? = null,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "login_type", nullable = false)
+    val loginType: LoginType = LoginType.LOCAL,
+
     @Column(name = "created_at", updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
+    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, LocalDateTime.now(), LocalDateTime.now())
+
     @PreUpdate
     fun onUpdate() {
         updatedAt = LocalDateTime.now()
     }
+}
+
+enum class LoginType {
+    LOCAL,
+    KAKAO,
+    GOOGLE
 }

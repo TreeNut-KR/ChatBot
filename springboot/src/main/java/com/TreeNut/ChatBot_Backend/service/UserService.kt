@@ -9,6 +9,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
+import com.TreeNut.ChatBot_Backend.model.LoginType
 
 @Service
 class UserService(
@@ -20,30 +21,10 @@ class UserService(
     @Transactional
     fun register(user: User): User {
         return try {
-            val encodedUser = user.copy(
-                password = passwordEncoder.encode(user.password),
-                loginType = "local" // 기본 회원가입은 'local'로 구분
-            )
+            val encodedUser = user.copy(password = passwordEncoder.encode(user.password))
             userRepository.save(encodedUser)
         } catch (e: Exception) {
             throw RuntimeException("Error during user registration", e)
-        }
-    }
-
-    @Transactional
-    fun loginWithKakao(kakaoId: String, username: String, email: String): User {
-        val user = userRepository.findByUserid("KAKAO_$kakaoId")
-        return if (user != null) {
-            user // 기존 사용자 반환
-        } else {
-            val newUser = User(
-                userid = "KAKAO_$kakaoId",
-                loginType = "KAKAO",
-                username = username,
-                email = email,
-                password = null // 소셜 로그인은 비밀번호 없음
-            )
-            userRepository.save(newUser) // 신규 사용자 저장
         }
     }
 
@@ -51,6 +32,24 @@ class UserService(
     fun login(userid: String, password: String): User? {
         val user = userRepository.findByUserid(userid) ?: return null
         return if (passwordEncoder.matches(password, user.password)) user else null
+    }
+
+    @Transactional
+    fun findOrRegisterWithKakao(kakaoId: String, username: String, email: String?): User {
+        val existingUser = userRepository.findByUserid("KAKAO_$kakaoId")
+        return if (existingUser != null) {
+            existingUser // 이미 존재하면 기존 사용자 반환
+        } else {
+            // 새로운 사용자 생성 및 저장
+            val newUser = User(
+                userid = "KAKAO_$kakaoId",
+                username = username,
+                email = email ?: "",
+                loginType = LoginType.KAKAO,
+                password = null // 소셜 로그인 사용자는 비밀번호가 없음
+            )
+            userRepository.save(newUser)
+        }
     }
 
     fun generateToken(user: User): String {

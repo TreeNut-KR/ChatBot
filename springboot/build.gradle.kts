@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+    // Spring 기본 의존성
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework:spring-context")
@@ -26,19 +27,20 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.security:spring-security-core")
     implementation("org.springframework.security:spring-security-web")
+    implementation("org.springframework.security:spring-security-config")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("org.springframework.security:spring-security-oauth2-core")
     implementation(kotlin("stdlib"))
 
-    // WebFlux 의존성 (Reactive 프로그래밍 및 WebClient)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("io.projectreactor:reactor-core")
-    implementation("io.projectreactor.netty:reactor-netty:1.1.6") // 정확한 버전 명시
+    // MySQL Connector: MySQL 5.7 호환 버전
+    runtimeOnly("mysql:mysql-connector-java:8.0.28") // MySQL 5.7과 안정적으로 호환되는 버전
+    implementation("org.flywaydb:flyway-core")
 
-    // MySQL Connector 버전
-    runtimeOnly("mysql:mysql-connector-java:8.0.33")
+    // Reactor 및 WebFlux 관련 의존성
+    implementation("io.projectreactor:reactor-core:3.4.30")
+    implementation("io.projectreactor.netty:reactor-netty:1.0.24") // MySQL 5.7에 적합한 WebFlux 버전
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     // JWT 토큰 관련 의존성
     implementation("io.jsonwebtoken:jjwt:0.9.1")
@@ -57,13 +59,16 @@ dependencies {
     implementation("javax.xml.bind:jaxb-api:2.3.1")
     implementation("org.glassfish.jaxb:jaxb-runtime:2.3.1")
 
+    // Google API 의존성
     implementation("com.google.api-client:google-api-client:1.30.10")
     implementation("com.google.apis:google-api-services-drive:v3-rev197-1.25.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.25.0")
     implementation("com.google.code.gson:gson:2.11.0")
-    
+
     implementation("org.apache.httpcomponents.client5:httpclient5:5.2")
     
+
+    implementation("org.hibernate:hibernate-core:6.2.7.Final")
     // 테스트 관련 의존성
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
