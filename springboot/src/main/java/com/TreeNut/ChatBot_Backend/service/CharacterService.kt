@@ -20,7 +20,7 @@ import java.nio.file.Paths
 import java.nio.charset.StandardCharsets
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.jsonwebtoken.Jwts
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 @Service
 class CharacterService(

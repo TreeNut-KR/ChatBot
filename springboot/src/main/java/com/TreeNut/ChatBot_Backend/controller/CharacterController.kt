@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*
 
 import java.util.UUID
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 import java.sql.SQLException
 import org.springframework.http.HttpStatus
 import io.jsonwebtoken.Jwts
