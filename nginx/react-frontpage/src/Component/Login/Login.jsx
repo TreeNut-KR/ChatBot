@@ -26,6 +26,12 @@ const Login = () => {
       if (response.status === 200) {
         setSuccess(true);
         console.log('로그인 성공:', response.data);
+
+        // JWT 토큰 저장
+        const token = response.data.token; // 서버 응답에서 토큰 가져오기
+        if (token) {
+          localStorage.setItem('jwt-token', token);
+        }
       } else {
         setError('로그인 실패. 다시 시도해 주세요.');
       }

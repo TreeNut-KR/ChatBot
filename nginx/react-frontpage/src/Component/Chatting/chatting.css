@@ -61,19 +61,21 @@ main {
     line-height: 1.5;
     max-width: 70%;
     word-wrap: break-word; /* 긴 단어가 줄 바꿈 되도록 설정 */
+    color: #000000; /* 기본 글자색을 검은색으로 설정 */
 }
 
 .user-message {
     background-color: #5865f2; /* 유저 메시지 배경색 */
     align-self: flex-end; /* 오른쪽 정렬 */
-    color: #000000; /* 유저 메시지 텍스트 색상 */
+    color: #000000; /* 유저 메시지 텍스트 색상 검정 */
 }
 
 .ai-message {
     background-color: #353857; /* AI 메시지 배경색 */
     align-self: flex-start; /* 왼쪽 정렬 */
-    color: #000000; /* AI 메시지 텍스트 색상 */
+    color: #000000; /* AI 메시지 텍스트 색상 검정 */
 }
+
 
 .chat-footer {
     background-color: #1e1e2f;

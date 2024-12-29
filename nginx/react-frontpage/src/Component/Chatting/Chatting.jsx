@@ -1,118 +1,102 @@
 import React, { useState } from 'react';
 import './chatting.css';
 
-const ChatHeader = ({ model, setModel }) => (
+const ChatHeader = () => (
     <div className="chat-header">
         <h1>TreeNut ChatBot</h1>
-        <select value={model} onChange={(e) => setModel(e.target.value)} aria-label="모델 선택">
-            <option value="Llama">Llama</option>
-            <option value="Bllossom">Bllossom</option>
-        </select>
     </div>
 );
 
-const ChatMessage = ({ user, text, className }) => (
-    <div className={`message ${className}`}>
+const ChatMessage = ({ text, isUser }) => (
+    <div className={`message ${isUser ? 'user-message' : 'ai-message'}`}>
         {text}
     </div>
 );
 
-const ChatContainer = ({ messages, isLoading }) => (
+const ChatContainer = ({ messages }) => (
     <div className="chat-container">
         {messages.map((msg, index) => (
-            <ChatMessage key={index} user={msg.user} text={msg.text} className={msg.className} />
+            <ChatMessage key={index} text={msg.text} isUser={msg.isUser} />
         ))}
-        {isLoading && <ChatMessage user="AI" text="로딩 중..." className="ai-message" />}
     </div>
 );
 
-const ChatFooter = ({ userInput, setUserInput, handleSubmit, isLoading }) => (
-    <form onSubmit={handleSubmit} className="chat-footer">
-        <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="메시지를 입력하세요..."
-            autoComplete="off"
-        />
-        <button type="submit" disabled={isLoading}>전송</button>
-    </form>
+const ChatFooter = ({ userInput, setUserInput, handleSend, isSending }) => (
+    <div className="chat-footer">
+        <form onSubmit={handleSend}>
+            <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="메시지를 입력하세요..."
+                autoComplete="off"
+            />
+            <button type="submit" disabled={isSending}>전송</button>
+        </form>
+    </div>
 );
 
 const Chatting = () => {
     const [userInput, setUserInput] = useState('');
     const [messages, setMessages] = useState([]);
-    const [model, setModel] = useState('Llama');
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSending, setIsSending] = useState(false);
 
-    const handleSubmit = async (e) => {
+    const handleSend = async (e) => {
         e.preventDefault();
-        if (userInput.trim() === '') return;
-
-        appendMessage('나', userInput, 'user-message');
+        if (!userInput.trim()) return;
+    
+        const newMessage = { text: userInput, isUser: true };
+        setMessages((prev) => [...prev, newMessage]);
         setUserInput('');
-        setIsLoading(true);
-        await sendToServer(model, userInput);
-        setIsLoading(false);
-    };
-
-    const appendMessage = (user, text, className) => {
-        setMessages((prevMessages) => [...prevMessages, { user, text, className }]);
-    };
-
-    const sendToServer = async (model, inputText) => {
+    
+        setIsSending(true);
+    
+        const url = 'http://localhost:3000/server/chatroom/office';
+        const token = localStorage.getItem('jwt-token'); // 로컬 스토리지에서 JWT 토큰 가져오기
+        if (!token) {
+            setMessages((prev) => [...prev, { text: '토큰이 없습니다. 로그인 후 다시 시도하세요.', isUser: false }]);
+            setIsSending(false);
+            return;
+        }
+    
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // 가져온 토큰 추가
+        };
+    
         try {
-            const requestBody = model === 'Bllossom'
-                ? {
-                    input_data: inputText,
-                    character_name: "KindBot",
-                    description: "친절한 도우미 봇",
-                    greeting: "안녕하세요! 무엇을 도와드릴까요?",
-                    image: "https://drive.google.com/thumbnail?id=12PqUS6bj4eAO_fLDaWQmoq94-771xfim",
-                    character_setting: "친절하고 공손한 봇",
-                    tone: "공손한",
-                    energy_level: 8,
-                    politeness: 10,
-                    humor: 5,
-                    assertiveness: 3,
-                    access_level: true
-                }
-                : { input_data: inputText };
-
-            const response = await fetch(`http://localhost:8000/${model}_stream`, {
+            console.log('API 호출 URL:', url);
+            console.log('Authorization 헤더:', headers.Authorization);
+    
+            const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
+                headers: headers,
+                body: JSON.stringify({ input_data_set: userInput }),
             });
-
-            if (!response.ok) throw new Error('서버 요청 실패');
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            let aiMessage = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                aiMessage += decoder.decode(value);
-            }
-            appendMessage('AI', aiMessage, 'ai-message');
+    
+            if (!response.ok) throw new Error('서버 응답 오류');
+    
+            const data = await response.json();
+            setMessages((prev) => [...prev, { text: data.message || 'AI 응답 없음', isUser: false }]);
         } catch (error) {
-            appendMessage('시스템', '서버와의 연결 중 문제가 발생했습니다.', 'ai-message');
+            setMessages((prev) => [...prev, { text: '메시지 전송 실패: ' + error.message, isUser: false }]);
+        } finally {
+            setIsSending(false);
         }
     };
+    
 
     return (
         <div className="chatting">
-            <ChatHeader model={model} setModel={setModel} />
+            <ChatHeader />
             <main>
-                <ChatContainer messages={messages} isLoading={isLoading} />
+                <ChatContainer messages={messages} />
             </main>
             <ChatFooter 
                 userInput={userInput} 
                 setUserInput={setUserInput} 
-                handleSubmit={handleSubmit} 
-                isLoading={isLoading} 
+                handleSend={handleSend} 
+                isSending={isSending} 
             />
         </div>
     );
