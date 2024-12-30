@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './resister.css';
 
-const Resister = () => {
-  const [Id, setId] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+const Resister: React.FC = () => {
+  // 상태 변수 타입 지정
+  const [Id, setId] = useState<string>(''); // 아이디
+  const [password, setPassword] = useState<string>(''); // 비밀번호
+  const [username, setUsername] = useState<string>(''); // 이름
+  const [email, setEmail] = useState<string>(''); // 이메일
+  const [error, setError] = useState<string>(''); // 에러 메시지
+  const [success, setSuccess] = useState<boolean>(false); // 성공 여부
 
   // 컴포넌트가 마운트될 때 입력 필드를 초기화
   useEffect(() => {
@@ -18,7 +19,8 @@ const Resister = () => {
     setEmail('');
   }, []);
 
-  const handleSubmit = async (e) => {
+  // 폼 제출 시 호출되는 함수
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess(false);

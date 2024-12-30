@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
 import './login.css'; 
+import logo_naver_kr from './logo/logo_naver_kr.png'; // 이미지 경로에 확장자 포함
+import logo_kakao_kr from './logo/logo_kakao_kr.png'; // 경로와 확장자 확인
+import logo_google_kr from './logo/logo_google_kr.png'; // 경로와 확장자 확인
 
-import logo_naver_kr from './logo/logo_naver_kr.png';
-import logo_kakao_kr from './logo/logo_kakao_kr.png';
-import logo_google_kr from './logo/logo_google_kr.png';
 
-const Login = () => {
-  const [Id, setId] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+const Login: React.FC = () => {
+  const [Id, setId] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<boolean>(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess(false);
@@ -39,7 +39,7 @@ const Login = () => {
     <div className="login-container">
       <form onSubmit={handleSubmit} className="login-form">
         <h2 className="title">TreeNut</h2>
-        <h2 className="subtitle">AI 어시스턴트한테 <br/> 도움을 받아보세요!</h2>
+        <h2 className="subtitle">AI 어시스턴트한테 <br /> 도움을 받아보세요!</h2>
         <h2 className="small-text">TreeNut과 함께 편리한 AI 서비스를 이용해보세요</h2>
         
         <div className="image-container">
