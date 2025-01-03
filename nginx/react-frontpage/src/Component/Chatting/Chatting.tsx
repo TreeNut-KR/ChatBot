@@ -1,5 +1,4 @@
 import React, { useState, FormEvent, useEffect, useRef } from 'react';
-import Header from '../Header/Header';
 
 type Message = {
   user: string;
@@ -38,7 +37,7 @@ type ChattingProps = {
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ model, setModel }) => (
   <div className="bg-gray-900 flex items-center justify-between px-5 py-2">
-    <h1 className="text-lg text-white ">TreeNut ChatBot</h1>
+    <h1 className="text-lg text-white">TreeNut ChatBot</h1>
     <select
       value={model}
       onChange={(e) => setModel(e.target.value)}
@@ -60,12 +59,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ user, text, className }) => (
 const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading }) => {
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // 스크롤을 가장 아래로 내리는 useEffect
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]); // messages가 변경될 때마다 실행
+  }, [messages]);
 
   return (
     <div
@@ -148,18 +146,37 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
 
   const sendToServer = async (model: string, inputText: string) => {
     try {
-      const requestBody =
-        model === 'Bllossom'
-          ? { input_data: inputText }
-          : { input_data: inputText };
+      const token = localStorage.getItem('jwt-token');
+      if (!token) {
+        throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
+      }
 
-      const response = await fetch(`http://localhost:8000/${model}_stream`, {
+      // 토큰 디버깅
+      console.log('로컬 스토리지의 JWT 토큰:', token);
+
+      const requestBody = { input_data: inputText };
+
+      // 디버깅: 요청 헤더와 본문 출력
+      console.log('요청 URL:', 'http://localhost:8080/server/chatroom/office');
+      console.log('요청 헤더:', {
+        'Content-Type': 'application/json',
+        Authorization: `${token}`,
+      });
+      console.log('요청 본문:', requestBody);
+
+      const response = await fetch(`http://localhost:8080/server/chatroom/office`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${token}`,
+        },
         body: JSON.stringify(requestBody),
       });
 
-      if (!response.ok) throw new Error('서버 요청 실패');
+      if (!response.ok) {
+        console.error('응답 상태 코드:', response.status);
+        throw new Error('서버 요청 실패');
+      }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -178,6 +195,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         type: '',
       });
     } catch (error) {
+      console.error('에러 발생:', error); // 에러 로그 출력
       appendMessage({
         user: '시스템',
         text: '서버와의 연결 중 문제가 발생했습니다.',
@@ -192,7 +210,6 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       <div className="flex-col text-white w-full max-w-[808px] max-h-full bg-gray-900">
         <ChatHeader model={model} setModel={setModel} />
         <main className="flex-1 flex flex-col p-3 h-[calc(100vh-300px)] overflow-y-auto">
-          {/* `h-[calc(100vh-130px)]` to give it a height that's dynamic but doesn't overflow */}
           <ChatContainer messages={messages} isLoading={isLoading} />
         </main>
         <ChatFooter

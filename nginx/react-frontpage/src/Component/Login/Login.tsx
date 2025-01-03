@@ -5,7 +5,6 @@ import logo_naver_kr from './logo/logo_naver_kr.png'; // 이미지 경로에 확
 import logo_kakao_kr from './logo/logo_kakao_kr.png'; // 경로와 확장자 확인
 import logo_google_kr from './logo/logo_google_kr.png'; // 경로와 확장자 확인
 
-
 const Login: React.FC = () => {
   const [Id, setId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -26,6 +25,15 @@ const Login: React.FC = () => {
       if (response.status === 200) {
         setSuccess(true);
         console.log('로그인 성공:', response.data);
+
+        // 로그인 토큰 로컬 스토리지에 저장
+        const token = response.data.token;
+        if (token) {
+          localStorage.setItem('jwt-token', token);
+          console.log('토큰 저장 성공:', token);
+        } else {
+          console.error('토큰이 반환되지 않았습니다.');
+        }
       } else {
         setError('로그인 실패. 다시 시도해 주세요.');
       }
