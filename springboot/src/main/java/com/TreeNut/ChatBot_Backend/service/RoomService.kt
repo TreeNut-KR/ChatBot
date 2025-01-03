@@ -22,12 +22,13 @@ class RoomService(
     // streamingComplete 변수 초기화
     private val streamingComplete = AtomicBoolean(true)
 
-    fun getLlamaResponse(inputDataSet: String): Mono<String> {
+    fun getLlamaResponse(inputDataSet: String, google_access_set: Boolean): Mono<String> {
         return Mono.just(streamingComplete.get()).flatMap {
             streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
 
             val llamaRequestBody = mapOf(
-                "input_data" to inputDataSet
+                "input_data" to inputDataSet,
+                "google_access_set" to google_access_set
             )
 
             webClient.build()
@@ -98,11 +99,12 @@ Office 라우터 관련 service ->
     fun addOfficeroom(
         userid: String,
         mongo_officeroomid: String,
-        input_data_set: String
+        input_data_set: String,
+        google_access_set: Boolean = false
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
+        return getLlamaResponse(input_data_set, google_access_set).flatMap { output_data_set ->
 
             // 요청 데이터가 FastAPI의 스키마와 일치하는지 확인
             val requestBody = mapOf(
@@ -164,11 +166,12 @@ Office 라우터 관련 service ->
         userid: String,
         mongo_officeroomid: String,
         index: Int,
-        input_data_set: String
+        input_data_set: String,
+        google_access_set: Boolean = false
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
+        return getLlamaResponse(input_data_set, google_access_set).flatMap { output_data_set ->
 
             val requestBody = mapOf(
                 "user_id" to userid,
