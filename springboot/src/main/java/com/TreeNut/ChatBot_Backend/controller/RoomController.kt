@@ -168,7 +168,9 @@ class RoomController(
         val inputDataSet = requestData["input_data_set"] as? String
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "input_data_set 값이 필요합니다.")))
 
-        return roomService.updateOfficeroomLog(userId, id, index, inputDataSet)
+        val googleAccessSet = inputData["google_access_set"]?.toBoolean() ?: false // google_access_set을 받아오고 기본값 false 설정
+
+        return roomService.updateOfficeroomLog(userId, id, index, inputDataSet, googleAccessSet)
             .map { response ->
                 ResponseEntity.ok(mapOf(
                     "status" to 200,
