@@ -35,21 +35,25 @@ class UserService(
     }
 
     @Transactional
-    fun findOrRegisterWithKakao(kakaoId: String, username: String, email: String?): User {
-        val existingUser = userRepository.findByUserid("KAKAO_$kakaoId")
-        return if (existingUser != null) {
-            existingUser // 이미 존재하면 기존 사용자 반환
-        } else {
-            // 새로운 사용자 생성 및 저장
-            val newUser = User(
-                userid = "KAKAO_$kakaoId",
-                username = username,
-                email = email ?: "",
-                loginType = LoginType.KAKAO,
-                password = null // 소셜 로그인 사용자는 비밀번호가 없음
-            )
-            userRepository.save(newUser)
-        }
+    fun isFirstLogin(userid: String): Boolean {
+        return userRepository.findByUserid(userid) == null
+    }
+
+    @Transactional
+    fun registerKakaoUser(kakaoId: String, username: String, email: String?): User {
+        val newUser = User(
+            userid = "KAKAO_$kakaoId",
+            username = username,
+            email = email ?: "",
+            loginType = LoginType.KAKAO,
+            password = null // 소셜 로그인 사용자는 비밀번호가 없음
+        )
+        return userRepository.save(newUser)
+    }
+
+    @Transactional(readOnly = true)
+    fun findUserByUserid(userid: String): User? {
+        return userRepository.findByUserid(userid)
     }
 
     fun generateToken(user: User): String {

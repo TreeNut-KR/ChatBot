@@ -6,8 +6,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 
 @Configuration
+@EnableWebSecurity
 class SecurityConfig : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
@@ -24,7 +26,7 @@ class SecurityConfig : WebMvcConfigurer {
             .cors().and()
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/server/user/**", "/oauth2/**").permitAll()
+                    .requestMatchers("/server/user/**", "/oauth2/**", "/oauth/callback/kakao").permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2Login() // OAuth2 로그인 활성화

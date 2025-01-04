@@ -66,12 +66,14 @@ class UserController(private val userService: UserService,
             .post()
             .uri(tokenUrl)
             .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .bodyValue(mapOf(
-                "grant_type" to "authorization_code",
-                "client_id" to kakaoClientId,
-                "redirect_uri" to kakaoRedirectUri,
-                "code" to (body["code"] ?: "")
-            ))
+            .bodyValue(
+                mapOf(
+                    "grant_type" to "authorization_code",
+                    "client_id" to kakaoClientId,
+                    "redirect_uri" to kakaoRedirectUri,
+                    "code" to (body["code"] ?: "")
+                )
+            )
             .retrieve()
             .bodyToMono(Map::class.java)
             .block() ?: return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -96,9 +98,23 @@ class UserController(private val userService: UserService,
         val email = (userInfoResponse["kakao_account"] as? Map<*, *>)?.get("email") as? String ?: ""
 
         // Step 3: 회원가입 또는 로그인 처리
-        val user = userService.findOrRegisterWithKakao(kakaoId, nickname, email)
-        val token = userService.generateToken(user)
+        val isNewUser = userService.isFirstLogin("KAKAO_$kakaoId")
+        val user = if (isNewUser) {
+            // 새 사용자 등록
+            val termsAccepted = body["termsAccepted"]?.toBoolean() ?: false
+            if (!termsAccepted) {
+                return ResponseEntity.badRequest().body(
+                    mapOf("status" to 400, "message" to "Terms and conditions must be accepted")
+                )
+            }
 
-        return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to user.username))
+            userService.registerKakaoUser(kakaoId, nickname, email)
+        } else {
+            // 기존 사용자 반환
+            userService.findUserByUserid("KAKAO_$kakaoId")
+        }
+
+        val token = userService.generateToken(user!!)
+        return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to user.username, "isNewUser" to isNewUser))
     }
 }

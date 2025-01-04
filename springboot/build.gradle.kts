@@ -42,8 +42,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     // Hibernate와 Jakarta Persistence
-    implementation("org.hibernate.orm:hibernate-core:5.6.15.Final") // 호환되는 Hibernate 버전
-    implementation("org.hibernate.orm:hibernate-jakarta:5.6.15.Final") // Hibernate의 Jakarta 버전
+    implementation("org.hibernate.orm:hibernate-core:6.2.7.Final") // Spring Boot 3.x 권장 Hibernate 버전
     implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
     
     // JWT 토큰 관련 의존성

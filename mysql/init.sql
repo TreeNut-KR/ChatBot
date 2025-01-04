@@ -6,7 +6,7 @@ CREATE DATABASE IF NOT EXISTS chatbot;
 USE chatbot;
 
 -- 유저 테이블
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     idx BIGINT AUTO_INCREMENT,
     userid VARCHAR(50) UNIQUE,
     username VARCHAR(50),
@@ -21,7 +21,7 @@ CREATE TABLE users (
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 -- 캐릭터 테이블
-CREATE TABLE characters (
+CREATE TABLE IF NOT EXISTS characters (
     idx BIGINT AUTO_INCREMENT,
     uuid CHAR(36) UNIQUE NOT NULL,
     userid VARCHAR(50),
@@ -37,8 +37,10 @@ CREATE TABLE characters (
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
--- 채팅방 테이블
-CREATE TABLE chatroom (
+-- 외래 키 삭제 후 chatroom 테이블 생성
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE TABLE IF NOT EXISTS chatroom (
     idx BIGINT AUTO_INCREMENT,
     userid VARCHAR(100),
     characters_idx BIGINT NOT NULL,
@@ -50,8 +52,10 @@ CREATE TABLE chatroom (
     FOREIGN KEY (characters_idx) REFERENCES characters(idx) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
+SET FOREIGN_KEY_CHECKS = 1;
+
 -- 오피스룸 테이블
-CREATE TABLE officeroom (
+CREATE TABLE IF NOT EXISTS officeroom (
     idx BIGINT AUTO_INCREMENT,
     userid VARCHAR(100),
     mongo_chatroomid VARCHAR(100),
