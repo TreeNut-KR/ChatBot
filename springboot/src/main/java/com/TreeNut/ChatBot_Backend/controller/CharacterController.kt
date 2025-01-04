@@ -1,6 +1,7 @@
 package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.model.Character
+import com.TreeNut.ChatBot_Backend.repository.UserRepository
 import com.TreeNut.ChatBot_Backend.service.CharacterService
 import com.TreeNut.ChatBot_Backend.service.GoogleDriveService
 import org.springframework.http.ResponseEntity
@@ -25,9 +26,9 @@ class CharacterController(
     private val characterService: CharacterService,
     private val tokenAuth: TokenAuth,
     @Value("\${jwt.secret}") private val jwtSecret: String,
-    private val googleDriveService: GoogleDriveService
+    private val googleDriveService: GoogleDriveService,
+    private val userRepository: UserRepository
 ) {
-
     @PostMapping("/add")
     fun addCharacter(
         @RequestBody body: Map<String, Any>,
@@ -163,6 +164,7 @@ class CharacterController(
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
+
     @DeleteMapping("/delete")
     fun deleteCharacter(
         @RequestParam character_name: String,
@@ -189,6 +191,51 @@ class CharacterController(
             // 캐릭터 삭제 수행
             characterService.deleteCharacter(character_name)
             ResponseEntity.ok(mapOf("status" to 200, "message" to "Character deleted successfully"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
+        }
+    }
+
+    @PutMapping("/manage_character_private")
+    fun manage_character_private(
+        @RequestParam character_name: String,
+        @RequestBody body: Map<String, Any>,
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Any> {
+        return try {
+            // 현재 캐릭터 찾기
+            val character = characterService.getCharacterByName(character_name).firstOrNull()
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
+
+            // JWT에서 사용자 ID 추출
+            val tokenUserId = tokenAuth.authGuard(userToken)
+                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
+
+            val user = userRepository.findByUserid(tokenUserId.toString())
+
+            if(user?.manager_boolean != true)
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("status" to 403, "message" to "권한이 없습니다. 관리자만 접근할 수 있습니다."))
+
+            // 캐릭터를 업데이트하기 위한 객체 생성
+            val editedCharacterEntity = character.copy(
+                characterName = character.characterName,
+                description = character.description,
+                greeting = character.greeting,
+                image = character.image,
+                characterSetting = character.characterSetting,
+                accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
+                tone = character.tone,
+                energyLevel = character.energyLevel,
+                politeness = character.politeness,
+                humor = character.humor,
+                assertiveness = character.assertiveness,
+                userid = character.userid
+            )
+
+            // 업데이트 수행
+            characterService.editCharacter(character_name, editedCharacterEntity, userToken)
+            ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
         } catch (e: Exception) {
             e.printStackTrace()
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
@@ -266,5 +313,12 @@ class CharacterController(
             e.printStackTrace()
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
+    }
+
+    @GetMapping("/details/{name}")
+    fun getCharacterDetailsByName(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
+        val character = characterService.getCharacterDetailsByName(name)
+            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("message" to "Character not found"))
+        return ResponseEntity.ok(character)
     }
 }

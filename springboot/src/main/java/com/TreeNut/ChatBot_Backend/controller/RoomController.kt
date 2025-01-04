@@ -38,13 +38,14 @@ class RoomController(
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다.")))
 
         val inputDataSet = inputData["input_data_set"] ?: "" // 명시적으로 초기화
+        val googleAccessSet = inputData["google_access_set"]?.toBoolean() ?: false // google_access_set을 받아오고 기본값 false 설정
 
         return roomService.createOfficeroom(userId)
             .flatMap { response ->
                 val id = response["Document ID"] as? String
                     ?: return@flatMap Mono.just(ResponseEntity.status(500).body(mapOf<String, Any>("status" to 500, "message" to "id 생성 실패")))
 
-                roomService.addOfficeroom(userId, id, inputDataSet)
+                roomService.addOfficeroom(userId, id, inputDataSet, googleAccessSet)
                     .flatMap { addResponse ->
                         roomService.saveOfficeroomToMySQL(userId, id)
                             .map { savedOfficeroom ->
@@ -127,7 +128,9 @@ class RoomController(
         val inputDataSet = inputData["input_data_set"]
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "input_data_set이 필요합니다.")))
 
-        return roomService.addOfficeroom(userId, id, inputDataSet)
+        val googleAccessSet = inputData["google_access_set"]?.toBoolean() ?: false // google_access_set을 받아오고 기본값 false 설정
+
+        return roomService.addOfficeroom(userId, id, inputDataSet, googleAccessSet)
                     .flatMap { addResponse ->
                         roomService.saveOfficeroomToMySQL(userId, id)
                             .map { savedOfficeroom ->
@@ -165,7 +168,9 @@ class RoomController(
         val inputDataSet = requestData["input_data_set"] as? String
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "input_data_set 값이 필요합니다.")))
 
-        return roomService.updateOfficeroomLog(userId, id, index, inputDataSet)
+        val googleAccessSet = inputData["google_access_set"]?.toBoolean() ?: false // google_access_set을 받아오고 기본값 false 설정
+
+        return roomService.updateOfficeroomLog(userId, id, index, inputDataSet, googleAccessSet)
             .map { response ->
                 ResponseEntity.ok(mapOf(
                     "status" to 200,
