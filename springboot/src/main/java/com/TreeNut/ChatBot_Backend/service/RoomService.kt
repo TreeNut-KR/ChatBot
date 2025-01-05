@@ -33,7 +33,7 @@ class RoomService(
 
             webClient.build()
                 .post()
-                .uri("http://192.168.219.100:8000/Llama_stream")
+                .uri("http://192.168.219.100:8001/Llama_stream")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(llamaRequestBody)
                 .retrieve()
@@ -60,7 +60,7 @@ class RoomService(
             webClient.build()
             
                 .post()
-                .uri("http://192.168.219.100:8000/Bllossom_stream")
+                .uri("http://192.168.219.100:8001/Bllossom_stream")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(bllossomRequestBody)
                 .retrieve()
@@ -100,7 +100,7 @@ Office 라우터 관련 service ->
         userid: String,
         mongo_officeroomid: String,
         input_data_set: String,
-        google_access_set: Boolean = false
+        google_access_set: Boolean
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
@@ -167,7 +167,7 @@ Office 라우터 관련 service ->
         mongo_officeroomid: String,
         index: Int,
         input_data_set: String,
-        google_access_set: Boolean = false
+        google_access_set: Boolean
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
