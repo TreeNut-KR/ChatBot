@@ -4,8 +4,8 @@ import com.TreeNut.ChatBot_Backend.model.User
 import com.TreeNut.ChatBot_Backend.service.UserService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import javax.servlet.http.HttpServletResponse
 
+@CrossOrigin(origins = ["http://localhost:3000"])
 @RestController
 @RequestMapping("/server/user")
 class UserController(private val userService: UserService) {

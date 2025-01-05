@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import reactor.core.publisher.Flux
 import java.util.concurrent.atomic.AtomicBoolean
+import java.time.Duration
 
 @Service
 class RoomService(
@@ -33,13 +34,13 @@ class RoomService(
 
             webClient.build()
                 .post()
-                .uri("http://192.168.219.100:8000/Llama_stream")
+                .uri("http://192.168.219.100:8001/Llama_stream")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(llamaRequestBody)
                 .retrieve()
                 .bodyToFlux(String::class.java)
-                .collectList() // 전체 스트리밍 데이터를 모아서 처리
-                .map { it.joinToString("") } // 각 조각을 이어서 최종 응답 생성
+                .reduce { acc, next -> acc + next } // 스트리밍 데이터를 하나의 문자열로 결합
+                .timeout(Duration.ofMinutes(10)) // 타임아웃 설정을 10분으로 조정
                 .doOnTerminate {
                     streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
                 }
@@ -49,7 +50,7 @@ class RoomService(
         }
     }
 
-        fun getBllossomResponse(inputDataSet: String): Mono<String> {
+    fun getBllossomResponse(inputDataSet: String): Mono<String> {
         return Mono.just(streamingComplete.get()).flatMap {
             streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
 
@@ -58,15 +59,15 @@ class RoomService(
             )
 
             webClient.build()
-            
                 .post()
-                .uri("http://192.168.219.100:8000/Bllossom_stream")
+                .uri("http://192.168.219.100:8001/Bllossom_stream")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(bllossomRequestBody)
                 .retrieve()
                 .bodyToFlux(String::class.java)
                 .collectList() // 전체 스트리밍 데이터를 모아서 처리
                 .map { it.joinToString("") } // 각 조각을 이어서 최종 응답 생성
+                .timeout(Duration.ofMinutes(10)) // 타임아웃 설정을 10분으로 조정
                 .doOnTerminate {
                     streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
                 }
@@ -77,10 +78,6 @@ class RoomService(
                 }
         }
     }
-
-/*
-Office 라우터 관련 service ->
-*/
 
     fun createOfficeroom(userid: String): Mono<Map<*, *>> {
         val requestBody = mapOf(
@@ -100,18 +97,17 @@ Office 라우터 관련 service ->
         userid: String,
         mongo_officeroomid: String,
         input_data_set: String,
-        google_access_set: Boolean = false
+        google_access_set: Boolean
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
         return getLlamaResponse(input_data_set, google_access_set).flatMap { output_data_set ->
-
-            // 요청 데이터가 FastAPI의 스키마와 일치하는지 확인
+            val truncatedOutputData = output_data_set.take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
                 "id" to mongo_officeroomid,
                 "input_data" to input_data_set,
-                "output_data" to output_data_set
+                "output_data" to truncatedOutputData
             )
 
             webClient.build()
@@ -120,6 +116,11 @@ Office 라우터 관련 service ->
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus({ status -> status.is4xxClientError || status.is5xxServerError }) { clientResponse ->
+                    clientResponse.bodyToMono(String::class.java).flatMap { errorBody ->
+                        Mono.error(RuntimeException("Error response from server: $errorBody"))
+                    }
+                }
                 .bodyToMono(Map::class.java)
         }
     }
@@ -167,18 +168,18 @@ Office 라우터 관련 service ->
         mongo_officeroomid: String,
         index: Int,
         input_data_set: String,
-        google_access_set: Boolean = false
+        google_access_set: Boolean
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
         return getLlamaResponse(input_data_set, google_access_set).flatMap { output_data_set ->
-
+            val truncatedOutputData = output_data_set.take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
                 "id" to mongo_officeroomid,
                 "index" to index,
                 "input_data" to input_data_set,
-                "output_data" to output_data_set
+                "output_data" to truncatedOutputData
             )
 
             webClient.build()
@@ -215,10 +216,6 @@ Office 라우터 관련 service ->
         return Mono.fromCallable { officeroomRepository.save(newOfficeroom) }
             .subscribeOn(Schedulers.boundedElastic())
     }
-
-/*
-Chatroom 라우터 관련 service ->
-*/
 
     fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
         val newChatroom = Chatroom(
