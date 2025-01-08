@@ -95,7 +95,7 @@ class RoomService(
 
     fun addOfficeroom(
         userid: String,
-        mongo_officeroomid: String,
+        mongo_chatroomid: String,  // 필드명 변경
         input_data_set: String,
         google_access_set: Boolean
     ): Mono<Map<*, *>> {
@@ -105,7 +105,7 @@ class RoomService(
             val truncatedOutputData = output_data_set.take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
-                "id" to mongo_officeroomid,
+                "id" to mongo_chatroomid,  // 필드명 변경
                 "input_data" to input_data_set,
                 "output_data" to truncatedOutputData
             )
@@ -125,10 +125,10 @@ class RoomService(
         }
     }
 
-    fun saveOfficeroom(userid: String, mongo_officeroomid: String): Officeroom {
+    fun saveOfficeroom(userid: String, mongo_chatroomid: String): Officeroom {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongo_officeroomid = mongo_officeroomid
+            mongo_chatroomid = mongo_chatroomid  // 필드명 변경
         )
         return officeroomRepository.save(newOfficeroom)
     }
@@ -148,10 +148,10 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun deleteOfficeroom(userid: String, mongo_officeroomid: String): Mono<Map<*, *>> {
+    fun deleteOfficeroom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_officeroomid
+            "id" to mongo_chatroomid  // 필드명 변경
         )
 
         return webClient.build()
@@ -165,7 +165,7 @@ class RoomService(
 
     fun updateOfficeroomLog(
         userid: String,
-        mongo_officeroomid: String,
+        mongo_chatroomid: String,  // 필드명 변경
         index: Int,
         input_data_set: String,
         google_access_set: Boolean
@@ -176,7 +176,7 @@ class RoomService(
             val truncatedOutputData = output_data_set.take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
-                "id" to mongo_officeroomid,
+                "id" to mongo_chatroomid,  // 필드명 변경
                 "index" to index,
                 "input_data" to input_data_set,
                 "output_data" to truncatedOutputData
@@ -192,10 +192,10 @@ class RoomService(
         }
     }
 
-    fun deleteOfficeroomLog(userid: String, mongo_officeroomid: String, index: Int): Mono<Map<*, *>> {
+    fun deleteOfficeroomLog(userid: String, mongo_chatroomid: String, index: Int): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_officeroomid,
+            "id" to mongo_chatroomid,  // 필드명 변경
             "index" to index
         )
 
@@ -208,10 +208,10 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {
+    fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongo_officeroomid = mongo_chatroomid
+            mongo_chatroomid = mongo_chatroomid  // 필드명 변경
         )
         return Mono.fromCallable { officeroomRepository.save(newOfficeroom) }
             .subscribeOn(Schedulers.boundedElastic())
