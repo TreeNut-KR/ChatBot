@@ -151,10 +151,11 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
       }
 
-      // 토큰 디버깅
-      console.log('로컬 스토리지의 JWT 토큰:', token);
-
-      const requestBody = { input_data: inputText };
+      // 요청 바디 업데이트
+      const requestBody = {
+        input_data_set: inputText,
+        google_access_set: "true",
+      };
 
       // 디버깅: 요청 헤더와 본문 출력
       console.log('요청 URL:', 'http://localhost:8080/server/chatroom/office');

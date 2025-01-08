@@ -69,5 +69,5 @@ CREATE TABLE officeroom (
     updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
     
     PRIMARY KEY(idx),
-    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE, /*외부키 설정*/
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE /*외부키 설정*/
 ) ENGINE=InnoDB CHARSET=utf8mb4;
