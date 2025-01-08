@@ -5,7 +5,6 @@ CREATE DATABASE IF NOT EXISTS chatbot;
 
 USE chatbot;
 
-
 -- 유저
 CREATE TABLE users (
     idx INT AUTO_INCREMENT,
@@ -20,7 +19,6 @@ CREATE TABLE users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
-
 
 -- 캐릭터
 CREATE TABLE characters (
@@ -54,20 +52,18 @@ CREATE TABLE chatroom (
     mongo_chatroomid VARCHAR(512),
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
-    
     PRIMARY KEY(idx),
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE, /*외부키 설정*/
     FOREIGN KEY (characters_idx) REFERENCES characters(idx) ON DELETE CASCADE /*외부키 설정*/
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
 -- 채팅방 (GPT 채팅)
-CREATE TABLE officeroom (
+CREATE TABLE IF NOT EXISTS officeroom (
     idx INT AUTO_INCREMENT,
     userid VARCHAR(100),
-    mongo_chatroomid VARCHAR(100),
+    mongo_chatroomid VARCHAR(512),
     created_at DATETIME DEFAULT NOW(),
     updated_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
-    
     PRIMARY KEY(idx),
-    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE, /*외부키 설정*/
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE /*외부키 설정*/
 ) ENGINE=InnoDB CHARSET=utf8mb4;
