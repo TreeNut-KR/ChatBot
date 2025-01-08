@@ -9,13 +9,13 @@ data class Officeroom(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idx")
-    val idx: Long? = null,
+    val idx: Long = 0,
 
     @Column(name = "userid", nullable = false, length = 100)
     val userid: String, // 외래 키로 설정될 수 있음
 
-    @Column(name = "mongo_officeroomid", length = 100)
-    val mongo_officeroomid: String? = null,
+    @Column(name = "mongo_chatroomid", length = 100)
+    val mongo_chatroomid: String? = null,
 
     @Column(name = "created_at", updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
