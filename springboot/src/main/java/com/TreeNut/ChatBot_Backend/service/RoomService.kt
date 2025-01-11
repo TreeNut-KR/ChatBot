@@ -23,8 +23,8 @@ class RoomService(
     // streamingComplete 변수 초기화
     private val streamingComplete = AtomicBoolean(true)
 
-    fun getLlamaResponse(inputDataSet: String, google_access_set: Boolean): Mono<String> {
-        return Mono.just(streamingComplete.get()).flatMap {
+    fun getLlamaResponse(inputDataSet: String, google_access_set: Boolean): Flux<String> {
+        return Flux.just(streamingComplete.get()).flatMapMany {
             streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
 
             val llamaRequestBody = mapOf(
@@ -39,13 +39,16 @@ class RoomService(
                 .bodyValue(llamaRequestBody)
                 .retrieve()
                 .bodyToFlux(String::class.java)
-                .reduce { acc, next -> acc + next } // 스트리밍 데이터를 하나의 문자열로 결합
                 .timeout(Duration.ofMinutes(10)) // 타임아웃 설정을 10분으로 조정
                 .doOnTerminate {
                     streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
                 }
-                .map { response ->
-                    response.ifEmpty { "Llama 응답 실패" }
+                .onErrorResume { throwable ->
+                    if (throwable is java.util.concurrent.TimeoutException) {
+                        Flux.just("Llama_stream 타임아웃이 발생하였습니다.")
+                    } else {
+                        Flux.error(throwable)
+                    }
                 }
         }
     }
@@ -70,6 +73,13 @@ class RoomService(
                 .timeout(Duration.ofMinutes(10)) // 타임아웃 설정을 10분으로 조정
                 .doOnTerminate {
                     streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
+                }
+                .onErrorResume { throwable ->
+                    if (throwable is java.util.concurrent.TimeoutException) {
+                        Mono.just("Bllossom_stream 타임아웃이 발생하였습니다.")
+                    } else {
+                        Mono.error(throwable)
+                    }
                 }
                 .map { response ->
                     println("Bllossom Response Length: ${response.length}")

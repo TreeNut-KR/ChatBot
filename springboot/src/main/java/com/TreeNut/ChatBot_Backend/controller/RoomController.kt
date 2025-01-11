@@ -5,6 +5,8 @@ import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import reactor.core.publisher.Mono
+import reactor.core.publisher.Flux
+import org.springframework.http.MediaType
 
 @RestController
 @RequestMapping("/server/chatroom")
@@ -41,10 +43,9 @@ class RoomController(
         )
     }
 
-    @PostMapping("/office")
+    @GetMapping("/office")
     fun createGptRoom(
-        @RequestHeader("Authorization") authorization: String?,
-        @RequestBody inputData: Map<String, Any>
+        @RequestHeader("Authorization") authorization: String?
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
             ?: return Mono.just(
@@ -66,9 +67,6 @@ class RoomController(
                 )
             )
 
-        val inputDataSet = inputData["input_data_set"] as? String ?: ""
-        val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
-
         return roomService.createOfficeroom(userId)
             .flatMap { response ->
                 val id = response["Document ID"] as? String
@@ -81,19 +79,15 @@ class RoomController(
                         )
                     )
 
-                roomService.addOfficeroom(userId, id, inputDataSet, googleAccessSet)
-                    .flatMap { addResponse ->
-                        roomService.saveOfficeroomToMySQL(userId, id)
-                            .map { savedOfficeroom ->
-                                ResponseEntity.ok(
-                                    mapOf<String, Any>(
-                                        "status" to 200,
-                                        "message" to "채팅방이 성공적으로 생성되었고 로그가 저장되었습니다.",
-                                        "add_log_response" to addResponse,
-                                        "mysql_officeroom" to savedOfficeroom
-                                    )
-                                )
-                            }
+                roomService.saveOfficeroomToMySQL(userId, id)
+                    .map { savedOfficeroom ->
+                        ResponseEntity.ok(
+                            mapOf<String, Any>(
+                                "status" to 200,
+                                "message" to "채팅방이 성공적으로 생성되었습니다.",
+                                "mysql_officeroom" to savedOfficeroom
+                            )
+                        )
                     }
             }
             .defaultIfEmpty(
@@ -104,6 +98,27 @@ class RoomController(
                     )
                 )
             )
+    }
+    
+    @PostMapping("/office/{id}/get_response", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun getGptResponse(
+        @RequestHeader("Authorization") authorization: String?,
+        @PathVariable id: String,
+        @RequestBody inputData: Map<String, Any>
+    ): Flux<String> {
+        val token = authorization
+            ?: return Flux.just("토큰 없음")
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Flux.just("유효한 토큰이 필요합니다.")
+
+        val inputDataSet = inputData["input_data_set"] as? String ?: ""
+        val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
+
+        return roomService.addOfficeroom(userId, id, inputDataSet, googleAccessSet)
+            .flatMapMany { addResponse ->
+                roomService.getLlamaResponse(inputDataSet, googleAccessSet)
+            }
     }
 
     @PostMapping("/office/{id}/load_logs")
