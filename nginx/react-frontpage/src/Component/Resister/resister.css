@@ -5,7 +5,7 @@
     justify-content: center; /* 세로 중앙 정렬 */
     width: 93vw;
     height: 100vh; /* 화면 전체 높이 */
-    background-color: #f0f0f0;
+    background-color: #1A1918;
 }
 
 .resister-form {
@@ -68,3 +68,14 @@
     margin-top: 10px;
     font-size: 14px;
 }
+.title_text {
+    color: black;
+    font-size: 20px;
+    text-align: center;
+    display: flex; /* Flexbox 활성화 */
+    align-items: center; /* 수직 중앙 정렬 */
+    justify-content: center; /* 가로 중앙 정렬 */
+    height: 50px; /* 고정 높이 지정 */
+    margin-bottom: 20px; /* 폼 내용과 간격 추가 */
+}
+

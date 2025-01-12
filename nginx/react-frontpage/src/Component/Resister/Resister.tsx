@@ -45,63 +45,64 @@ const Resister: React.FC = () => {
 
   return (
     <div className="resister-container">
-      <h2>회원가입</h2>
-      <form onSubmit={handleSubmit} className="resister-form">
-        
-        <div className="inputGroup">
-          <div className="input-label">이름</div>
-          <input
-            type="text"
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            className="resister-input"
-            autoComplete="off" // 자동 완성 비활성화
-          />
-        </div>
 
-        <div className="inputGroup">
-          <div className="input-label">아이디</div>
-          <input
-            type="text"
-            id="Id"
-            value={Id}
-            onChange={(e) => setId(e.target.value)}
-            required
-            className="resister-input"
-            autoComplete="off" // 자동 완성 비활성화
-          />
-        </div>
+<form onSubmit={handleSubmit} className="resister-form">
+  <h2 className="title_text">회원가입</h2>
+  <div className="inputGroup">
+    <div className="input-label">이름</div>
+    <input
+      type="text"
+      id="username"
+      value={username}
+      onChange={(e) => setUsername(e.target.value)}
+      required
+      className="resister-input"
+      autoComplete="off"
+    />
+  </div>
 
-        <div className="inputGroup">
-          <div className="input-label">비밀번호</div>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="resister-input"
-            autoComplete="off" // 자동 완성 비활성화
-          />
-        </div>
+  <div className="inputGroup">
+    <div className="input-label">아이디</div>
+    <input
+      type="text"
+      id="Id"
+      value={Id}
+      onChange={(e) => setId(e.target.value)}
+      required
+      className="resister-input"
+      autoComplete="off"
+    />
+  </div>
 
-        <div className="inputGroup">
-          <div className="input-label">이메일</div>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="resister-input"
-            autoComplete="off" // 자동 완성 비활성화
-          />
-        </div>
+  <div className="inputGroup">
+    <div className="input-label">비밀번호</div>
+    <input
+      type="password"
+      id="password"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      required
+      className="resister-input"
+      autoComplete="off"
+    />
+  </div>
 
-        <button type="submit" className="resister-button">회원가입</button>
-      </form>
+  <div className="inputGroup">
+    <div className="input-label">이메일</div>
+    <input
+      type="email"
+      id="email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      required
+      className="resister-input"
+      autoComplete="off"
+    />
+  </div>
+
+  <button type="submit" className="resister-button">회원가입</button>
+</form>
+
 
       {error && <p className="error-message">{error}</p>}
       {success && <p className="success-message">회원가입 성공!</p>}

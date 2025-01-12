@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Chatting from '../Component/Chatting/Chatting';
 import Header from '../Component/Header/Header';
+
 // Message 타입 정의
 type Message = {
   user: string;
@@ -25,14 +26,14 @@ const Home: React.FC = () => {
   };
 
   return (
-  <div className='flex flex-col item-center w-full h-full'>
-    <Header/>
-    <div className="flex items-center w-full justify-center h-full">
-      <div className="relative max-w-[808px] p-5 pt-10 pb-24 w-full h-full justify-center items-center ">
-        <Chatting messages={messages} onSend={handleSendMessage} />
+    <div className="flex flex-col items-center w-full h-full">
+      <Header />
+      <div className="flex items-center w-full justify-center h-full">
+        <div className="relative max-w-[808px] p-5 pt-10 pb-24 w-full h-[calc(100vh-100px)]">
+          <Chatting messages={messages} onSend={handleSendMessage} />
+        </div>
       </div>
     </div>
-  </div>
   );
 };
 

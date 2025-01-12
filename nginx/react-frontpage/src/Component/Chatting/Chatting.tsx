@@ -125,13 +125,22 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    const token = localStorage.getItem('jwt-token');
+    if (!token) {
+        // JWT 토큰이 없을 경우 알림과 함께 입력값 초기화
+        alert('로그인을 해주세요.');
+        setUserInput('');
+        return; // 함수 종료
+    }
+
     if (userInput.trim() === '') return;
 
     appendMessage({
-      user: '나',
-      text: userInput,
-      className: 'bg-indigo-500 text-black self-end',
-      type: '',
+        user: '나',
+        text: userInput,
+        className: 'bg-indigo-500 text-black self-end',
+        type: '',
     });
     setUserInput('');
     setIsLoading(true);
@@ -148,15 +157,17 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     try {
       const token = localStorage.getItem('jwt-token');
       if (!token) {
-        throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
+        // JWT 토큰이 없을 경우 팝업창 표시
+        alert('로그인을 해주세요.');
+        return; // 함수 종료
       }
-
+  
       // 요청 바디 업데이트
       const requestBody = {
         input_data_set: inputText,
         google_access_set: "true",
       };
-
+  
       // 디버깅: 요청 헤더와 본문 출력
       console.log('요청 URL:', 'http://localhost:8080/server/chatroom/office');
       console.log('요청 헤더:', {
@@ -164,7 +175,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         Authorization: `${token}`,
       });
       console.log('요청 본문:', requestBody);
-
+  
       const response = await fetch(`http://localhost:8080/server/chatroom/office`, {
         method: 'POST',
         headers: {
@@ -173,22 +184,22 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         },
         body: JSON.stringify(requestBody),
       });
-
+  
       if (!response.ok) {
         console.error('응답 상태 코드:', response.status);
         throw new Error('서버 요청 실패');
       }
-
+  
       const reader = response.body?.getReader();
       const decoder = new TextDecoder('utf-8');
       let aiMessage = '';
-
+  
       while (true) {
         const { done, value } = (await reader?.read()) || {};
         if (done) break;
         aiMessage += decoder.decode(value);
       }
-
+  
       appendMessage({
         user: 'AI',
         text: aiMessage,
