@@ -12,24 +12,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 @EnableWebSecurity
 class SecurityConfig : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
-        registry.addMapping("/**")
-            .allowedOrigins("http://localhost") // nginx를 통해 프록시 처리됨
-            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedHeaders("*")
-            .allowCredentials(true)
-    }
-
-    @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http
-            .csrf().disable()
-            .cors().and()
-            .authorizeHttpRequests { auth ->
-                auth
-                    .requestMatchers("/server/user/**", "/oauth2/**", "/oauth/callback/kakao").permitAll()
-                    .anyRequest().authenticated()
-            }
-            .oauth2Login() // OAuth2 로그인 활성화
-        return http.build()
+        registry.addMapping("/**") // 모든 경로에 대해 CORS 설정
+            .allowedOrigins("http://localhost:80") // 허용할 출처 (예: React 앱)
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 허용할 HTTP 메서드
+            .allowedHeaders("*") // 허용할 헤더
+            .allowCredentials(true) // 인증 정보를 포함할 수 있도록 설정
     }
 }

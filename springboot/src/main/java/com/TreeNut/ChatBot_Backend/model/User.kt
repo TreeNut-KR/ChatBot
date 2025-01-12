@@ -31,6 +31,8 @@ data class User(
     @Enumerated(EnumType.STRING)
     @Column(name = "login_type", nullable = false)
     val loginType: LoginType = LoginType.LOCAL,
+    @Column(name = "manager_boolean", columnDefinition = "BOOLEAN")
+    val manager_boolean: Boolean? = false,
 
     @Column(name = "created_at", updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

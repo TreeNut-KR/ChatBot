@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClient
 
+@CrossOrigin(origins = ["http://localhost:3000"])
 @RestController
 @RequestMapping("/server/user")
 class UserController(private val userService: UserService,
@@ -54,67 +55,5 @@ class UserController(private val userService: UserService,
         } else {
             ResponseEntity.status(401).body(mapOf("status" to 401, "message" to "Invalid credentials"))
         }
-    }
-
-    @PostMapping("/social/kakao/login")
-    fun kakaoLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
-        val tokenUrl = "https://kauth.kakao.com/oauth/token"
-        val userInfoUrl = "https://kapi.kakao.com/v2/user/me"
-
-        // Step 1: Access Token 요청
-        val tokenResponse = webClientBuilder.build()
-            .post()
-            .uri(tokenUrl)
-            .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .bodyValue(
-                mapOf(
-                    "grant_type" to "authorization_code",
-                    "client_id" to kakaoClientId,
-                    "redirect_uri" to kakaoRedirectUri,
-                    "code" to (body["code"] ?: "")
-                )
-            )
-            .retrieve()
-            .bodyToMono(Map::class.java)
-            .block() ?: return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(mapOf("message" to "Failed to fetch access token"))
-
-        val accessToken = tokenResponse["access_token"] as? String
-            ?: return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("message" to "Access token not found"))
-
-        // Step 2: 사용자 정보 요청
-        val userInfoResponse = webClientBuilder.build()
-            .get()
-            .uri(userInfoUrl)
-            .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
-            .retrieve()
-            .bodyToMono(Map::class.java)
-            .block() ?: return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(mapOf("message" to "Failed to fetch user info"))
-
-        val kakaoId = userInfoResponse["id"].toString()
-        val nickname = (userInfoResponse["properties"] as? Map<*, *>)?.get("nickname") as? String ?: "Anonymous"
-        val email = (userInfoResponse["kakao_account"] as? Map<*, *>)?.get("email") as? String ?: ""
-
-        // Step 3: 회원가입 또는 로그인 처리
-        val isNewUser = userService.isFirstLogin("KAKAO_$kakaoId")
-        val user = if (isNewUser) {
-            // 새 사용자 등록
-            val termsAccepted = body["termsAccepted"]?.toBoolean() ?: false
-            if (!termsAccepted) {
-                return ResponseEntity.badRequest().body(
-                    mapOf("status" to 400, "message" to "Terms and conditions must be accepted")
-                )
-            }
-
-            userService.registerKakaoUser(kakaoId, nickname, email)
-        } else {
-            // 기존 사용자 반환
-            userService.findUserByUserid("KAKAO_$kakaoId")
-        }
-
-        val token = userService.generateToken(user!!)
-        return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to user.username, "isNewUser" to isNewUser))
     }
 }

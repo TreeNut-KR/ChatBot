@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import reactor.core.publisher.Flux
 import java.util.concurrent.atomic.AtomicBoolean
+import java.time.Duration
 
 @Service
 class RoomService(
@@ -22,35 +23,66 @@ class RoomService(
     // streamingComplete 변수 초기화
     private val streamingComplete = AtomicBoolean(true)
 
-    private fun getLlamaResponse(inputDataSet: String): Mono<String> {
-        return Mono.just(streamingComplete.get()).flatMap {
+    fun getLlamaResponse(inputDataSet: String, google_access_set: Boolean): Flux<String> {
+        return Flux.just(streamingComplete.get()).flatMap {
             streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
 
             val llamaRequestBody = mapOf(
+                "input_data" to inputDataSet,
+                "google_access_set" to google_access_set
+            )
+
+            webClient.build()
+                .post()
+                .uri("http://192.168.219.100:8001/Llama_stream")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(llamaRequestBody)
+                .retrieve()
+                .bodyToFlux(String::class.java)
+                .timeout(Duration.ofMinutes(10)) // 타임아웃 설정을 10분으로 조정
+                .doOnTerminate {
+                    streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
+                }
+                .onErrorResume { throwable ->
+                    if (throwable is java.util.concurrent.TimeoutException) {
+                        Flux.just("Llama_stream 타임아웃이 발생하였습니다.")
+                    } else {
+                        Flux.error(throwable)
+                    }
+                }
+        }
+    }
+
+    fun getBllossomResponse(inputDataSet: String): Mono<String> {
+        return Mono.just(streamingComplete.get()).flatMap {
+            streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
+
+            val bllossomRequestBody = mapOf(
                 "input_data" to inputDataSet
             )
 
             webClient.build()
                 .post()
-                .uri("http://192.168.219.100:8000/Llama_stream")
+                .uri("http://192.168.219.100:8001/Bllossom_stream")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(llamaRequestBody)
+                .bodyValue(bllossomRequestBody)
                 .retrieve()
                 .bodyToFlux(String::class.java)
                 .collectList() // 전체 스트리밍 데이터를 모아서 처리
                 .map { it.joinToString("") } // 각 조각을 이어서 최종 응답 생성
+                .timeout(Duration.ofMinutes(10)) // 타임아웃 설정을 10분으로 조정
                 .doOnTerminate {
                     streamingComplete.set(true) // 스트리밍이 끝나면 완료 상태로 설정
                 }
-                .map { response ->
-                    response.ifEmpty { "Llama 응답 실패" }
+                .onErrorResume { throwable ->
+                    if (throwable is java.util.concurrent.TimeoutException) {
+                        Mono.just("Bllossom_stream 타임아웃이 발생하였습니다.")
+                    } else {
+                        Mono.error(throwable)
+                    }
                 }
         }
     }
-
-/*
-Office 라우터 관련 service ->
-*/
 
     fun createOfficeroom(userid: String): Mono<Map<*, *>> {
         val requestBody = mapOf(
@@ -68,19 +100,19 @@ Office 라우터 관련 service ->
 
     fun addOfficeroom(
         userid: String,
-        mongo_officeroomid: String,
-        input_data_set: String
+        mongo_chatroomid: String,  // 필드명 변경
+        input_data_set: String,
+        google_access_set: Boolean
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
-
-            // 요청 데이터가 FastAPI의 스키마와 일치하는지 확인
+        return getLlamaResponse(input_data_set, google_access_set).collectList().flatMap { output_data_set ->
+            val truncatedOutputData = output_data_set.joinToString("").take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
-                "id" to mongo_officeroomid,
+                "id" to mongo_chatroomid,  // 필드명 변경
                 "input_data" to input_data_set,
-                "output_data" to output_data_set
+                "output_data" to truncatedOutputData
             )
 
             webClient.build()
@@ -89,14 +121,19 @@ Office 라우터 관련 service ->
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(requestBody)
                 .retrieve()
+                .onStatus({ status -> status.is4xxClientError || status.is5xxServerError }) { clientResponse ->
+                    clientResponse.bodyToMono(String::class.java).flatMap { errorBody ->
+                        Mono.error(RuntimeException("Error response from server: $errorBody"))
+                    }
+                }
                 .bodyToMono(Map::class.java)
         }
     }
 
-    fun saveOfficeroom(userid: String, mongo_officeroomid: String): Officeroom {
+    fun saveOfficeroom(userid: String, mongo_chatroomid: String): Officeroom {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongo_officeroomid = mongo_officeroomid
+            mongo_chatroomid = mongo_chatroomid  // 필드명 변경
         )
         return officeroomRepository.save(newOfficeroom)
     }
@@ -116,10 +153,10 @@ Office 라우터 관련 service ->
             .bodyToMono(Map::class.java)
     }
 
-    fun deleteOfficeroom(userid: String, mongo_officeroomid: String): Mono<Map<*, *>> {
+    fun deleteOfficeroom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_officeroomid
+            "id" to mongo_chatroomid  // 필드명 변경
         )
 
         return webClient.build()
@@ -133,20 +170,21 @@ Office 라우터 관련 service ->
 
     fun updateOfficeroomLog(
         userid: String,
-        mongo_officeroomid: String,
+        mongo_chatroomid: String,  // 필드명 변경
         index: Int,
-        input_data_set: String
+        input_data_set: String,
+        google_access_set: Boolean
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
-
+        return getLlamaResponse(input_data_set, google_access_set).collectList().flatMap { output_data_set ->
+            val truncatedOutputData = output_data_set.joinToString("").take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
-                "id" to mongo_officeroomid,
+                "id" to mongo_chatroomid,  // 필드명 변경
                 "index" to index,
                 "input_data" to input_data_set,
-                "output_data" to output_data_set
+                "output_data" to truncatedOutputData
             )
 
             webClient.build()
@@ -159,10 +197,10 @@ Office 라우터 관련 service ->
         }
     }
 
-    fun deleteOfficeroomLog(userid: String, mongo_officeroomid: String, index: Int): Mono<Map<*, *>> {
+    fun deleteOfficeroomLog(userid: String, mongo_chatroomid: String, index: Int): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_officeroomid,
+            "id" to mongo_chatroomid,  // 필드명 변경
             "index" to index
         )
 
@@ -175,18 +213,14 @@ Office 라우터 관련 service ->
             .bodyToMono(Map::class.java)
     }
 
-    fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {
+    fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongo_officeroomid = mongo_chatroomid
+            mongo_chatroomid = mongo_chatroomid  // 필드명 변경
         )
         return Mono.fromCallable { officeroomRepository.save(newOfficeroom) }
             .subscribeOn(Schedulers.boundedElastic())
     }
-
-/*
-Chatroom 라우터 관련 service ->
-*/
 
     fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
         val newChatroom = Chatroom(

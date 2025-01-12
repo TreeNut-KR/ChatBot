@@ -23,17 +23,38 @@ data class Character(
     @Column(name = "character_setting", length = 255)
     val characterSetting: String? = null,
 
+    @Column(name = "tone", length = 30)
+    val tone: String? = null, // 예: "공손한", "유쾌한", "단호한"
+
+    @Column(name = "energy_level")
+    val energyLevel: Int? = null, // 에너지 수준 (1~10): 낮음(1) ~ 높음(10)
+
+    @Column(name = "politeness")
+    val politeness: Int? = null, // 공손함 (1~10): 비공손(1) ~ 매우 공손(10)
+
+    @Column(name = "humor")
+    val humor: Int? = null, // 유머 감각 (1~10): 진지(1) ~ 유머러스(10)
+
+    @Column(name = "assertiveness")
+    val assertiveness: Int? = null, // 단호함 (1~10): 온화(1) ~ 단호(10)
+
     @Column(name = "description", length = 255)
     val description: String? = null,
 
     @Column(name = "greeting", columnDefinition = "TEXT")
     val greeting: String? = null,
 
-    @Column(name = "accesslevel")
-    val accessLevel: Boolean? = null,
+    @Column(name = "accessLevel")
+    val accessLevel: Boolean? = true, // 공개여부 미선택 시 공개
 
     @Column(name = "image")
     val image: String? = null,
+
+    @Column(name = "like_count")
+    var like_count: Int = 0,
+
+    @Column(name = "liked_users", columnDefinition = "TEXT") // liked_users 추가
+    var liked_users: String? = null, // 좋아요를 누른 유저의 ID를 저장할 변수
 
     @Column(name = "created_at", updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),

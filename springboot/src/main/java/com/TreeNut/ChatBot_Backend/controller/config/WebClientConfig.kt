@@ -13,7 +13,7 @@ class WebClientConfig {
     @Bean
     fun webClientBuilder(): WebClient.Builder {
         val httpClient = HttpClient.create()
-            .responseTimeout(Duration.ofSeconds(360)) // 응답 타임아웃을 60초로 설정
+            .responseTimeout(Duration.ofMinutes(10)) // 응답 타임아웃을 10분으로 설정
 
         return WebClient.builder()
             .baseUrl("http://fastapi:8000") // 기본 URL 설정
