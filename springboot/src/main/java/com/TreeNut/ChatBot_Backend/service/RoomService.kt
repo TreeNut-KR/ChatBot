@@ -24,7 +24,7 @@ class RoomService(
     private val streamingComplete = AtomicBoolean(true)
 
     fun getLlamaResponse(inputDataSet: String, google_access_set: Boolean): Flux<String> {
-        return Flux.just(streamingComplete.get()).flatMapMany {
+        return Flux.just(streamingComplete.get()).flatMap {
             streamingComplete.set(false) // 스트리밍 시작 시 완료 상태 설정을 false로 변경
 
             val llamaRequestBody = mapOf(
@@ -81,11 +81,6 @@ class RoomService(
                         Mono.error(throwable)
                     }
                 }
-                .map { response ->
-                    println("Bllossom Response Length: ${response.length}")
-                    val truncatedResponse = response.take(512)
-                    response.ifEmpty { "Bllossom 응답 실패" }
-                }
         }
     }
 
@@ -111,8 +106,8 @@ class RoomService(
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set, google_access_set).flatMap { output_data_set ->
-            val truncatedOutputData = output_data_set.take(500) // output_data의 길이를 500자로 제한
+        return getLlamaResponse(input_data_set, google_access_set).collectList().flatMap { output_data_set ->
+            val truncatedOutputData = output_data_set.joinToString("").take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
                 "id" to mongo_chatroomid,  // 필드명 변경
@@ -182,8 +177,8 @@ class RoomService(
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set, google_access_set).flatMap { output_data_set ->
-            val truncatedOutputData = output_data_set.take(500) // output_data의 길이를 500자로 제한
+        return getLlamaResponse(input_data_set, google_access_set).collectList().flatMap { output_data_set ->
+            val truncatedOutputData = output_data_set.joinToString("").take(500) // output_data의 길이를 500자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
                 "id" to mongo_chatroomid,  // 필드명 변경
