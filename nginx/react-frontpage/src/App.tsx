@@ -8,6 +8,7 @@ import UserProfile from './Pages/UserProfile';
 import Resister from './Component/Resister/Resister';
 import Login from './Component/Login/Login';
 import CharacterChat from './Pages/CharacterChat';
+import Profile from './Component/Profile/Profile';
 
 const App: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ const App: React.FC = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/userProfile" element={<UserProfile />} />
       <Route path="/resister" element={<Resister />} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
   </div>
 </div>
