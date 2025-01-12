@@ -9,12 +9,12 @@ data class Officeroom(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "idx")
-    val idx: Long = 0,
+    val idx: Long? = null,
 
     @Column(name = "userid", nullable = false, length = 100)
     val userid: String, // 외래 키로 설정될 수 있음
 
-    @Column(name = "mongo_chatroomid", length = 100)
+    @Column(name = "mongo_chatroomid", length = 512)
     val mongo_chatroomid: String? = null,
 
     @Column(name = "created_at", updatable = false)
