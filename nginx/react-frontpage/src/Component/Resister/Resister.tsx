@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './resister.css';
 
 const Resister: React.FC = () => {
-  const [Id, setId] = useState<string>(''); // 아이디
-  const [password, setPassword] = useState<string>(''); // 비밀번호
-  const [username, setUsername] = useState<string>(''); // 이름
-  const [email, setEmail] = useState<string>(''); // 이메일
-  const [idError, setIdError] = useState<string>(''); // 아이디 경고 메시지
-  const [emailError, setEmailError] = useState<string>(''); // 이메일 경고 메시지
+  const [Id, setId] = useState<string>(''); 
+  const [password, setPassword] = useState<string>('');
+  const [username, setUsername] = useState<string>(''); 
+  const [email, setEmail] = useState<string>(''); 
+  const [idError, setIdError] = useState<string>(''); 
+  const [emailError, setEmailError] = useState<string>(''); 
 
   useEffect(() => {
     setId('');
@@ -50,7 +49,7 @@ const Resister: React.FC = () => {
       setIdError('아이디에 한글을 입력할 수 없습니다.');
     } else {
       setIdError('');
-      setId(value); // 한글이 아닌 경우에만 상태 업데이트
+      setId(value);
     }
   };
 
@@ -61,69 +60,77 @@ const Resister: React.FC = () => {
       setEmailError('이메일에 한글을 입력할 수 없습니다.');
     } else {
       setEmailError('');
-      setEmail(value); // 한글이 아닌 경우에만 상태 업데이트
+      setEmail(value);
     }
   };
 
   return (
-    <div className="resister-container">
-      <form onSubmit={handleSubmit} className="resister-form">
-        <h2 className="title_text">회원가입</h2>
-        <div className="inputGroup">
-          <div className="input-label">이름</div>
+    <div className="flex flex-col items-center justify-center w-[93vw] h-screen bg-[#1A1918]">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-12 rounded-md text-left w-[400px]"
+      >
+        <h2 className="text-black tracking-wide font-bold text-2xl text-center flex  justify-center h-[60px] mb-9">
+          회원가입
+        </h2>
+
+        <div className="mb-4">
+          <label className="block text-sm text-gray-800 mb-1">이름</label>
           <input
             type="text"
             id="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            className="resister-input"
+            className="w-full p-2 border-b-2 border-gray-300 text-gray-700 focus:outline-none focus:border-blue-500"
             autoComplete="off"
           />
         </div>
 
-        <div className="inputGroup">
-          <div className="input-label">아이디</div>
+        <div className="mb-4">
+          <label className="block text-sm text-gray-800 mb-1">아이디</label>
           <input
             type="text"
             id="Id"
             value={Id}
             onChange={handleIdChange}
             required
-            className="resister-input"
-            autoComplete="off"
+            className="w-full p-2 border-b-2 text-gray-700 border-gray-300 focus:outline-none focus:border-blue-500"
           />
-          {idError && <p className="error-message">{idError}</p>}
+          {idError && <p className="text-red-600 text-sm mt-2">{idError}</p>}
         </div>
 
-        <div className="inputGroup">
-          <div className="input-label">비밀번호</div>
+        <div className="mb-4">
+          <label className="block text-sm text-gray-800 mb-1">비밀번호</label>
           <input
             type="password"
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="resister-input"
-            autoComplete="off"
+            className="w-full p-2 border-b-2 border-gray-300 focus:outline-none text-gray-700 focus:border-blue-500"
           />
         </div>
 
-        <div className="inputGroup">
-          <div className="input-label">이메일</div>
+        <div className="mb-4">
+          <label className="block text-sm text-gray-800 mb-1">이메일</label>
           <input
             type="email"
             id="email"
             value={email}
             onChange={handleEmailChange}
             required
-            className="resister-input"
-            autoComplete="off"
+            className="w-full p-2 border-b-2 text-gray-700 border-gray-300 focus:outline-none focus:border-blue-500"
           />
-          {emailError && <p className="error-message">{emailError}</p>}
+          {emailError && <p className="text-red-600 text-sm mt-2">{emailError}</p>}
         </div>
 
-        <button type="submit" className="resister-button">회원가입</button>
+        <button
+          type="submit"
+          className="w-full p-2 font-semibold bg-green-600 text-white rounded hover:bg-green-700 transition mt-4"
+        >
+          회원가입
+        </button>
       </form>
     </div>
   );
