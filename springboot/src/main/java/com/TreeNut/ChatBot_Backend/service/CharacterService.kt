@@ -26,7 +26,7 @@ import java.nio.file.Paths
 import java.nio.charset.StandardCharsets
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.jsonwebtoken.Jwts
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 import reactor.core.publisher.Mono
 
 @Service
@@ -190,12 +190,14 @@ class CharacterService(
     }
 
     fun getCharacterById(request: HttpServletRequest, characterId: Long): Character? {
-        val token = request.getHeader("Authorization")?.substring(7)
-        val userId = token?.let { tokenAuth.authGuard(it) }
-
-        if (userId == null) {
-            throw IllegalArgumentException("유효하지 않은 토큰입니다.")
+        val token = request.getHeader("Authorization")
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw IllegalArgumentException("유효한 토큰이 필요합니다.")
         }
+        
+        val actualToken = token.substring(7)
+        val userId = tokenAuth.authGuard(actualToken)
+            ?: throw IllegalArgumentException("유효하지 않은 토큰입니다.")
 
         return characterRepository.findById(characterId).orElse(null)
     }

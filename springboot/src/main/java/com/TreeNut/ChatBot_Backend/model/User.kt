@@ -31,16 +31,17 @@ data class User(
     @Enumerated(EnumType.STRING)
     @Column(name = "login_type", nullable = false)
     val loginType: LoginType = LoginType.LOCAL,
-    @Column(name = "manager_boolean", columnDefinition = "BOOLEAN")
-    val manager_boolean: Boolean? = false,
 
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "manager_boolean", nullable = false)
+    val manager_boolean: Boolean = false,
+
+    @Column(name = "created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
-    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, LocalDateTime.now(), LocalDateTime.now())
+    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, LocalDateTime.now(), LocalDateTime.now())
 
     @PreUpdate
     fun onUpdate() {

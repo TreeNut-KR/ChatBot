@@ -7,21 +7,19 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.web.AuthenticationEntryPoint
+import org.springframework.security.config.http.SessionCreationPolicy // SessionCreationPolicy import 추가
 
 @Configuration
 @EnableWebSecurity
 class SecurityConfig : WebMvcConfigurer {
-    override fun addCorsMappings(registry: CorsRegistry) {
 
-        registry.addMapping("/**") // 모든 경로에 대해 CORS 설정
-            .allowedOrigins(
-                "http://localhost:80", //정식 런칭 시 사용 도메인으로 변경
-                "http://localhost:8080",
-                "http://localhost:3000" //정식 런칭 시 삭제
-            )
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry.addMapping("/**")
+            .allowedOrigins("http://localhost") // Nginx(React)에서 오는 요청 허용
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
-            .allowCredentials(true)
+            .allowCredentials(true) // 인증 포함 (JWT 등)
     }
 
     @Bean
@@ -31,10 +29,32 @@ class SecurityConfig : WebMvcConfigurer {
             .cors().and()
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/server/user/**", "/oauth2/**", "/oauth/callback/kakao").permitAll()
+                    .requestMatchers(
+                        "/server/user/register",
+                        "/server/user/login",
+                        "/server/user/social/kakao/login", 
+                        "/oauth/callback/kakao",
+                        "/server/oauth/callback/kakao",
+                        "/server/user/social/kakao/**",
+                        "/login/oauth2/code/kakao",
+                        // 추가
+                        "/oauth/**",  // 모든 OAuth 관련 경로 허용
+                        "/callback/**" // 모든 callback 경로 허용
+                    ).permitAll()
                     .anyRequest().authenticated()
             }
-            .oauth2Login() // OAuth2 로그인 활성화
+            .sessionManagement()
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+
         return http.build()
+    }
+
+    @Bean
+    fun customAuthenticationEntryPoint(): AuthenticationEntryPoint {
+        return AuthenticationEntryPoint { _, response, _ ->
+            response.contentType = "application/json"
+            response.status = 401
+            response.writer.write("{\"status\": 401, \"message\": \"Unauthorized: 인증이 필요합니다.\"}")
+        }
     }
 }

@@ -67,10 +67,17 @@ data class Character(
         userid = "",
         characterName = "",
         characterSetting = null,
+        tone = null,
+        energyLevel = null,
+        politeness = null,
+        humor = null,
+        assertiveness = null,
         description = null,
         greeting = null,
-        accessLevel = null,
+        accessLevel = true,
         image = null,
+        like_count = 0,
+        liked_users = null,
         createdAt = LocalDateTime.now(),
         updatedAt = LocalDateTime.now()
     )

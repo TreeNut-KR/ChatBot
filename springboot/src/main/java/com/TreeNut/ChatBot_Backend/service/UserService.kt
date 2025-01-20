@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 import com.TreeNut.ChatBot_Backend.model.LoginType
+import io.jsonwebtoken.security.Keys
+import javax.crypto.SecretKey
 
 @Service
 class UserService(
@@ -21,14 +23,18 @@ class UserService(
     @Transactional
     fun register(user: User): User {
         return try {
+            // 중복 체크
+            if (userRepository.findByUserid(user.userid) != null) {
+                throw IllegalArgumentException("이미 존재하는 ID입니다.")
+            }
             val encodedUser = user.copy(password = passwordEncoder.encode(user.password))
             userRepository.save(encodedUser)
         } catch (e: Exception) {
-            throw RuntimeException("Error during user registration", e)
+            throw RuntimeException("회원가입 중 오류 발생", e)
         }
     }
 
-    @Transactional//(readOnly = true)
+    @Transactional(readOnly = true)
     fun login(userid: String, password: String): User? {
         val user = userRepository.findByUserid(userid) ?: return null
         return if (passwordEncoder.matches(password, user.password)) user else null
@@ -41,14 +47,19 @@ class UserService(
 
     @Transactional
     fun registerKakaoUser(kakaoId: String, username: String, email: String?): User {
-        val newUser = User(
-            userid = "KAKAO_$kakaoId",
-            username = username,
-            email = email ?: "",
-            loginType = LoginType.KAKAO,
-            password = null // 소셜 로그인 사용자는 비밀번호가 없음
-        )
-        return userRepository.save(newUser)
+        val existingUser = userRepository.findByUserid("KAKAO_$kakaoId")
+        return if (existingUser == null) {
+            val newUser = User(
+                userid = "KAKAO_$kakaoId",
+                username = username,
+                email = email ?: "",
+                loginType = LoginType.KAKAO,
+                password = null // 소셜 로그인 사용자는 비밀번호 없음
+            )
+            userRepository.save(newUser)
+        } else {
+            existingUser
+        }
     }
 
     @Transactional(readOnly = true)
@@ -57,12 +68,13 @@ class UserService(
     }
 
     fun generateToken(user: User): String {
-        return Jwts.builder()
-            .setSubject(user.userid) // userid를 사용하여 토큰 생성
-            .setIssuedAt(Date())
-            .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
-            .signWith(SignatureAlgorithm.HS512, jwtSecret)
-            .compact()
+    val key: SecretKey = Keys.hmacShaKeyFor(jwtSecret.toByteArray()) // ✅ 안전한 키 생성
+    return Jwts.builder()
+        .setSubject(user.userid)
+        .setIssuedAt(Date())
+        .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
+        .signWith(key, SignatureAlgorithm.HS512)
+        .compact()
     }
     
     @Transactional

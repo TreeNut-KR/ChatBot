@@ -14,7 +14,7 @@ CREATE TABLE users (
     password VARCHAR(255),
     access_token TEXT,
     refresh_token TEXT,
-    login_type ENUM('local', 'kakao', 'google') DEFAULT 'local',
+    login_type ENUM('LOCAL', 'KAKAO', 'GOOGLE') DEFAULT 'LOCAL',
     manager_boolean BOOLEAN,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

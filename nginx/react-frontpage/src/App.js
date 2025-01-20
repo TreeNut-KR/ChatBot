@@ -1,54 +1,37 @@
 import React, { useEffect } from "react";
 
 function App() {
-  const KAKAO_API_KEY = process.env.REACT_APP_KAKAO_JS_KEY; // Kakao JavaScript Key
+  const KAKAO_API_KEY = process.env.REACT_APP_KAKAO_JS_KEY;
 
   useEffect(() => {
-    // Kakao SDK 초기화
-    if (!window.Kakao.isInitialized()) {
-      window.Kakao.init(KAKAO_API_KEY);
-      console.log("Kakao SDK initialized:", window.Kakao.isInitialized());
+    const code = new URL(window.location.href).searchParams.get("code");
+    if (code) {
+      console.log("카카오 인가 코드:", code); // ✅ 인가 코드 로그 확인
+  
+      fetch("http://localhost:8080/server/user/social/kakao/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: code }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("백엔드 응답:", data); // ✅ 백엔드 응답 확인
+          if (data.token) {
+            localStorage.setItem("jwt", data.token);
+            alert("로그인 성공!");
+          } else {
+            alert("로그인 실패!");
+          }
+        })
+        .catch((err) => console.error("백엔드 요청 실패", err));
     }
-  }, []);
+  }, [KAKAO_API_KEY]);  
 
   const handleLogin = () => {
-    window.Kakao.Auth.login({
-      success: (authObj) => {
-        console.log("카카오 로그인 성공", authObj);
-
-        window.Kakao.API.request({
-          url: "/v2/user/me",
-          success: (res) => {
-            console.log("사용자 정보", res);
-
-            // 백엔드로 카카오 로그인 정보 전송
-            fetch("http://localhost:8080/server/user/social/kakao/login", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                kakaoId: res.id,
-                email: res.kakao_account.email,
-                nickname: res.properties.nickname,
-                profileImage: res.properties.profile_image,
-              }),
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.token) {
-                  localStorage.setItem("jwt", data.token); // JWT 저장
-                  alert("로그인 성공!");
-                } else {
-                  alert("로그인 실패!");
-                }
-              })
-              .catch((err) => console.error("백엔드 요청 실패", err));
-          },
-          fail: (err) => console.error("사용자 정보 요청 실패", err),
-        });
-      },
-      fail: (err) => console.error("카카오 로그인 실패", err),
+    window.Kakao.Auth.authorize({
+      redirectUri: "http://localhost/server/oauth/callback/kakao", // ✅ 카카오 로그인 후 리다이렉트될 주소
     });
   };
 
