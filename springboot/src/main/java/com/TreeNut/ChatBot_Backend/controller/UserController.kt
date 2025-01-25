@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.http.MediaType
+import org.springframework.web.reactive.function.BodyInserters
 
 @RestController
 @RequestMapping("/server/user")
@@ -16,7 +19,12 @@ class UserController(
     private val userService: UserService,
     private val webClientBuilder: WebClient.Builder,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-id}") private val kakaoClientId: String,
-    @Value("\${spring.security.oauth2.client.registration.kakao.redirect_uri}") private val kakaoRedirectUri: String
+    @Value("\${spring.security.oauth2.client.registration.kakao.client-secret}") private val kakaoClientSecret: String,
+    @Value("\${spring.security.oauth2.client.registration.kakao.redirect_uri}") private val kakaoRedirectUri: String,
+    @Value("\${kakao.token.url}") private val kakaoTokenUrl: String,
+    @Value("\${kakao.user-info.url}") private val kakaoUserInfoUrl: String,
+    @Value("\${kakao.auth.grant-type}") private val kakaoGrantType: String,
+    @Value("\${kakao.auth.scope}") private val kakaoScope: String
     ) {
 
     @PostMapping("/register")
@@ -65,77 +73,55 @@ fun kakaoLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<Strin
         return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 없음"))
     }
 
-    try {
+    return try {
         println("✅ 카카오 로그인 요청 - 인가 코드: $code")
+        
+        val formData = LinkedMultiValueMap<String, String>().apply {
+            add("grant_type", kakaoGrantType)
+            add("client_id", kakaoClientId)
+            add("client_secret", kakaoClientSecret)
+            add("redirect_uri", kakaoRedirectUri)
+            add("code", code)
+            add("scope", kakaoScope)
+        }
 
-        val tokenUrl = "https://kauth.kakao.com/oauth/token"
-        val userInfoUrl = "https://kapi.kakao.com/v2/user/me"
-
-        // 카카오 API에 Access Token 요청
         val tokenResponse = webClientBuilder.build()
             .post()
-            .uri(tokenUrl)
-            .header(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .bodyValue(
-                mapOf(
-                    "grant_type" to "authorization_code",
-                    "client_id" to kakaoClientId,
-                    "redirect_uri" to kakaoRedirectUri,
-                    "code" to code
-                )
-            )
+            .uri(kakaoTokenUrl)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData(formData))
             .retrieve()
             .bodyToMono(Map::class.java)
-            .block()
+            .block() ?: throw RuntimeException("토큰 응답이 null입니다")
 
-        if (tokenResponse == null) {
-            println("❌ 카카오 Access Token 요청 실패")
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("status" to 500, "message" to "Failed to fetch access token"))
-        }
-
-        val accessToken = tokenResponse["access_token"] as? String
-        if (accessToken.isNullOrEmpty()) {
-            println("❌ 카카오 Access Token 응답 없음: $tokenResponse")
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("status" to 500, "message" to "Access token not found"))
-        }
-
-        // 카카오 사용자 정보 요청
+        val accessToken = tokenResponse["access_token"] as String
+        
         val userInfoResponse = webClientBuilder.build()
             .get()
-            .uri(userInfoUrl)
+            .uri(kakaoUserInfoUrl)
             .header("Authorization", "Bearer $accessToken")
             .retrieve()
             .bodyToMono(Map::class.java)
-            .block()
+            .block() ?: throw RuntimeException("사용자 정보 응답이 null입니다")
 
-        if (userInfoResponse == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("status" to 500, "message" to "Failed to fetch user info"))
-        }
-
-        // 카카오 ID 추출
+        val kakaoAccount = userInfoResponse["kakao_account"] as Map<*, *>
+        /* val email = kakaoAccount["email"] as? String 비즈니스 계정이 아니라 email 권한이 없어서 임시로 막아둠*/
+        val profile = kakaoAccount["profile"] as Map<*, *>
+        val nickname = profile["nickname"] as String
         val kakaoId = userInfoResponse["id"].toString()
-        val properties = userInfoResponse["properties"] as? Map<*, *>
-        val nickname = properties?.get("nickname") as? String ?: "Unknown"
-        
-        // 사용자 등록 또는 조회
+
         val user = userService.registerKakaoUser(kakaoId, nickname, null)
-        
-        // JWT 토큰 생성
-        val jwtToken = userService.generateToken(user)
+        val token = userService.generateToken(user)
 
-        return ResponseEntity.ok(mapOf(
+        ResponseEntity.ok(mapOf(
             "status" to 200,
-            "token" to jwtToken,
-            "name" to user.username
+            "token" to token,
+            "message" to "카카오 로그인 성공"
         ))
-
     } catch (e: Exception) {
         println("❌ 카카오 로그인 처리 중 에러 발생: ${e.message}")
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(mapOf("status" to 500, "message" to "Internal server error: ${e.message}"))
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
     }
 }
 }

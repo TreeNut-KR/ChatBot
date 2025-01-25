@@ -16,10 +16,10 @@ class SecurityConfig : WebMvcConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
-            .allowedOrigins("http://localhost") // Nginx(React)에서 오는 요청 허용
+            .allowedOrigins("http://localhost")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
-            .allowCredentials(true) // 인증 포함 (JWT 등)
+            .allowCredentials(true)
     }
 
     @Bean
@@ -30,16 +30,16 @@ class SecurityConfig : WebMvcConfigurer {
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(
+                        "/",
+                        "/static/**",
                         "/server/user/register",
                         "/server/user/login",
                         "/server/user/social/kakao/login", 
-                        "/oauth/callback/kakao",
-                        "/server/oauth/callback/kakao",
+                        "/server/oauth/callback/kakao",  // 콜백 URL
+                        "/server/oauth/callback/kakao/**",  // 와일드카드 추가
                         "/server/user/social/kakao/**",
-                        "/login/oauth2/code/kakao",
-                        // 추가
-                        "/oauth/**",  // 모든 OAuth 관련 경로 허용
-                        "/callback/**" // 모든 callback 경로 허용
+                        "/oauth/**",
+                        "/callback/**"
                     ).permitAll()
                     .anyRequest().authenticated()
             }

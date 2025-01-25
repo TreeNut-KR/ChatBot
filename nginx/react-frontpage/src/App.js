@@ -2,13 +2,21 @@ import React, { useEffect } from "react";
 
 function App() {
   const KAKAO_API_KEY = process.env.REACT_APP_KAKAO_JS_KEY;
+  const KAKAO_REDIRECT_URI = process.env.REACT_APP_KAKAO_REDIRECT_URI;
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
+    // Kakao SDK 초기화
+    if (!window.Kakao.isInitialized()) {
+      window.Kakao.init(KAKAO_API_KEY);
+      console.log('Kakao SDK 초기화됨:', KAKAO_API_KEY);
+    }
+    
     const code = new URL(window.location.href).searchParams.get("code");
     if (code) {
       console.log("카카오 인가 코드:", code); // ✅ 인가 코드 로그 확인
   
-      fetch("http://localhost:8080/server/user/social/kakao/login", {
+      fetch(`${BACKEND_URL}/server/user/social/kakao/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -27,12 +35,24 @@ function App() {
         })
         .catch((err) => console.error("백엔드 요청 실패", err));
     }
-  }, [KAKAO_API_KEY]);  
+  }, [KAKAO_API_KEY, BACKEND_URL]);  
 
   const handleLogin = () => {
-    window.Kakao.Auth.authorize({
-      redirectUri: "http://localhost/server/oauth/callback/kakao", // ✅ 카카오 로그인 후 리다이렉트될 주소
-    });
+    console.log('로그인 버튼 클릭됨');
+    console.log('KAKAO_REDIRECT_URI:', KAKAO_REDIRECT_URI);
+    
+    if (!window.Kakao) {
+      console.error('Kakao SDK가 로드되지 않았습니다');
+      return;
+    }
+    
+    try {
+      window.Kakao.Auth.authorize({
+        redirectUri: KAKAO_REDIRECT_URI,
+      });
+    } catch (error) {
+      console.error('카카오 인증 에러:', error);
+    }
   };
 
   return (
