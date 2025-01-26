@@ -48,18 +48,13 @@ class UserService(
     @Transactional
     fun registerKakaoUser(kakaoId: String, username: String, email: String?): User {
         val existingUser = userRepository.findByUserid("KAKAO_$kakaoId")
-        return if (existingUser == null) {
-            val newUser = User(
-                userid = "KAKAO_$kakaoId",
-                username = username,
-                email = email ?: "",
-                loginType = LoginType.KAKAO,
-                password = null // 소셜 로그인 사용자는 비밀번호 없음
-            )
-            userRepository.save(newUser)
-        } else {
-            existingUser
-        }
+        return existingUser ?: userRepository.save(User(
+            userid = "KAKAO_$kakaoId",
+            username = username,
+            email = email ?: "",
+            loginType = LoginType.KAKAO,
+            password = null
+        ))
     }
 
     @Transactional(readOnly = true)

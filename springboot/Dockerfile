@@ -22,4 +22,5 @@ RUN sed -i 's/\r$//' /wait-for-it && chmod +x /wait-for-it
 
 COPY --from=build /app/build/libs/*.jar /app.jar
 
-ENTRYPOINT ["./wait-for-it", "mysql:3306", "--", "java", "-jar", "/app.jar"]
+# 로그 파일 설정
+ENTRYPOINT ["./wait-for-it", "mysql:3306", "--", "sh", "-c", "java -Djava.security.egd=file:/dev/./urandom -jar /app.jar --logging.file.name=logs/spring-boot-app.log"]

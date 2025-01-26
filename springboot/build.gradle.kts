@@ -30,6 +30,7 @@ dependencies {
     implementation("org.springframework.security:spring-security-web")
     implementation("org.springframework.security:spring-security-config")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+    implementation("org.springframework.security:spring-security-oauth2-client")
     implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("org.springframework.security:spring-security-oauth2-core")
     implementation(kotlin("stdlib"))

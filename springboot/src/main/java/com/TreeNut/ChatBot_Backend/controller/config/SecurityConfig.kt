@@ -7,8 +7,11 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.web.AuthenticationEntryPoint
-import org.springframework.security.config.http.SessionCreationPolicy // SessionCreationPolicy import 추가
+import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import org.springframework.context.annotation.Bean as Bean1
 
 @Configuration
 @EnableWebSecurity
@@ -19,14 +22,16 @@ class SecurityConfig : WebMvcConfigurer {
             .allowedOrigins("http://localhost")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
+            .exposedHeaders("*")
             .allowCredentials(true)
     }
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .csrf().disable()
-            .cors().and()
+            .csrf { it.disable() }
+            .cors()
+            .and()
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(
@@ -34,27 +39,32 @@ class SecurityConfig : WebMvcConfigurer {
                         "/static/**",
                         "/server/user/register",
                         "/server/user/login",
-                        "/server/user/social/kakao/login", 
-                        "/server/oauth/callback/kakao",  // 콜백 URL
-                        "/server/oauth/callback/kakao/**",  // 와일드카드 추가
-                        "/server/user/social/kakao/**",
-                        "/oauth/**",
-                        "/callback/**"
+                        "/server/user/social/kakao/login",
+                        "/server/oauth/callback/kakao",
+                        "/server/oauth/callback/kakao/**",
+                        "/server/user/oauth/callback/kakao",
+                        "/oauth2/**",
+                        "/login/**",
+                        "/error"  // 추가
                     ).permitAll()
-                    .anyRequest().authenticated()
+                    .anyRequest().permitAll()  // 임시로 모든 요청 허용
             }
-            .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
 
         return http.build()
     }
 
     @Bean
-    fun customAuthenticationEntryPoint(): AuthenticationEntryPoint {
-        return AuthenticationEntryPoint { _, response, _ ->
-            response.contentType = "application/json"
-            response.status = 401
-            response.writer.write("{\"status\": 401, \"message\": \"Unauthorized: 인증이 필요합니다.\"}")
-        }
+    fun corsConfigurationSource(): CorsConfigurationSource {
+        val configuration = CorsConfiguration()
+        configuration.allowedOrigins = listOf("http://localhost")
+        configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+        configuration.allowedHeaders = listOf("*")
+        configuration.exposedHeaders = listOf("*")
+        configuration.allowCredentials = true
+
+        val source = UrlBasedCorsConfigurationSource()
+        source.registerCorsConfiguration("/**", configuration)
+        return source
     }
 }
