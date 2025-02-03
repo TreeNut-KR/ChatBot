@@ -38,15 +38,6 @@ type ChattingProps = {
 const ChatHeader: React.FC<ChatHeaderProps> = ({ model, setModel }) => (
   <div className="bg-gray-900 flex items-center justify-between px-5 py-2">
     <h1 className="text-lg text-white">TreeNut ChatBot</h1>
-    <select
-      value={model}
-      onChange={(e) => setModel(e.target.value)}
-      className="bg-gray-800 text-white border-none px-3 py-2 rounded"
-      aria-label="모델 선택"
-    >
-      <option value="Llama">Llama</option>
-      <option value="Bllossom">Bllossom</option>
-    </select>
   </div>
 );
 
@@ -95,7 +86,7 @@ const ChatFooter: React.FC<ChatFooterProps> = ({
   handleSubmit,
   isLoading,
 }) => (
-  <form onSubmit={handleSubmit} className="bg-gray-900 p-5 flex gap-4">
+  <form onSubmit={handleSubmit} className="bg-gray-900 p-5 flex gap-5 w-[40vw]">
     <input
       type="text"
       value={userInput}
@@ -125,22 +116,13 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    const token = localStorage.getItem('jwt-token');
-    if (!token) {
-        // JWT 토큰이 없을 경우 알림과 함께 입력값 초기화
-        alert('로그인을 해주세요.');
-        setUserInput('');
-        return; // 함수 종료
-    }
-
     if (userInput.trim() === '') return;
 
     appendMessage({
-        user: '나',
-        text: userInput,
-        className: 'bg-indigo-500 text-black self-end',
-        type: '',
+      user: '나',
+      text: userInput,
+      className: 'bg-indigo-500 text-black self-end',
+      type: '',
     });
     setUserInput('');
     setIsLoading(true);
@@ -157,17 +139,14 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     try {
       const token = localStorage.getItem('jwt-token');
       if (!token) {
-        // JWT 토큰이 없을 경우 팝업창 표시
-        alert('로그인을 해주세요.');
-        return; // 함수 종료
+        throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
       }
-  
-      // 요청 바디 업데이트
-      const requestBody = {
-        input_data_set: inputText,
-        google_access_set: "true",
-      };
-  
+
+      // 토큰 디버깅
+      console.log('로컬 스토리지의 JWT 토큰:', token);
+
+      const requestBody = { input_data: inputText };
+
       // 디버깅: 요청 헤더와 본문 출력
       console.log('요청 URL:', 'http://localhost:8080/server/chatroom/office');
       console.log('요청 헤더:', {
@@ -175,7 +154,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         Authorization: `${token}`,
       });
       console.log('요청 본문:', requestBody);
-  
+
       const response = await fetch(`http://localhost:8080/server/chatroom/office`, {
         method: 'POST',
         headers: {
@@ -184,22 +163,22 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         },
         body: JSON.stringify(requestBody),
       });
-  
+
       if (!response.ok) {
         console.error('응답 상태 코드:', response.status);
         throw new Error('서버 요청 실패');
       }
-  
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder('utf-8');
       let aiMessage = '';
-  
+
       while (true) {
         const { done, value } = (await reader?.read()) || {};
         if (done) break;
         aiMessage += decoder.decode(value);
       }
-  
+
       appendMessage({
         user: 'AI',
         text: aiMessage,
@@ -218,10 +197,10 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <div className="flex-col text-white w-full max-w-[808px] max-h-full bg-gray-900">
+    <div className="flex flex-col items-center justify-center h-[calc(100vh)]">
+      <div className="flex flex-col text-white w-[calc(100vw-80px)] h-full bg-gray-900">
         <ChatHeader model={model} setModel={setModel} />
-        <main className="flex-1 flex flex-col p-3 h-[calc(100vh-300px)] overflow-y-auto">
+        <main className="flex-1 flex flex-col p-3 overflow-y-auto">
           <ChatContainer messages={messages} isLoading={isLoading} />
         </main>
         <ChatFooter
@@ -233,6 +212,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       </div>
     </div>
   );
+  
 };
 
 export default Chatting;
