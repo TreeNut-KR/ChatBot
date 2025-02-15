@@ -18,7 +18,7 @@ const Profile: React.FC = () => {
           <input
             type="text"
             defaultValue="GingGang"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white bg-transparent text-lg"
+            className="w-full border border-gray-3x`00 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white bg-transparent text-lg"
           />
         </div>
 
