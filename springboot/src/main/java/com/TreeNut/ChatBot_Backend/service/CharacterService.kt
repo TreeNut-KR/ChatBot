@@ -66,12 +66,7 @@ class CharacterService(
             "greeting" to character.greeting,
             "image" to character.image,
             "character_setting" to character.characterSetting,
-            "access_level" to character.accessLevel,
-            "tone" to character.tone,
-            "energy_level" to character.energyLevel,
-            "politeness" to character.politeness,
-            "humor" to character.humor,
-            "assertiveness" to character.assertiveness
+            "access_level" to character.accessLevel
         )
 
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
@@ -126,11 +121,6 @@ class CharacterService(
             greeting = updatedCharacter.greeting ?: character.greeting,
             image = updatedCharacter.image ?: character.image,
             characterSetting = updatedCharacter.characterSetting ?: character.characterSetting,
-            tone = updatedCharacter.tone ?: character.tone,
-            energyLevel = updatedCharacter.energyLevel ?: character.energyLevel,
-            politeness = updatedCharacter.politeness ?: character.politeness,
-            humor = updatedCharacter.humor ?: character.humor,
-            assertiveness = updatedCharacter.assertiveness ?: character.assertiveness,
             accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
             updatedAt = LocalDateTime.now()
         )
@@ -143,12 +133,7 @@ class CharacterService(
             "greeting" to savedCharacter.greeting,
             "image" to savedCharacter.image,
             "character_setting" to savedCharacter.characterSetting,
-            "access_level" to savedCharacter.accessLevel,
-            "tone" to savedCharacter.tone,
-            "energy_level" to savedCharacter.energyLevel,
-            "politeness" to savedCharacter.politeness,
-            "humor" to savedCharacter.humor,
-            "assertiveness" to savedCharacter.assertiveness
+            "access_level" to savedCharacter.accessLevel
         )
 
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()

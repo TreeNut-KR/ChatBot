@@ -23,21 +23,6 @@ data class Character(
     @Column(name = "character_setting", length = 255)
     val characterSetting: String? = null,
 
-    @Column(name = "tone", length = 30)
-    val tone: String? = null, // 예: "공손한", "유쾌한", "단호한"
-
-    @Column(name = "energy_level")
-    val energyLevel: Int? = null, // 에너지 수준 (1~10): 낮음(1) ~ 높음(10)
-
-    @Column(name = "politeness")
-    val politeness: Int? = null, // 공손함 (1~10): 비공손(1) ~ 매우 공손(10)
-
-    @Column(name = "humor")
-    val humor: Int? = null, // 유머 감각 (1~10): 진지(1) ~ 유머러스(10)
-
-    @Column(name = "assertiveness")
-    val assertiveness: Int? = null, // 단호함 (1~10): 온화(1) ~ 단호(10)
-
     @Column(name = "description", length = 255)
     val description: String? = null,
 
