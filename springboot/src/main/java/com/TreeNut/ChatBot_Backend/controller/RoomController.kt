@@ -2,21 +2,37 @@ package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.service.RoomService
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import reactor.core.publisher.Mono
 import reactor.core.publisher.Flux
 import org.springframework.http.MediaType
 
+@Tag(name = "Room Controller", description = "채팅방 관련 API")
 @RestController
 @RequestMapping("/server/chatroom")
 class RoomController(
     private val roomService: RoomService,
     private val tokenAuth: TokenAuth
 ) {
-
+    @Operation(
+        summary = "채팅방 테스트",
+        description = "토큰 인증을 통한 채팅방 테스트를 수행합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "테스트 성공"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
     @GetMapping("/test")
     fun testRoom(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?
     ): ResponseEntity<Map<String, Any>> {
         val token = authorization
@@ -43,8 +59,18 @@ class RoomController(
         )
     }
 
+    @Operation(
+        summary = "GPT 채팅방 생성",
+        description = "새로운 GPT 채팅방을 생성합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "채팅방 생성 성공"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 오류")
+    ])
     @GetMapping("/office")
     fun createGptRoom(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
@@ -100,10 +126,21 @@ class RoomController(
             )
     }
     
+    @Operation(
+        summary = "GPT 응답 받기",
+        description = "채팅방에서 GPT 응답을 스트리밍 방식으로 받습니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "응답 스트리밍 성공"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
     @PostMapping("/office/{id}/get_response", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     fun getGptResponse(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
+        @Parameter(description = "채팅방 ID", required = true)
         @PathVariable id: String,
+        @Parameter(description = "입력 데이터", required = true)
         @RequestBody inputData: Map<String, Any>
     ): Flux<String> {
         val token = authorization
@@ -121,9 +158,20 @@ class RoomController(
             }
     }
 
+    @Operation(
+        summary = "채팅 로그 불러오기",
+        description = "특정 채팅방의 대화 로그를 불러옵니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "로그 조회 성공"),
+        ApiResponse(responseCode = "400", description = "로그 조회 실패"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
     @PostMapping("/office/{id}/load_logs")
     fun loadChatLogs(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
+        @Parameter(description = "채팅방 ID", required = true)
         @PathVariable id: String
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
@@ -165,9 +213,20 @@ class RoomController(
             )
     }
 
+    @Operation(
+        summary = "채팅방 삭제",
+        description = "특정 채팅방을 삭제합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "채팅방 삭제 성공"),
+        ApiResponse(responseCode = "400", description = "채팅방 삭제 실패"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
     @DeleteMapping("/office/{id}/delete_room")
     fun deleteChatRoom(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
+        @Parameter(description = "채팅방 ID", required = true)
         @PathVariable id: String
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
@@ -210,10 +269,23 @@ class RoomController(
             )
     }
 
+    @Operation(
+        summary = "채팅 로그 저장",
+        description = "새로운 채팅 로그를 저장합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "로그 저장 성공"),
+        ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 오류")
+    ])
     @PutMapping("/office/{id}/save_log")
     fun saveChatLog(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
+        @Parameter(description = "채팅방 ID", required = true)
         @PathVariable id: String,
+        @Parameter(description = "입력 데이터", required = true)
         @RequestBody inputData: Map<String, Any>
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
@@ -272,10 +344,22 @@ class RoomController(
             )
     }
 
+    @Operation(
+        summary = "채팅 로그 수정",
+        description = "기존 채팅 로그를 수정합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "로그 수정 성공"),
+        ApiResponse(responseCode = "400", description = "로그 수정 실패"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
     @PutMapping("/office/{id}/update_log")
     fun updateChatLog(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
+        @Parameter(description = "채팅방 ID", required = true)
         @PathVariable id: String,
+        @Parameter(description = "입력 데이터", required = true)
         @RequestBody inputData: Map<String, Any>
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
@@ -341,10 +425,22 @@ class RoomController(
             )
     }
 
+    @Operation(
+        summary = "채팅 로그 삭제",
+        description = "특정 채팅 로그를 삭제합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "로그 삭제 성공"),
+        ApiResponse(responseCode = "400", description = "로그 삭제 실패"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
     @DeleteMapping("/office/{id}/delete_log")
     fun deleteOfficeroomLog(
+        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
+        @Parameter(description = "채팅방 ID", required = true)
         @PathVariable id: String,
+        @Parameter(description = "로그 인덱스", required = true)
         @RequestParam index: Int
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization

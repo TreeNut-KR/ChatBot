@@ -59,6 +59,10 @@ dependencies {
     implementation("com.google.auth:google-auth-library-oauth2-http:1.25.0")
     implementation("com.google.code.gson:gson:2.11.0")
     
+    // Springdoc OpenAPI (Swagger) 의존성
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    implementation("org.springdoc:springdoc-openapi-starter-common:2.3.0")
+    
     // 테스트 관련 의존성
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
