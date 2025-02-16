@@ -70,17 +70,15 @@ class UserService(
         return user?.email ?: ""
     }
 
-    fun updateUserInfo(user: User): User {
+    fun updateUserInfo(userid: String, username: String): User {
         return try {
             // 기존 사용자 조회
-            val existingUser = userRepository.findByUserid(user.userid)
+            val existingUser = userRepository.findByUserid(userid)
                 ?: throw RuntimeException("User not found")
 
             // 기존 사용자 정보를 업데이트
             val updatedUser = existingUser.copy(
-                username = user.username,
-                email = user.email,
-                password = passwordEncoder.encode(user.password) // 비밀번호 인코딩
+                username = username
             )
 
             // 업데이트된 사용자 정보 저장

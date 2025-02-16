@@ -57,16 +57,13 @@ class UserController(private val userService: UserService) {
         return ResponseEntity.ok(mapOf("name" to name, "email" to email))
     }
 
-    @PostMapping("/updateUserInfo")
+    @PostMapping("/changeUsername")
     fun updateUserInfo(@RequestBody body: Map<String, String>, @RequestHeader("Authorization") userToken:String): ResponseEntity<Map<String, Any>> {
         val userid = userService.getUserid(userToken)
         val username = body["name"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Name is required"))
-        val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
-        val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
-    
-        val user = User(userid = userid, username = username, email = email, password = password)
+        
         return try {
-            val updatedUser = userService.updateUserInfo(user)
+            val updatedUser = userService.updateUserInfo(userid, username)
             ResponseEntity.ok(mapOf("status" to 200, "message" to "User information updated successfully"))
         } catch (e: Exception) {
             ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
