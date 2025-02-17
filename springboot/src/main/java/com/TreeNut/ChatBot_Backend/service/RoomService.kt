@@ -29,12 +29,12 @@ class RoomService(
 
             val llamaRequestBody = mapOf(
                 "input_data" to inputDataSet,
-                "google_access_set" to google_access_set
+                "google_access" to google_access_set
             )
 
             webClient.build()
                 .post()
-                .uri("http://192.168.219.100:8001/Llama_stream")
+                .uri("http://192.168.219.100:8001/Office_stream")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(llamaRequestBody)
                 .retrieve()
@@ -45,7 +45,7 @@ class RoomService(
                 }
                 .onErrorResume { throwable ->
                     if (throwable is java.util.concurrent.TimeoutException) {
-                        Flux.just("Llama_stream 타임아웃이 발생하였습니다.")
+                        Flux.just("Office_stream 타임아웃이 발생하였습니다.")
                     } else {
                         Flux.error(throwable)
                     }
@@ -63,7 +63,7 @@ class RoomService(
 
             webClient.build()
                 .post()
-                .uri("http://192.168.219.100:8001/Bllossom_stream")
+                .uri("http://192.168.219.100:8001/Character_stream")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(bllossomRequestBody)
                 .retrieve()
@@ -76,7 +76,7 @@ class RoomService(
                 }
                 .onErrorResume { throwable ->
                     if (throwable is java.util.concurrent.TimeoutException) {
-                        Mono.just("Bllossom_stream 타임아웃이 발생하였습니다.")
+                        Mono.just("Character_stream 타임아웃이 발생하였습니다.")
                     } else {
                         Mono.error(throwable)
                     }
