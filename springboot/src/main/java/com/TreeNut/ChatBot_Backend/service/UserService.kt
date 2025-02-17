@@ -9,6 +9,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
+import org.springframework.dao.DataIntegrityViolationException
+import java.sql.SQLIntegrityConstraintViolationException
 
 @Service
 class UserService(
@@ -50,6 +52,41 @@ class UserService(
             true
         } else {
             false
+        }
+    }
+
+    fun getUserid(token: String): String {
+        val userid = Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).body.subject
+        return userid
+    }
+
+    fun getUsername(userid: String): String {
+        val user = userRepository.findByUserid(userid)
+        return user?.username ?: ""
+    }
+
+    fun getUseremail(userid: String): String {
+        val user = userRepository.findByUserid(userid)
+        return user?.email ?: ""
+    }
+
+    fun updateUserInfo(userid: String, username: String): User {
+        return try {
+            // 기존 사용자 조회
+            val existingUser = userRepository.findByUserid(userid)
+                ?: throw RuntimeException("User not found")
+
+            // 기존 사용자 정보를 업데이트
+            val updatedUser = existingUser.copy(
+                username = username
+            )
+
+            // 업데이트된 사용자 정보 저장
+            userRepository.save(updatedUser)
+        } catch (e: DataIntegrityViolationException) {
+            throw RuntimeException("Duplicate userid", e)
+        } catch (e: Exception) {
+            throw RuntimeException("Error during user information update", e)
         }
     }
 }
