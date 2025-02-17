@@ -28,7 +28,7 @@ const Profile: React.FC = () => {
   const handleUpdate = async () => {
     try {
       console.log('Updating User Info:', editedInfo);
-      const response = await fetch('http://localhost:8080/server/user/updateUserInfo', {
+      const response = await fetch('http://localhost:8080/server/user/changeUsername', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,19 +73,8 @@ const Profile: React.FC = () => {
           <input
             type="text"
             value={editedInfo.email}
-            onChange={(e) => setEditedInfo({ ...editedInfo, email: e.target.value })}
-            className="bg-transparent w-full text-white focus:outline-none text-lg border border-gray-300 rounded-lg px-4 py-2"
-          />
-        </div>
-
-        {/* 비밀번호 */}
-        <div className="flex flex-col items-start w-2/5 mx-auto">
-          <label className="block text-white text-lg font-semibold mb-1">비밀번호</label>
-          <input
-            type="password"
-            value={editedInfo.pw}
-            onChange={(e) => setEditedInfo({ ...editedInfo, pw: e.target.value })}
-            className="bg-transparent w-full text-white focus:outline-none text-lg border border-gray-300 rounded-lg px-4 py-2"
+            readOnly
+            className="bg-transparent w-full text-white focus:outline-none text-lg border border-gray-300 rounded-lg px-4 py-2 cursor-not-allowed"
           />
         </div>
 
