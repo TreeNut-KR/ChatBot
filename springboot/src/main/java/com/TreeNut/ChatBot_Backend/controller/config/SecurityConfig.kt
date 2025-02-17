@@ -43,6 +43,11 @@ class SecurityConfig : WebMvcConfigurer {
                         "/server/oauth/callback/kakao",
                         "/server/oauth/callback/kakao/**",
                         "/server/user/oauth/callback/kakao",
+                        
+                        "/server/user/social/google/login",
+                        "/server/oauth/callback/google",
+                        "/server/oauth/callback/google/**",
+                        "/server/user/oauth/callback/google",
                         "/oauth2/**",
                         "/login/**",
                         "/error"  // 추가

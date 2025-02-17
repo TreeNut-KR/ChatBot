@@ -56,6 +56,17 @@ class UserService(
             password = null
         ))
     }
+    @Transactional
+    fun registerGoogleUser(googleId: String, username: String, email: String?): User {
+        val existingUser = userRepository.findByUserid("GOOGLE_$googleId")
+        return existingUser ?: userRepository.save(User(
+            userid = "GOOGLE_$googleId",
+            username = username,
+            email = email ?: "",
+            loginType = LoginType.GOOGLE,
+            password = null
+        ))
+    }
 
     @Transactional(readOnly = true)
     fun findUserByUserid(userid: String): User? {
