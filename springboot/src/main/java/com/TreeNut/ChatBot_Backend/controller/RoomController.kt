@@ -23,8 +23,8 @@ class RoomController(
     private val tokenAuth: TokenAuth
 ) {
     @Operation(
-        summary = "GPT 채팅방 생성",
-        description = "새로운 GPT 채팅방을 생성합니다."
+        summary = "office 채팅방 생성",
+        description = "새로운 office 채팅방을 생성합니다."
     )
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "채팅방 생성 성공"),
@@ -32,7 +32,7 @@ class RoomController(
         ApiResponse(responseCode = "500", description = "서버 오류")
     ])
     @GetMapping("/office")
-    fun createGptRoom(
+    fun createOfficeRoom(
         @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?
     ): Mono<ResponseEntity<Map<String, Any>>> {
@@ -56,7 +56,7 @@ class RoomController(
                 )
             )
 
-        return roomService.createOfficeroom(userId)
+        return roomService.createOfficeRoom(userId)
             .flatMap { response ->
                 val id = response["Document ID"] as? String
                     ?: return@flatMap Mono.just(
@@ -68,7 +68,7 @@ class RoomController(
                         )
                     )
 
-                roomService.saveOfficeroomToMySQL(userId, id)
+                roomService.saveOfficeRoomToMySQL(userId, id)
                     .map { savedOfficeroom ->
                         ResponseEntity.ok(
                             mapOf<String, Any>(
@@ -98,7 +98,7 @@ class RoomController(
         ApiResponse(responseCode = "401", description = "토큰 인증 실패")
     ])
     @PostMapping("/office/{id}/get_response")
-    fun getGptResponse(
+    fun getofficeResponse(
         @RequestHeader("Authorization") authorization: String?,
         @PathVariable id: String,
         @RequestBody inputData: Map<String, Any>

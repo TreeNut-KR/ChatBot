@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
 
-from .Error_handlers import InternalServerErrorException, NotFoundException
+from error_handler import InternalServerErrorException, NotFoundException
 
 class MongoDBHandler:
     def __init__(self) -> None:

@@ -22,11 +22,13 @@ class RoomService(
     private val webClient: WebClient.Builder
 ) {
     private val logger = LoggerFactory.getLogger(RoomService::class.java)
-
+/*
+오피스 응답을 요청하는 메소드
+*/
     fun getOfficeResponse(inputDataSet: String, googleAccessSet: Boolean): Mono<String> {
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/office_stream")
+            .uri("http://122.45.4.113:8001/office_stream")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
@@ -48,39 +50,11 @@ class RoomService(
                 }
             }
             .doOnError { error ->
-        logger.error("[ERROR] 응답 처리 중 오류 발생: ${error.message}", error)
-    }
-    }
-
-    fun getCharacterResponse(inputDataSet: String): Mono<String> {
-        return webClient.build()
-            .post()
-            .uri("http://192.168.219.100:8001/character_stream")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(mapOf(
-                "input_data" to inputDataSet
-            ))
-            .retrieve()
-            .bodyToMono(Map::class.java)
-            .timeout(Duration.ofMinutes(10))
-            .map { response ->
-                val responseData = response["response"] as? String
-                    ?: throw IllegalArgumentException("응답 데이터에 'response' 필드가 없습니다.")
-                responseData
-            }
-            .onErrorResume { throwable ->
-                when (throwable) {
-                    is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
-                    else -> Mono.error(throwable)
-                }
-            }
-            .doOnError { error ->
                 logger.error("[ERROR] 응답 처리 중 오류 발생: ${error.message}", error)
             }
     }
 
-    fun createOfficeroom(userid: String): Mono<Map<String, Any>> {
+    fun createOfficeRoom(userid: String): Mono<Map<String, Any>> {
         val requestBody = mapOf<String, Any>(
             "user_id" to userid
         )
@@ -95,7 +69,7 @@ class RoomService(
             .map { it as Map<String, Any> }
     }
 
-   fun addOfficeroom(
+   fun addOfficeRoom(
         userid: String,
         mongo_chatroomid: String,
         input_data_set: String,
@@ -119,7 +93,7 @@ class RoomService(
             .map { it as Map<String, Any> }
     }
 
-    fun saveOfficeroom(userid: String, mongo_chatroomid: String): Officeroom {  // 필드명 변경
+    fun saveOfficeRoom(userid: String, mongo_chatroomid: String): Officeroom {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
             mongo_chatroomid = mongo_chatroomid  // 필드명 변경
@@ -127,7 +101,7 @@ class RoomService(
         return officeroomRepository.save(newOfficeroom)
     }
 
-    fun loadOfficeroomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
+    fun loadOfficeRoomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
         val requestBody = mapOf(
             "user_id" to userid,
             "id" to mongo_chatroomid
@@ -142,7 +116,7 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun deleteOfficeroom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {  // 필드명 변경
+    fun deleteOfficeRoom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
             "id" to mongo_chatroomid  // 필드명 변경
@@ -157,7 +131,7 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun updateOfficeroomLog(
+    fun updateOfficeRoomLog(
         userid: String,
         mongo_chatroomid: String,  // 필드명 변경
         index: Int,
@@ -186,7 +160,7 @@ class RoomService(
         }
     }
 
-    fun deleteOfficeroomLog(userid: String, mongo_chatroomid: String, index: Int): Mono<Map<*, *>> {  // 필드명 변경
+    fun deleteOfficeRoomLog(userid: String, mongo_chatroomid: String, index: Int): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
             "id" to mongo_chatroomid,  // 필드명 변경
@@ -202,7 +176,7 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {  // 필드명 변경
+    fun saveOfficeRoomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
             mongo_chatroomid = mongo_chatroomid  // 필드명 변경
@@ -211,12 +185,85 @@ class RoomService(
             .subscribeOn(Schedulers.boundedElastic())
     }
 
-    fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
-        val newChatroom = Chatroom(
-            userid = userid,
-            charactersIdx = charactersIdx,
-            mongo_chatroomid = mongo_chatroomid
-        )
-        return chatroomRepository.save(newChatroom)
+/*
+캐릭터 응답을 요청하는 메소드
+*/
+    fun getCharacterResponse(inputDataSet: String, characterName: String, greeting: String, context: String): Mono<String> {
+        return webClient.build()
+            .post()
+            .uri("http://122.45.4.113:8001/character_stream")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(mapOf(
+                "input_data" to inputDataSet
+                "character_name" to characterName
+                "greeting" to greeting
+                "context" to context
+            ))
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .timeout(Duration.ofMinutes(10))
+            .map { response ->
+                val responseData = response["response"] as? String
+                    ?: throw IllegalArgumentException("응답 데이터에 'response' 필드가 없습니다.")
+                responseData
+            }
+            .onErrorResume { throwable ->
+                when (throwable) {
+                    is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
+                    else -> Mono.error(throwable)
+                }
+            }
+            .doOnError { error ->
+                logger.error("[ERROR] 응답 처리 중 오류 발생: ${error.message}", error)
+            }
     }
+
+    fun createCharacterRoom(userid: String): Mono<Map<String, Any>> {
+        val requestBody = mapOf<String, Any>(
+            "user_id" to userid
+        )
+
+        return webClient.build()
+            .post()
+            .uri("/mongo/chatbot/create")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { it as Map<String, Any> }
+    }
+
+    fun addCharacterRoom(
+        userid: String,
+        mongo_chatroomid: String,
+        input_data_set: String,
+        output_data_set: String
+    ): Mono<Map<String, Any>> {
+        val truncatedOutputData = output_data_set.take(8191)
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid,
+            "input_data" to input_data_set,
+            "output_data" to truncatedOutputData
+        )
+
+        return webClient.build()
+            .put()
+            .uri("/mongo/chatbot/save_log")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { it as Map<String, Any> }
+    }
+
+    // fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
+    //     val newChatroom = Chatroom(
+    //         userid = userid,
+    //         charactersIdx = charactersIdx,
+    //         mongo_chatroomid = mongo_chatroomid
+    //     )
+    //     return chatroomRepository.save(newChatroom)
+    // }
 }

@@ -18,8 +18,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./fastapi/sources:/app/sources
-      - ./fastapi/sources/logs:/app/sources/logs
+      - ./fastapi/src:/app/src
+      - ./fastapi/src/logs:/app/src/logs
     depends_on:
       - mysql
       - mongodb
