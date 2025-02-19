@@ -5,7 +5,6 @@ import com.TreeNut.ChatBot_Backend.service.UserService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.sql.SQLIntegrityConstraintViolationException
-import java.sql.SQLIntegrityConstraintViolationException
 
 @CrossOrigin(origins = ["http://localhost:3000"])
 @RestController

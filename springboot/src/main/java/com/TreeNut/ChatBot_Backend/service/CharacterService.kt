@@ -72,7 +72,7 @@ class CharacterService(
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
         val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
-        return roomService.getBllossomResponse(inputDataSetJson)
+        return roomService.getCharacterResponse(inputDataSetJson)
             .flatMap { bllossomResponse ->
                 val truncatedResponse = bllossomResponse.take(255)
 
@@ -139,7 +139,7 @@ class CharacterService(
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
         val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
-        return roomService.getBllossomResponse(inputDataSetJson)
+        return roomService.getCharacterResponse(inputDataSetJson)
             .flatMap { bllossomResponse ->
                 val chatroom = chatroomRepository.findByUserid(savedCharacter.userid)
                     ?: Chatroom(
