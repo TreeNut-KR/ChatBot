@@ -11,27 +11,34 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.*
 import com.TreeNut.ChatBot_Backend.model.LoginType
 import io.jsonwebtoken.security.Keys
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.http.MediaType
+import org.springframework.web.reactive.function.BodyInserters
 import javax.crypto.SecretKey
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
-    @Value("\${jwt.secret}") private val jwtSecret: String
+    private val webClientBuilder: WebClient.Builder,
+    @Value("\${jwt.secret}") private val jwtSecret: String,
+    @Value("\${spring.security.oauth2.client.registration.kakao.client-id}") private val kakaoClientId: String,
+    @Value("\${spring.security.oauth2.client.registration.kakao.client-secret}") private val kakaoClientSecret: String,
+    @Value("\${spring.security.oauth2.client.registration.kakao.redirect-uri}") private val kakaoRedirectUri: String,
+    @Value("\${spring.security.oauth2.client.provider.kakao.token-uri}") private val kakaoTokenUrl: String,
+    @Value("\${spring.security.oauth2.client.provider.kakao.user-info-uri}") private val kakaoUserInfoUrl: String,
+    @Value("\${spring.security.oauth2.client.registration.kakao.authorization-grant-type}") private val kakaoGrantType: String,
+    @Value("\${spring.security.oauth2.client.registration.kakao.scope}") private val kakaoScope: String
 ) {
     private val passwordEncoder = BCryptPasswordEncoder()
 
     @Transactional
     fun register(user: User): User {
-        return try {
-            // 중복 체크
-            if (userRepository.findByUserid(user.userid) != null) {
-                throw IllegalArgumentException("이미 존재하는 ID입니다.")
-            }
-            val encodedUser = user.copy(password = passwordEncoder.encode(user.password))
-            userRepository.save(encodedUser)
-        } catch (e: Exception) {
-            throw RuntimeException("회원가입 중 오류 발생", e)
+        if (userRepository.findByUserid(user.userid) != null) {
+            throw IllegalArgumentException("이미 존재하는 ID입니다.")
         }
+        val encodedUser = user.copy(password = passwordEncoder.encode(user.password))
+        return userRepository.save(encodedUser)
     }
 
     @Transactional(readOnly = true)
@@ -74,15 +81,15 @@ class UserService(
     }
 
     fun generateToken(user: User): String {
-    val key: SecretKey = Keys.hmacShaKeyFor(jwtSecret.toByteArray()) // ✅ 안전한 키 생성
-    return Jwts.builder()
-        .setSubject(user.userid)
-        .setIssuedAt(Date())
-        .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
-        .signWith(key, SignatureAlgorithm.HS512)
-        .compact()
+        val key: SecretKey = Keys.hmacShaKeyFor(jwtSecret.toByteArray())
+        return Jwts.builder()
+            .setSubject(user.userid)
+            .setIssuedAt(Date())
+            .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
+            .signWith(key, SignatureAlgorithm.HS512)
+            .compact()
     }
-    
+
     @Transactional
     fun deleteUser(userid: String): Boolean {
         val user = userRepository.findByUserid(userid)
@@ -92,5 +99,50 @@ class UserService(
         } else {
             false
         }
+    }
+
+    fun kakaoLogin(code: String): Map<String, Any> {
+        val formData = LinkedMultiValueMap<String, String>().apply {
+            add("grant_type", kakaoGrantType)
+            add("client_id", kakaoClientId)
+            add("client_secret", kakaoClientSecret)
+            add("redirect_uri", kakaoRedirectUri)
+            add("code", code)
+            add("scope", kakaoScope)
+        }
+
+        val tokenResponse = webClientBuilder.build()
+            .post()
+            .uri(kakaoTokenUrl)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData(formData))
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .block() ?: throw RuntimeException("토큰 응답이 null입니다")
+
+        val accessToken = tokenResponse["access_token"] as String
+        
+        val userInfoResponse = webClientBuilder.build()
+            .get()
+            .uri(kakaoUserInfoUrl)
+            .header("Authorization", "Bearer $accessToken")
+            .header("Content-type", "application/x-www-form-urlencoded;charset=utf-8")
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .block() ?: throw RuntimeException("사용자 정보 응답이 null입니다")
+
+        val kakaoAccount = userInfoResponse["kakao_account"] as Map<*, *>
+        val profile = kakaoAccount["profile"] as Map<*, *>
+        val nickname = profile["nickname"] as String
+        val kakaoId = userInfoResponse["id"].toString()
+
+        val user = registerKakaoUser(kakaoId, nickname, null)
+        val token = generateToken(user)
+
+        return mapOf(
+            "status" to 200,
+            "token" to token,
+            "message" to "카카오 로그인 성공"
+        )
     }
 }
