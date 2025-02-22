@@ -1,4 +1,5 @@
 import React, { useState, FormEvent, useEffect, useRef } from 'react';
+import { marked } from 'marked';
 
 type Message = {
   user: string;
@@ -43,7 +44,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ model, setModel }) => (
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ user, text, className }) => (
   <div className={`p-2 rounded-lg max-w-[70%] break-words ${className}`}>
-    {text}
+    <div dangerouslySetInnerHTML={{ __html: text }} />
   </div>
 );
 
@@ -102,16 +103,6 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [model, setModel] = useState<string>('Llama');
   const [chatRoomId, setChatRoomId] = useState<string>(''); // 채팅방 ID를 상태로 관리
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoading(true);
-      await getFromServer(model);
-      setIsLoading(false);
-    };
-
-    fetchInitialData();
-  }, [model]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -190,7 +181,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       const token = localStorage.getItem('jwt-token');
       if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
 
-      const url = `http://localhost:8080/server/chatroom/ㅇ/get_response`;
+      const url = `http://localhost:8080/server/chatroom/office/d330bc5c-1db3-4173-a329-34c532c4791a/get_response`;
 
       const response = await fetch(url, {
         method: 'POST',
@@ -209,7 +200,8 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       }
 
       const responseData = await response.json();
-      appendMessage({ user: 'AI', text: responseData.message, className: 'bg-gray-600 text-white', type: '' });
+      const parsedMessage = await marked.parse(responseData.message);
+      appendMessage({ user: 'AI', text: parsedMessage, className: 'bg-gray-600 text-white', type: '' });
     } catch (error) {
       console.error('에러 발생:', error);
     }
@@ -223,6 +215,12 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
           <ChatContainer messages={messages} isLoading={isLoading} />
         </main>
         <ChatFooter userInput={userInput} setUserInput={setUserInput} handleSubmit={handleSubmit} isLoading={isLoading} />
+        <button
+          onClick={() => getFromServer(model)}
+          className="mt-4 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg"
+        >
+          서버에서 데이터 가져오기
+        </button>
       </div>
     </div>
   );
