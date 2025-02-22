@@ -10,10 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 
-import utils.Models as ChatModel
-import utils.Error_handlers as ChatError
-from utils.DB_mongo import MongoDBHandler
-from utils.DB_mysql import MySQLDBHandler
+from utils  import ChatError, ChatModel, MongoDBHandler, MySQLDBHandler
 
 mysql_handler = MySQLDBHandler()  # MySQL 핸들러 초기화
 mongo_handler = MongoDBHandler()  # MongoDB 핸들러 초기화

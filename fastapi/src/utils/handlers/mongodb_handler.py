@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
 
-from .Error_handlers import InternalServerErrorException, NotFoundException
+from .error_handler import InternalServerErrorException, NotFoundException
 
 class MongoDBHandler:
     def __init__(self) -> None:
@@ -16,7 +16,7 @@ class MongoDBHandler:
         try:
             # 환경 변수 파일 경로 설정
             current_directory = os.path.dirname(os.path.abspath(__file__))
-            env_file_path = os.path.join(current_directory, '../.env')
+            env_file_path = os.path.join(current_directory, '../../.env')
             load_dotenv(env_file_path)
             
             # 환경 변수에서 MongoDB 연결 URI 가져오기
@@ -26,6 +26,10 @@ class MongoDBHandler:
             mongo_password = os.getenv("MONGO_ADMIN_PASSWORD")
             mongo_db = os.getenv("MONGO_DATABASE")
             mongo_auth = os.getenv("MONGO_AUTH")
+            
+            # 디버깅 코드 추가
+            if not mongo_db:
+                raise ValueError("MONGO_DATABASE 환경 변수가 설정되지 않았습니다.")
             
             # MongoDB URI 생성
             self.mongo_uri = (
@@ -63,7 +67,7 @@ class MongoDBHandler:
         :raises NotFoundException: 데이터베이스가 존재하지 않을 경우
         :raises InternalServerErrorException: 컬렉션 이름을 가져오는 도중 문제가 발생할 경우
         """
-        db_names = await self.get_db_names()
+        db_names = await self.get_db()
         if database_name not in db_names:
             raise NotFoundException(f"Database '{database_name}' not found.")
         try:
@@ -72,7 +76,6 @@ class MongoDBHandler:
             raise InternalServerErrorException(detail=f"Error retrieving collection names: {str(e)}")
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
-
 
     async def create_collection(self, user_id: str, router: str) -> str:
         """

@@ -97,6 +97,7 @@ class CharacterController(
             Mono.just(ResponseEntity.ok(mapOf("status" to 200, "name" to registeredCharacter.characterName as Any)))
         } catch (e: Exception) {
             e.printStackTrace() // 예외 로그 출력
+            println("Error details: ${e.message}") // 예외 메시지 출력
             Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("status" to 500, "message" to "Error during character addition: ${e.message}" as Any)))
         }
     }

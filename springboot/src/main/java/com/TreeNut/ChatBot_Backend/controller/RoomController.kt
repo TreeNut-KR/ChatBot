@@ -23,45 +23,8 @@ class RoomController(
     private val tokenAuth: TokenAuth
 ) {
     @Operation(
-        summary = "채팅방 테스트",
-        description = "토큰 인증을 통한 채팅방 테스트를 수행합니다."
-    )
-    @ApiResponses(value = [
-        ApiResponse(responseCode = "200", description = "테스트 성공"),
-        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
-    ])
-    @GetMapping("/test")
-    fun testRoom(
-        @Parameter(description = "인증 토큰", required = true)
-        @RequestHeader("Authorization") authorization: String?
-    ): ResponseEntity<Map<String, Any>> {
-        val token = authorization
-            ?: return ResponseEntity.badRequest().body(
-                mapOf(
-                    "status" to 401,
-                    "message" to "토큰 없음"
-                )
-            )
-
-        val userId = tokenAuth.authGuard(token)
-            ?: return ResponseEntity.badRequest().body(
-                mapOf(
-                    "status" to 401,
-                    "message" to "유효한 토큰이 필요합니다."
-                )
-            )
-
-        return ResponseEntity.ok(
-            mapOf(
-                "status" to 200,
-                "user_id" to userId
-            )
-        )
-    }
-
-    @Operation(
-        summary = "GPT 채팅방 생성",
-        description = "새로운 GPT 채팅방을 생성합니다."
+        summary = "office 채팅방 생성",
+        description = "새로운 office 채팅방을 생성합니다."
     )
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "채팅방 생성 성공"),
@@ -69,7 +32,7 @@ class RoomController(
         ApiResponse(responseCode = "500", description = "서버 오류")
     ])
     @GetMapping("/office")
-    fun createGptRoom(
+    fun createOfficeRoom(
         @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?
     ): Mono<ResponseEntity<Map<String, Any>>> {
@@ -93,8 +56,8 @@ class RoomController(
                 )
             )
 
-        return roomService.createOfficeroom(userId)
-            .flatMap { response ->
+        return roomService.createOfficeRoom(userId)
+            .flatMap { response: Map<String, Any> ->
                 val id = response["Document ID"] as? String
                     ?: return@flatMap Mono.just(
                         ResponseEntity.status(500).body<Map<String, Any>>(
@@ -105,13 +68,13 @@ class RoomController(
                         )
                     )
 
-                roomService.saveOfficeroomToMySQL(userId, id)
-                    .map { savedOfficeroom ->
+                roomService.saveOfficeRoomToMySQL(userId, id)
+                    .map { savedOfficeRoom ->
                         ResponseEntity.ok(
                             mapOf<String, Any>(
                                 "status" to 200,
                                 "message" to "채팅방이 성공적으로 생성되었습니다.",
-                                "mysql_officeroom" to savedOfficeroom
+                                "mysql_officeroom" to savedOfficeRoom
                             )
                         )
                     }
@@ -125,36 +88,78 @@ class RoomController(
                 )
             )
     }
-    
+
     @Operation(
-        summary = "GPT 응답 받기",
-        description = "채팅방에서 GPT 응답을 스트리밍 방식으로 받습니다."
+        summary = "AI 응답 받기",
+        description = "채팅방에서 AI 응답을 받습니다."
     )
     @ApiResponses(value = [
-        ApiResponse(responseCode = "200", description = "응답 스트리밍 성공"),
+        ApiResponse(responseCode = "200", description = "응답 성공"),
         ApiResponse(responseCode = "401", description = "토큰 인증 실패")
     ])
-    @PostMapping("/office/{id}/get_response", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun getGptResponse(
-        @Parameter(description = "인증 토큰", required = true)
+    @PostMapping("/office/{id}/get_response")
+    fun getofficeResponse(
         @RequestHeader("Authorization") authorization: String?,
-        @Parameter(description = "채팅방 ID", required = true)
         @PathVariable id: String,
-        @Parameter(description = "입력 데이터", required = true)
         @RequestBody inputData: Map<String, Any>
-    ): Flux<String> {
+    ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
-            ?: return Flux.just("토큰 없음")
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "토큰 없음"
+                    )
+                )
+            )
 
         val userId = tokenAuth.authGuard(token)
-            ?: return Flux.just("유효한 토큰이 필요합니다.")
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "유효한 토큰이 필요합니다."
+                    )
+                )
+            )
 
-        val inputDataSet = inputData["input_data_set"] as? String ?: ""
+        val inputDataSet = inputData["input_data_set"] as? String
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "input_data_set 값이 필요합니다."
+                    )
+                )
+            )
+
         val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
 
-        return roomService.addOfficeroom(userId, id, inputDataSet, googleAccessSet)
-            .flatMapMany { addResponse ->
-                roomService.getLlamaResponse(inputDataSet, googleAccessSet)
+        return roomService.getOfficeResponse(inputDataSet, googleAccessSet)
+            .flatMap { response ->
+                roomService.addOfficeRoom(
+                    userid = userId,
+                    mongo_chatroomid = id,
+                    input_data_set = inputDataSet,
+                    output_data_set = response.toString()
+                ).map {
+                    ResponseEntity.ok(
+                        mapOf(
+                            "status" to 200,
+                            "message" to response.toString()
+                        ) as Map<String, Any>
+                    )
+                }
+            }
+            .onErrorResume { e ->
+                Mono.just(
+                    ResponseEntity.status(500).body(
+                        mapOf(
+                            "status" to 500,
+                            "message" to "에러 발생: ${e.message}"
+                        ) as Map<String, Any>
+                    )
+                )
             }
     }
 
@@ -194,7 +199,7 @@ class RoomController(
                 )
             )
 
-        return roomService.loadOfficeroomLogs(userId, id)
+        return roomService.loadOfficeRoomLogs(userId, id)
             .map { logs ->
                 ResponseEntity.ok(
                     mapOf(
@@ -249,7 +254,7 @@ class RoomController(
                 )
             )
 
-        return roomService.deleteOfficeroom(userId, id)
+        return roomService.deleteOfficeRoom(userId, id)
             .map { response ->
                 ResponseEntity.ok(
                     mapOf(
@@ -269,80 +274,88 @@ class RoomController(
             )
     }
 
-    @Operation(
-        summary = "채팅 로그 저장",
-        description = "새로운 채팅 로그를 저장합니다."
-    )
-    @ApiResponses(value = [
-        ApiResponse(responseCode = "200", description = "로그 저장 성공"),
-        ApiResponse(responseCode = "400", description = "잘못된 요청"),
-        ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
-        ApiResponse(responseCode = "500", description = "서버 오류")
-    ])
-    @PutMapping("/office/{id}/save_log")
-    fun saveChatLog(
-        @Parameter(description = "인증 토큰", required = true)
-        @RequestHeader("Authorization") authorization: String?,
-        @Parameter(description = "채팅방 ID", required = true)
-        @PathVariable id: String,
-        @Parameter(description = "입력 데이터", required = true)
-        @RequestBody inputData: Map<String, Any>
-    ): Mono<ResponseEntity<Map<String, Any>>> {
-        val token = authorization
-            ?: return Mono.just(
-                ResponseEntity.badRequest().body(
-                    mapOf(
-                        "status" to 401,
-                        "message" to "토큰 없음"
-                    )
-                )
-            )
+    // @Operation(
+    //     summary = "채팅 로그 저장",
+    //     description = "새로운 채팅 로그를 저장합니다."
+    // )
+    // @ApiResponses(value = [
+    //     ApiResponse(responseCode = "200", description = "로그 저장 성공"),
+    //     ApiResponse(responseCode = "400", description = "잘못된 요청"),
+    //     ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+    //     ApiResponse(responseCode = "500", description = "서버 오류")
+    // ])
+    // @PutMapping("/office/{id}/save_log")
+    // fun saveChatLog(
+    //     @Parameter(description = "인증 토큰", required = true)
+    //     @RequestHeader("Authorization") authorization: String?,
+    //     @Parameter(description = "채팅방 ID", required = true)
+    //     @PathVariable id: String,
+    //     @Parameter(description = "입력 데이터", required = true)
+    //     @RequestBody inputData: Map<String, Any>
+    // ): Mono<ResponseEntity<Map<String, Any>>> {
+    //     val token = authorization
+    //         ?: return Mono.just(
+    //             ResponseEntity.badRequest().body(
+    //                 mapOf(
+    //                     "status" to 401,
+    //                     "message" to "토큰 없음"
+    //                 )
+    //             )
+    //         )
 
-        val userId = tokenAuth.authGuard(token)
-            ?: return Mono.just(
-                ResponseEntity.badRequest().body(
-                    mapOf(
-                        "status" to 401,
-                        "message" to "유효한 토큰이 필요합니다."
-                    )
-                )
-            )
+    //     val userId = tokenAuth.authGuard(token)
+    //         ?: return Mono.just(
+    //             ResponseEntity.badRequest().body(
+    //                 mapOf(
+    //                     "status" to 401,
+    //                     "message" to "유효한 토큰이 필요합니다."
+    //                 )
+    //             )
+    //         )
 
-        val inputDataSet = inputData["input_data_set"]
-            ?: return Mono.just(
-                ResponseEntity.badRequest().body(
-                    mapOf(
-                        "status" to 400,
-                        "message" to "input_data_set이 필요합니다."
-                    )
-                )
-            )
+    //     val inputDataSet = inputData["input_data_set"]
+    //         ?: return Mono.just(
+    //             ResponseEntity.badRequest().body(
+    //                 mapOf(
+    //                     "status" to 400,
+    //                     "message" to "input_data_set이 필요합니다."
+    //                 )
+    //             )
+    //         )
 
-        val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
+    //     val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
         
-        return roomService.addOfficeroom(userId, id, inputDataSet as String, googleAccessSet)
-            .flatMap { addResponse ->
-                roomService.saveOfficeroomToMySQL(userId, id)
-                    .map { savedOfficeroom ->
-                        ResponseEntity.ok(
-                            mapOf<String, Any>(
-                                "status" to 200,
-                                "message" to "채팅방이 성공적으로 생성되었고 로그가 저장되었습니다.",
-                                "add_log_response" to addResponse,
-                                "mysql_officeroom" to savedOfficeroom
-                            )
-                        )
-                    }
-            }
-            .defaultIfEmpty(
-                ResponseEntity.status(500).body(
-                    mapOf(
-                        "status" to 500,
-                        "message" to "채팅 로그 저장에 실패했습니다."
-                    )
-                )
-            )
-    }
+    //     return roomService.getOfficeResponse(inputDataSet, googleAccessSet)
+    //         .flatMap { response ->
+    //             roomService.addOfficeRoom(
+    //                 userid = userId,
+    //                 mongo_chatroomid = id,
+    //                 input_data_set = inputDataSet,
+    //                 output_data_set = response.toString()
+    //             )
+    //             roomService.saveOfficeRoomToMySQL(
+    //                 userid = userId,
+    //                 mongo_chatroomid = id
+    //             ).map { savedOfficeRoom ->
+    //                 ResponseEntity.ok(
+    //                     mapOf<String, Any>(
+    //                         "status" to 200,
+    //                         "message" to "채팅방이 성공적으로 생성되었고 로그가 저장되었습니다.",
+    //                         "add_log_response" to response.toString(),
+    //                         "mysql_officeroom" to savedOfficeRoom
+    //                     )
+    //                 )
+    //             }
+    //         }
+    //         .defaultIfEmpty(
+    //             ResponseEntity.status(500).body(
+    //                 mapOf(
+    //                     "status" to 500,
+    //                     "message" to "채팅 로그 저장에 실패했습니다."
+    //                 )
+    //             )
+    //         )
+    // }
 
     @Operation(
         summary = "채팅 로그 수정",
@@ -404,7 +417,7 @@ class RoomController(
 
         val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
         
-        return roomService.updateOfficeroomLog(userId, id, index, inputDataSet, googleAccessSet)
+        return roomService.updateOfficeRoomLog(userId, id, index, inputDataSet, googleAccessSet)
             .map { response ->
                 ResponseEntity.ok(
                     mapOf(
@@ -463,7 +476,7 @@ class RoomController(
                 )
             )
 
-        return roomService.deleteOfficeroomLog(userId, id, index)
+        return roomService.deleteOfficeRoomLog(userId, id, index)
             .map { response ->
                 ResponseEntity.ok(
                     mapOf(
@@ -481,5 +494,176 @@ class RoomController(
                     )
                 )
             )
+    }
+
+    @Operation(
+        summary = "캐릭터 채팅방 생성",
+        description = "새로운 캐릭터 채팅방을 생성합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "채팅방 생성 성공"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
+        ApiResponse(responseCode = "500", description = "서버 오류")
+    ])
+    @GetMapping("/character/{idx}")
+    fun createCharacterRoom(
+        @Parameter(description = "인증 토큰", required = true)
+        @RequestHeader("Authorization") authorization: String?,
+        @Parameter(description = "캐릭터 ID", required = true)
+        @PathVariable idx: Int
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "토큰 없음"
+                    )
+                )
+            )
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "유효한 토큰이 필요합니다."
+                    )
+                )
+            )
+
+        return roomService.createCharacterRoom(userId)
+            .flatMap { response ->
+                val id = response["Document ID"] as? String
+                    ?: return@flatMap Mono.just(
+                        ResponseEntity.status(500).body<Map<String, Any>>(
+                            mapOf(
+                                "status" to 500,
+                                "message" to "id 생성 실패"
+                            )
+                        )
+                    )
+
+                roomService.saveCharacterRoomToMySQL(userId, idx, id)
+                    .map { savedOfficeRoom ->
+                        ResponseEntity.ok(
+                            mapOf<String, Any>(
+                                "status" to 200,
+                                "message" to "채팅방이 성공적으로 생성되었습니다.",
+                                "mysql_officeroom" to savedOfficeRoom
+                            )
+                        )
+                    }
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(500).body(
+                    mapOf(
+                        "status" to 500,
+                        "message" to "채팅방 생성에 실패했습니다."
+                    )
+                )
+            )
+    }
+
+    @Operation(
+        summary = "캐릭터 AI 응답 받기",
+        description = "채팅방에서 캐릭터 AI 응답을 받습니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "응답 성공"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
+    @PostMapping("/character/{id}/get_response")
+    fun getCharacterResponse(
+        @RequestHeader("Authorization") authorization: String?,
+        @PathVariable id: String,
+        @RequestBody inputData: Map<String, Any>
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "토큰 없음"
+                    )
+                )
+            )
+
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "유효한 토큰이 필요합니다."
+                    )
+                )
+            )
+
+        val inputDataSet = inputData["input_data_set"] as? String
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "input_data_set 값이 필요합니다."
+                    )
+                )
+            )
+            
+        val characterName = inputData["character_name"] as? String
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "character_name 값이 필요합니다."
+                    )
+                )
+            )
+
+        val greeting = inputData["greeting"] as? String
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "greeting 값이 필요합니다."
+                    )
+                )
+            )
+
+        val context = inputData["context"] as? String
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "context 값이 필요합니다."
+                    )
+                )
+            )
+
+        return roomService.getCharacterResponse(inputDataSet, characterName, greeting, context)
+            .flatMap { response ->
+                roomService.addCharacterRoom(
+                    userid = userId,
+                    mongo_chatroomid = id,
+                    input_data_set = inputDataSet,
+                    output_data_set = response.toString()
+                ).map {
+                    ResponseEntity.ok(
+                        mapOf(
+                            "status" to 200,
+                            "message" to response.toString()
+                        ) as Map<String, Any>
+                    )
+                }
+            }
+            .onErrorResume { e ->
+                Mono.just(
+                    ResponseEntity.status(500).body(
+                        mapOf(
+                            "status" to 500,
+                            "message" to "에러 발생: ${e.message}"
+                        ) as Map<String, Any>
+                    )
+                )
+            }
     }
 }

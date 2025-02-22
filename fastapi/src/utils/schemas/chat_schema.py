@@ -76,7 +76,7 @@ input_data_set = Field(
 output_data_set = Field(
     examples=["안녕하세요! 무엇을 도와드릴까요?"],
     title="챗봇 출력 문장",
-    min_length=1, max_length=500,
+    min_length=1, max_length=8191,
     description="챗봇 출력 문장 길이 제약"
 )
 index_set = Field(
