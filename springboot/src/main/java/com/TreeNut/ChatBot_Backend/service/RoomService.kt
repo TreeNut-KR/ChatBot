@@ -195,9 +195,9 @@ class RoomService(
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
-                "input_data" to inputDataSet
-                "character_name" to characterName
-                "greeting" to greeting
+                "input_data" to inputDataSet,
+                "character_name" to characterName,
+                "greeting" to greeting,
                 "context" to context
             ))
             .retrieve()
@@ -258,12 +258,27 @@ class RoomService(
             .map { it as Map<String, Any> }
     }
 
-    // fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
-    //     val newChatroom = Chatroom(
-    //         userid = userid,
-    //         charactersIdx = charactersIdx,
-    //         mongo_chatroomid = mongo_chatroomid
-    //     )
-    //     return chatroomRepository.save(newChatroom)
-    // }
+    fun saveCharacterRoomToMySQL(
+        userid: String,
+        charactersid: Int,
+        mongo_chatroomid: String
+    ): Mono<Chatroom> {
+        return Mono.fromCallable {
+            // 새로운 채팅방 생성
+            val newCharacterroom = Chatroom(
+                userid = userid,
+                charactersIdx = charactersid,
+                mongo_chatroomid = mongo_chatroomid
+            )
+            chatroomRepository.save(newCharacterroom)
+        }.subscribeOn(Schedulers.boundedElastic())
+        .onErrorResume { error ->
+            // 외래 키 제약 조건 위반 시 에러 처리
+            if (error.message?.contains("foreign key constraint fails") == true) {
+                Mono.error(RuntimeException("선택한 캐릭터가 존재하지 않습니다: $charactersid"))
+            } else {
+                Mono.error(error)
+            }
+        }
+    }
 }

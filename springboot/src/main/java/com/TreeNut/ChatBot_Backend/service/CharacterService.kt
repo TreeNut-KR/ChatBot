@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.HttpStatus
 import reactor.core.scheduler.Schedulers
 
-
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.drive.Drive
@@ -34,7 +33,7 @@ class CharacterService(
     private val characterRepository: CharacterRepository,
     private val chatroomRepository: ChatroomRepository,
     private val tokenAuth: TokenAuth,
-    private val roomService: RoomService 
+    private val roomService: RoomService
 ) {
 
     fun addCharacter(character: Character): Character {
@@ -72,20 +71,24 @@ class CharacterService(
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
         val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
-        return roomService.getCharacterResponse(inputDataSetJson)
-            .flatMap { bllossomResponse ->
-                val truncatedResponse = bllossomResponse.take(255)
+        return roomService.getCharacterResponse(
+            inputDataSetJson,
+            character.characterName ?: "",
+            character.greeting ?: "",
+            character.characterSetting ?: ""
+        ).flatMap { bllossomResponse ->
+            val truncatedResponse = bllossomResponse.take(255)
 
-                val chatroom = Chatroom(
-                    userid = character.userid,
-                    charactersIdx = savedCharacter.idx?.toInt() ?: 0,
-                    mongo_chatroomid = truncatedResponse
-                )
+            val chatroom = Chatroom(
+                userid = character.userid,
+                charactersIdx = savedCharacter.idx?.toInt() ?: 0,
+                mongo_chatroomid = truncatedResponse
+            )
 
-                Mono.fromCallable { chatroomRepository.save(chatroom) }
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .thenReturn(savedCharacter)
-            }
+            Mono.fromCallable { chatroomRepository.save(chatroom) }
+                .subscribeOn(Schedulers.boundedElastic())
+                .thenReturn(savedCharacter)
+        }
     }
 
     fun editCharacter(
@@ -139,39 +142,42 @@ class CharacterService(
         val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
         val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
-        return roomService.getCharacterResponse(inputDataSetJson)
-            .flatMap { bllossomResponse ->
-                val chatroom = chatroomRepository.findByUserid(savedCharacter.userid)
-                    ?: Chatroom(
-                        userid = savedCharacter.userid,
-                        charactersIdx = savedCharacter.idx?.toInt() ?: 0
-                    )
-
-                val updatedChatroom = chatroom.copy(
-                    mongo_chatroomid = bllossomResponse.take(255)
+        return roomService.getCharacterResponse(
+            inputDataSetJson,
+            savedCharacter.characterName ?: "",
+            savedCharacter.greeting ?: "",
+            savedCharacter.characterSetting ?: ""
+        ).flatMap { bllossomResponse ->
+            val chatroom = chatroomRepository.findByUserid(savedCharacter.userid)
+                ?: Chatroom(
+                    userid = savedCharacter.userid,
+                    charactersIdx = savedCharacter.idx?.toInt() ?: 0
                 )
 
-                Mono.fromCallable { chatroomRepository.save(updatedChatroom) }
-                    .subscribeOn(Schedulers.boundedElastic())
-                    .thenReturn(
-                        ResponseEntity.ok(
-                            mapOf<String, Any>(
-                                "status" to 200,
-                                "message" to "Character updated and integrated with Bllossom successfully"
-                            )
-                        )
-                    )
-            }
-            .onErrorResume { e ->
-                Mono.just(
-                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+            val updatedChatroom = chatroom.copy(
+                mongo_chatroomid = bllossomResponse.take(255)
+            )
+
+            Mono.fromCallable { chatroomRepository.save(updatedChatroom) }
+                .subscribeOn(Schedulers.boundedElastic())
+                .thenReturn(
+                    ResponseEntity.ok(
                         mapOf<String, Any>(
-                            "status" to 500,
-                            "message" to "Error during character update: ${e.message}"
+                            "status" to 200,
+                            "message" to "Character updated and integrated with Bllossom successfully"
                         )
                     )
                 )
-            }
+        }.onErrorResume { e ->
+            Mono.just(
+                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    mapOf<String, Any>(
+                        "status" to 500,
+                        "message" to "Error during character update: ${e.message}"
+                    )
+                )
+            )
+        }
     }
 
     fun getCharacterById(request: HttpServletRequest, characterId: Long): Character? {
@@ -190,10 +196,10 @@ class CharacterService(
     }
 
     fun deleteCharacter(characterName: String) {
-    val character = characterRepository.findByCharacterName(characterName)
-        .firstOrNull() ?: throw RuntimeException("Character not found")
-    // 캐릭터 삭제
-    characterRepository.delete(character)
+        val character = characterRepository.findByCharacterName(characterName)
+            .firstOrNull() ?: throw RuntimeException("Character not found")
+        // 캐릭터 삭제
+        characterRepository.delete(character)
     }
 
     fun openCharacterList(): List<Map<String, Any>> {
@@ -202,40 +208,40 @@ class CharacterService(
             .filter { it.accessLevel == true }
             .map {
                 mapOf(
-                "character_name" to (it.characterName ?: ""),
-                "userid" to (it.userid ?: ""),
-                "description" to (it.description ?: ""),
-                "image" to (it.image ?: "")
-            )
-        } // characterName, userid, description만 선택하여 반환
+                    "character_name" to (it.characterName ?: ""),
+                    "userid" to (it.userid ?: ""),
+                    "description" to (it.description ?: ""),
+                    "image" to (it.image ?: "")
+                )
+            } // characterName, userid, description만 선택하여 반환
     }
 
     fun myCharacterList(tokenUserId: String): List<Map<String, Any>> {
-    // 모든 캐릭터를 가져온 후, AccessLevel이 True인 캐릭터의 characterName만 필터링
+        // 모든 캐릭터를 가져온 후, AccessLevel이 True인 캐릭터의 characterName만 필터링
         return characterRepository.findAll()
-            .filter {it.userid == tokenUserId}
+            .filter { it.userid == tokenUserId }
             .map {
                 mapOf(
-                "character_name" to (it.characterName ?: ""),
-                "userid" to (it.userid ?: ""),
-                "description" to (it.description ?: ""),
-                "image" to (it.image ?: "")
-            )
-        } // characterName, userid, description만 선택하여 반환
+                    "character_name" to (it.characterName ?: ""),
+                    "userid" to (it.userid ?: ""),
+                    "description" to (it.description ?: ""),
+                    "image" to (it.image ?: "")
+                )
+            } // characterName, userid, description만 선택하여 반환
     }
 
     fun searchCharacterByName(characterName: String): List<Map<String, Any>> {
-    // 캐릭터 이름으로 검색하고, accessLevel이 true인 캐릭터만 필터링
-    return characterRepository.findByCharacterNameContaining(characterName)
-        .filter { it.accessLevel == true } // accessLevel이 true인 캐릭터만 선택
-        .map {
-            mapOf(
-                "character_name" to (it.characterName ?: ""),
-                "userid" to (it.userid ?: ""),
-                "description" to (it.description ?: ""),
-                "image" to (it.image ?: "")
-            )
-        }
+        // 캐릭터 이름으로 검색하고, accessLevel이 true인 캐릭터만 필터링
+        return characterRepository.findByCharacterNameContaining(characterName)
+            .filter { it.accessLevel == true } // accessLevel이 true인 캐릭터만 선택
+            .map {
+                mapOf(
+                    "character_name" to (it.characterName ?: ""),
+                    "userid" to (it.userid ?: ""),
+                    "description" to (it.description ?: ""),
+                    "image" to (it.image ?: "")
+                )
+            }
     }
 
     fun add_like_count(like_character: Character, userid: String): String {
@@ -279,16 +285,17 @@ class CharacterService(
         )
     }
 }
+
 //이미지 업로드 서비스를 위한 클래스
 @Service
-class GoogleDriveService{
+class GoogleDriveService {
     private val APPLICATION_NAME = "Chatbot Character Image"
     //Drive 객체 초기화
     private val driveService: Drive by lazy {
         val jsonKeyFilePath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
             ?: throw RuntimeException("Environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON is not set")
         val jsonKey = Files.readString(Paths.get(jsonKeyFilePath))
-        
+
         val credentials: GoogleCredentials = try {
             // JSON 문자열을 InputStream으로 변환
             val stream = ByteArrayInputStream(jsonKey.toByteArray(StandardCharsets.UTF_8))
@@ -301,11 +308,10 @@ class GoogleDriveService{
         }
 
         Drive.Builder(
-            GoogleNetHttpTransport.newTrustedTransport(), 
-            GsonFactory.getDefaultInstance(), 
-            HttpCredentialsAdapter(credentials))
-            .setApplicationName(APPLICATION_NAME)
-            .build()
+            GoogleNetHttpTransport.newTrustedTransport(),
+            GsonFactory.getDefaultInstance(),
+            HttpCredentialsAdapter(credentials)
+        ).setApplicationName(APPLICATION_NAME).build()
     }
 
     fun uploadImageAndGetLink(imagePath: String): String {
@@ -322,7 +328,7 @@ class GoogleDriveService{
             .execute()
 
         // 파일 공유 설정 (모두에게 읽기 권한 부여)
-        driveService.permissions().create(file.id, com.google.api.services.drive.model.Permission().setType("anyone").setRole("reader")).execute()
+        driveService.permissions().create(file.id, Permission().setType("anyone").setRole("reader")).execute()
 
         return "https://drive.google.com/uc?id=${file.id}"
     }
