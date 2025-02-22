@@ -101,6 +101,17 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
   const [userInput, setUserInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [model, setModel] = useState<string>('Llama');
+  const [chatRoomId, setChatRoomId] = useState<string>(''); // 채팅방 ID를 상태로 관리
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      setIsLoading(true);
+      await getFromServer(model);
+      setIsLoading(false);
+    };
+
+    fetchInitialData();
+  }, [model]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -115,7 +126,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     setUserInput('');
     setIsLoading(true);
 
-    await sendToServer(model, userInput);
+    await postToServer(model, userInput);
     setIsLoading(false);
   };
 
@@ -123,23 +134,23 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     onSend(message);
   };
 
-  const sendToServer = async (model: string, inputText: string) => {
+  const getFromServer = async (model: string, inputText?: string) => {
     try {
       const token = localStorage.getItem('jwt-token');
       if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
 
-        const requestBody = {
-          input_data_set: inputText,
-        google_access_set: "true"
-      };
+      const url = new URL("http://localhost:8080/server/chatroom/office");
+      if (inputText) {
+        url.searchParams.append('input_data_set', inputText);
+      }
+      url.searchParams.append('google_access_set', "true");
 
-      const response = await fetch("http://localhost:8080/server/chatroom/office", {
-        method: 'POST',
+      const response = await fetch(url.toString(), {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `${token}`,
         },
-        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -153,6 +164,9 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       console.log('응답 데이터:', responseData);
 
       const aiMessage = responseData.message;
+      const roomId = responseData.chatRoomId; // 서버에서 받은 chatRoomId
+
+      setChatRoomId(roomId); // chatRoomId 상태 업데이트
 
       appendMessage({
         user: 'AI',
@@ -168,6 +182,36 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         className: 'bg-gray-600 text-white self-start',
         type: 'client',
       });
+    }
+  };
+
+  const postToServer = async (model: string, inputText: string) => {
+    try {
+      const token = localStorage.getItem('jwt-token');
+      if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
+
+      const url = `http://localhost:8080/server/chatroom/ㅇ/get_response`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify({
+          input_data_set: inputText,
+          google_access_set: "true",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('서버 요청 실패');
+      }
+
+      const responseData = await response.json();
+      appendMessage({ user: 'AI', text: responseData.message, className: 'bg-gray-600 text-white', type: '' });
+    } catch (error) {
+      console.error('에러 발생:', error);
     }
   };
 
