@@ -77,29 +77,6 @@ class MongoDBHandler:
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
-    async def create_collection(self, user_id: str, router: str) -> str:
-        """
-        사용자 ID에 기반한 채팅 로그 컬렉션을 생성합니다.
-        
-        :param user_id: 사용자 ID
-        :return: 생성된 문서의 UUID
-        :raises InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
-        """
-        try:
-            collection_name = f'{router}_log_{user_id}'
-            collection = self.db[collection_name]
-            document_id = str(uuid.uuid4())
-            document = {
-                "id": document_id,
-                "value": []
-            }
-            await collection.insert_one(document)
-            return document_id
-        except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error creating chatlog collection: {str(e)}")
-        except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
-        
     async def get_log(self, user_id: str, document_id: str, router: str) -> List[Dict]:
         """
         특정 문서의 'value' 필드를 반환합니다.
@@ -196,6 +173,29 @@ class MongoDBHandler:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
         
 # Office Collection---------------------------------------------------------------------------------------------------
+    async def create_office_collection(self, user_id: str, router: str) -> str:
+        """
+        사용자 ID에 기반한 채팅 로그 컬렉션을 생성합니다.
+        
+        :param user_id: 사용자 ID
+        :return: 생성된 문서의 UUID
+        :raises InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
+        """
+        try:
+            collection_name = f'{router}_log_{user_id}'
+            collection = self.db[collection_name]
+            document_id = str(uuid.uuid4())
+            document = {
+                "id": document_id,
+                "value": []
+            }
+            await collection.insert_one(document)
+            return document_id
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error creating chatlog collection: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+        
 
     async def add_office_log(self, user_id: str, document_id: str, new_data: Dict) -> str:
         """
@@ -287,7 +287,30 @@ class MongoDBHandler:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
 # ChatBot Collection---------------------------------------------------------------------------------------------------
-
+    async def create_chatbot_collection(self, user_id: str, character: int, router: str) -> str:
+        """
+        사용자 ID에 기반한 채팅 로그 컬렉션을 생성합니다.
+        
+        :param user_id: 사용자 ID
+        :return: 생성된 문서의 UUID
+        :raises InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
+        """
+        try:
+            collection_name = f'{router}_log_{user_id}'
+            collection = self.db[collection_name]
+            document_id = str(uuid.uuid4())
+            document = {
+                "id": document_id,
+                "character_idx": character,
+                "value": []
+            }
+            await collection.insert_one(document)
+            return document_id
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error creating chatlog collection: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+        
     async def add_chatbot_log(self, user_id: str, document_id: str, new_data: Dict) -> str:
         """
         특정 문서의 'value' 필드에 JSON 데이터를 추가합니다.

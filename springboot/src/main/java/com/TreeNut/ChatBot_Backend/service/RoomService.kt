@@ -219,9 +219,10 @@ class RoomService(
             }
     }
 
-    fun createCharacterRoom(userid: String): Mono<Map<String, Any>> {
+    fun createCharacterRoom(userid: String, characterIdx: Int): Mono<Map<String, Any>> {
         val requestBody = mapOf<String, Any>(
             "user_id" to userid
+            "character_idx" to characterIdx
         )
 
         return webClient.build()

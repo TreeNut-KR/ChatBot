@@ -532,7 +532,7 @@ class RoomController(
                 )
             )
 
-        return roomService.createCharacterRoom(userId)
+        return roomService.createCharacterRoom(userId, idx)  // idx 파라미터 추가
             .flatMap { response ->
                 val id = response["Document ID"] as? String
                     ?: return@flatMap Mono.just(
@@ -545,12 +545,12 @@ class RoomController(
                     )
 
                 roomService.saveCharacterRoomToMySQL(userId, idx, id)
-                    .map { savedOfficeRoom ->
+                    .map { savedCharacterRoom ->  // 변수명 변경
                         ResponseEntity.ok(
                             mapOf<String, Any>(
                                 "status" to 200,
                                 "message" to "채팅방이 성공적으로 생성되었습니다.",
-                                "mysql_officeroom" to savedOfficeRoom
+                                "mysql_characterroom" to savedCharacterRoom  // 키 이름 변경
                             )
                         )
                     }
