@@ -195,6 +195,10 @@ class CharacterService(
         return characterRepository.findByCharacterName(characterName)
     }
 
+    fun getCharacterByIdx(idx: Long): Character? {
+        return characterRepository.findById(idx).orElse(null)
+    }
+
     fun deleteCharacter(characterName: String) {
         val character = characterRepository.findByCharacterName(characterName)
             .firstOrNull() ?: throw RuntimeException("Character not found")

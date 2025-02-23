@@ -319,6 +319,21 @@ class CharacterController(
         return ResponseEntity.ok(character)
     }
 
+    @GetMapping("/details/idx/{idx}")
+    fun getCharacterDetailsByIdx(
+        @PathVariable idx: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val character = characterService.getCharacterByIdx(idx)
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("status" to 404, "message" to "Character not found"))
+
+            ResponseEntity.ok(character)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("status" to 500, "message" to "Error retrieving character details: ${e.message}"))
+        }
+    }
+
     @PostMapping("/upload_image")
     fun uploadCharacterImage(
         @RequestParam("file") file: MultipartFile,
