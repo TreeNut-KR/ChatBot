@@ -221,7 +221,7 @@ class RoomService(
 
     fun createCharacterRoom(userid: String, characterIdx: Int): Mono<Map<String, Any>> {
         val requestBody = mapOf<String, Any>(
-            "user_id" to userid
+            "user_id" to userid,
             "character_idx" to characterIdx
         )
 
@@ -239,14 +239,16 @@ class RoomService(
         userid: String,
         mongo_chatroomid: String,
         input_data_set: String,
-        output_data_set: String
+        output_data_set: String,
+        image_set: String,
     ): Mono<Map<String, Any>> {
         val truncatedOutputData = output_data_set.take(8191)
         val requestBody = mapOf(
             "user_id" to userid,
             "id" to mongo_chatroomid,
             "input_data" to input_data_set,
-            "output_data" to truncatedOutputData
+            "output_data" to truncatedOutputData,
+            "img_url" to image_set,
         )
 
         return webClient.build()
@@ -281,5 +283,30 @@ class RoomService(
                 Mono.error(error)
             }
         }
+    }
+    
+    fun loadCharacterRoomLogs(
+        userid: String,
+        mongo_chatroomid: String
+    ): Mono<Map<String, Any>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid
+        )
+
+        return webClient.build()
+            .post()
+            .uri("/mongo/chatbot/load_log")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { response -> 
+                @Suppress("UNCHECKED_CAST")
+                response as Map<String, Any>
+            }
+            .onErrorMap { e ->
+                RuntimeException("채팅 로그 로드 실패: ${e.message}")
+            }
     }
 }

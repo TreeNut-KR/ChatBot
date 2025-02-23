@@ -77,34 +77,6 @@ class MongoDBHandler:
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
-    async def get_log(self, user_id: str, document_id: str, router: str) -> List[Dict]:
-        """
-        특정 문서의 'value' 필드를 반환합니다.
-        
-        :param user_id: 사용자 ID
-        :param document_id: 문서의 ID
-        :return: 해당 문서의 'value' 필드 데이터 또는 빈 배열
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
-        """
-        try:
-            collection = self.db[f'{router}_log_{user_id}']
-            document = await collection.find_one({"id": document_id})
-
-            if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
-
-            value_list = document.get("value", [])
-
-            sorted_value_list = sorted(value_list, key=lambda x:x.get("index"))
-
-            # document에서 value를 반환
-            return sorted_value_list
-        except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
-        except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
-
     async def remove_log(self, user_id: str, document_id: str, selected_count: int, router: str) -> str:
         """
         특정 대화의 최신 대화 ~ 선택한 대화를 지웁니다.
@@ -285,31 +257,68 @@ class MongoDBHandler:
             raise InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+        
+    async def get_offic_log(self, user_id: str, document_id: str, router: str) -> List[Dict]:
+        """
+        특정 문서의 'value' 필드를 반환합니다.
+        
+        :param user_id: 사용자 ID
+        :param document_id: 문서의 ID
+        :return: 해당 문서의 'value' 필드 데이터 또는 빈 배열
+        :raises NotFoundException: 문서가 존재하지 않을 경우
+        :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
+        """
+        try:
+            collection = self.db[f'{router}_log_{user_id}']
+            document = await collection.find_one({"id": document_id})
 
+            if document is None:
+                raise NotFoundException(f"No document found with ID: {document_id}")
+
+            value_list = document.get("value", [])
+
+            sorted_value_list = sorted(value_list, key=lambda x:x.get("index"))
+
+            # document에서 value를 반환
+            return sorted_value_list
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+
+    
 # ChatBot Collection---------------------------------------------------------------------------------------------------
     async def create_chatbot_collection(self, user_id: str, character: int, router: str) -> str:
         """
         사용자 ID에 기반한 채팅 로그 컬렉션을 생성합니다.
         
         :param user_id: 사용자 ID
+        :param character: 캐릭터 인덱스
+        :param router: 라우터 타입
         :return: 생성된 문서의 UUID
         :raises InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
         """
         try:
             collection_name = f'{router}_log_{user_id}'
             collection = self.db[collection_name]
+            
+            # 항상 새로운 UUID 생성
             document_id = str(uuid.uuid4())
             document = {
                 "id": document_id,
                 "character_idx": character,
                 "value": []
             }
-            await collection.insert_one(document)
+        
+            result = await collection.insert_one(document)
+            if not result.inserted_id:
+                raise InternalServerErrorException("문서 생성 실패")
+                
             return document_id
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error creating chatlog collection: {str(e)}")
+            raise InternalServerErrorException(detail=f"MongoDB 에러: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise InternalServerErrorException(detail=f"예상치 못한 에러: {str(e)}")
         
     async def add_chatbot_log(self, user_id: str, document_id: str, new_data: Dict) -> str:
         """
@@ -397,5 +406,33 @@ class MongoDBHandler:
                 raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
         except PyMongoError as e:
             raise InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
+        except Exception as e:
+            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+        
+    async def get_chatbot_log(self, user_id: str, document_id: str, router: str) -> List[Dict]:
+        """
+        특정 문서의 'value' 필드를 반환합니다.
+        
+        :param user_id: 사용자 ID
+        :param document_id: 문서의 ID
+        :return: 해당 문서의 'value' 필드 데이터 또는 빈 배열
+        :raises NotFoundException: 문서가 존재하지 않을 경우
+        :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
+        """
+        try:
+            collection = self.db[f'{router}_log_{user_id}']
+            document = await collection.find_one({"id": document_id})
+
+            if document is None:
+                raise NotFoundException(f"No document found with ID: {document_id}")
+            character_idx = document.get("character_idx")
+            value_list = document.get("value", [])
+
+            sorted_value_list = sorted(value_list, key=lambda x:x.get("index"))
+
+            # document에서 value를 반환
+            return sorted_value_list, character_idx
+        except PyMongoError as e:
+            raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")

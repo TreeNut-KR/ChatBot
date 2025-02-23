@@ -64,7 +64,6 @@ id_set = Field(
 character_idx_set = Field(
     examples=[1],
     title="캐릭터 id",
-    min_length=1,
     description="int 형식"
 )
 img_url_set = Field(
@@ -89,6 +88,10 @@ index_set = Field(
     examples=[1],
     title="채팅방 log index",
     description="int 형식"
+)
+value_set = Field(
+    examples=[{}],
+    title="채팅 로그"
 )
 
 # Public ---------------------------------------------------------------------------------------------------
@@ -119,8 +122,13 @@ class Room_Delete_Request(BaseModel):
         return Validators.validate_uuid(v)
 
 class Response(BaseModel):
-    id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
-    value: list = Field(examples=[{}], title="채팅 로그")
+    id: str = id_set
+    character_idx: int = character_idx_set
+    value: list = value_set
+        
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
 
 # Office ---------------------------------------------------------------------------------------------------
 
@@ -167,7 +175,6 @@ class Office_Update_Request(BaseModel):
 class ChatBot_Id_Request(BaseModel):
     user_id: str = user_id_set
     character_idx: int = character_idx_set
-    id: str = id_set
     
 class ChatBot_Create_Request(BaseModel):
     user_id: str = user_id_set
@@ -180,9 +187,9 @@ class ChatBot_Create_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
     
-    @field_validator('img_url', mode='before')
-    def check_img_url(cls, v):
-        return Validators.validate_URL(v)
+    # @field_validator('img_url', mode='before')
+    # def check_img_url(cls, v):
+    #     return Validators.validate_URL(v)
     
     def model_dump(self, **kwargs):
         """
@@ -203,9 +210,9 @@ class ChatBot_Update_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
     
-    @field_validator('img_url', mode='before')
-    def check_img_url(cls, v):
-        return Validators.validate_URL(v)
+    # @field_validator('img_url', mode='before')
+    # def check_img_url(cls, v):
+    #     return Validators.validate_URL(v)
     
     def model_dump(self, **kwargs):
         """

@@ -26,9 +26,9 @@ CREATE TABLE characters (
     uuid CHAR(36) UNIQUE NOT NULL,
     userid VARCHAR(50), 
     character_name VARCHAR(30) NOT NULL,
-    character_setting TEXT,
-    description TEXT,
-    greeting TEXT,
+    character_setting LONGTEXT,
+    description LONGTEXT,
+    greeting LONGTEXT,
     image TEXT,
     access_level BOOLEAN,
     like_count int DEFAULT 0,
@@ -38,6 +38,8 @@ CREATE TABLE characters (
     PRIMARY KEY(idx),
     FOREIGN KEY (userid) REFERENCES users(userid)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
+
+ALTER TABLE characters MODIFY character_setting LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 채팅방 (캐릭터 채팅)
 CREATE TABLE chatroom (

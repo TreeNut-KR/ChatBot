@@ -218,7 +218,7 @@ async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.Resp
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
     '''
     try:
-        chat_logs = await mongo_handler.get_log(
+        chat_logs = await mongo_handler.get_offic_log(
             user_id=request.user_id,
             document_id=request.id,
             router="office"
@@ -284,11 +284,19 @@ async def create_chat(request: ChatModel.ChatBot_Id_Request):
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
     '''
     try:
+        # character_idx가 양수인지 확인
+        if request.character_idx <= 0:
+            raise ChatError.BadRequestException("character_idx는 양수여야 합니다.")
+            
         document_id = await mongo_handler.create_chatbot_collection(
             user_id=request.user_id,
             character=request.character_idx,
             router="chatbot"
         )
+        
+        if not document_id:
+            raise ChatError.InternalServerErrorException("문서 ID 생성 실패")
+            
         return {"Document ID": document_id}
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
@@ -354,13 +362,14 @@ async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.Resp
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
     '''
     try:
-        chat_logs = await mongo_handler.get_log(
+        chat_logs, character_idx = await mongo_handler.get_chatbot_log(
             user_id=request.user_id,
             document_id=request.id,
             router="chatbot"
         )
         response_data = ChatModel.Response(
             id=request.id,
+            character_idx=character_idx,
             value=chat_logs,
         )
         return response_data

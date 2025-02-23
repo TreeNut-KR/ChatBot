@@ -1,5 +1,7 @@
 package com.TreeNut.ChatBot_Backend.controller
 
+import com.TreeNut.ChatBot_Backend.service.CharacterService
+import org.springframework.web.reactive.function.client.WebClient
 import com.TreeNut.ChatBot_Backend.service.RoomService
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.swagger.v3.oas.annotations.Operation
@@ -19,6 +21,7 @@ import org.springframework.http.MediaType
 @RestController
 @RequestMapping("/server/chatroom")
 class RoomController(
+    private val characterService: CharacterService,
     private val roomService: RoomService,
     private val tokenAuth: TokenAuth
 ) {
@@ -273,90 +276,7 @@ class RoomController(
                 )
             )
     }
-
-    // @Operation(
-    //     summary = "채팅 로그 저장",
-    //     description = "새로운 채팅 로그를 저장합니다."
-    // )
-    // @ApiResponses(value = [
-    //     ApiResponse(responseCode = "200", description = "로그 저장 성공"),
-    //     ApiResponse(responseCode = "400", description = "잘못된 요청"),
-    //     ApiResponse(responseCode = "401", description = "토큰 인증 실패"),
-    //     ApiResponse(responseCode = "500", description = "서버 오류")
-    // ])
-    // @PutMapping("/office/{id}/save_log")
-    // fun saveChatLog(
-    //     @Parameter(description = "인증 토큰", required = true)
-    //     @RequestHeader("Authorization") authorization: String?,
-    //     @Parameter(description = "채팅방 ID", required = true)
-    //     @PathVariable id: String,
-    //     @Parameter(description = "입력 데이터", required = true)
-    //     @RequestBody inputData: Map<String, Any>
-    // ): Mono<ResponseEntity<Map<String, Any>>> {
-    //     val token = authorization
-    //         ?: return Mono.just(
-    //             ResponseEntity.badRequest().body(
-    //                 mapOf(
-    //                     "status" to 401,
-    //                     "message" to "토큰 없음"
-    //                 )
-    //             )
-    //         )
-
-    //     val userId = tokenAuth.authGuard(token)
-    //         ?: return Mono.just(
-    //             ResponseEntity.badRequest().body(
-    //                 mapOf(
-    //                     "status" to 401,
-    //                     "message" to "유효한 토큰이 필요합니다."
-    //                 )
-    //             )
-    //         )
-
-    //     val inputDataSet = inputData["input_data_set"]
-    //         ?: return Mono.just(
-    //             ResponseEntity.badRequest().body(
-    //                 mapOf(
-    //                     "status" to 400,
-    //                     "message" to "input_data_set이 필요합니다."
-    //                 )
-    //             )
-    //         )
-
-    //     val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
-        
-    //     return roomService.getOfficeResponse(inputDataSet, googleAccessSet)
-    //         .flatMap { response ->
-    //             roomService.addOfficeRoom(
-    //                 userid = userId,
-    //                 mongo_chatroomid = id,
-    //                 input_data_set = inputDataSet,
-    //                 output_data_set = response.toString()
-    //             )
-    //             roomService.saveOfficeRoomToMySQL(
-    //                 userid = userId,
-    //                 mongo_chatroomid = id
-    //             ).map { savedOfficeRoom ->
-    //                 ResponseEntity.ok(
-    //                     mapOf<String, Any>(
-    //                         "status" to 200,
-    //                         "message" to "채팅방이 성공적으로 생성되었고 로그가 저장되었습니다.",
-    //                         "add_log_response" to response.toString(),
-    //                         "mysql_officeroom" to savedOfficeRoom
-    //                     )
-    //                 )
-    //             }
-    //         }
-    //         .defaultIfEmpty(
-    //             ResponseEntity.status(500).body(
-    //                 mapOf(
-    //                     "status" to 500,
-    //                     "message" to "채팅 로그 저장에 실패했습니다."
-    //                 )
-    //             )
-    //         )
-    // }
-
+    
     @Operation(
         summary = "채팅 로그 수정",
         description = "기존 채팅 로그를 수정합니다."
@@ -507,14 +427,12 @@ class RoomController(
     ])
     @GetMapping("/character/{idx}")
     fun createCharacterRoom(
-        @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
-        @Parameter(description = "캐릭터 ID", required = true)
         @PathVariable idx: Int
     ): Mono<ResponseEntity<Map<String, Any>>> {
         val token = authorization
             ?: return Mono.just(
-                ResponseEntity.badRequest().body(
+                ResponseEntity.badRequest().body<Map<String, Any>>(
                     mapOf(
                         "status" to 401,
                         "message" to "토큰 없음"
@@ -524,7 +442,7 @@ class RoomController(
 
         val userId = tokenAuth.authGuard(token)
             ?: return Mono.just(
-                ResponseEntity.badRequest().body(
+                ResponseEntity.badRequest().body<Map<String, Any>>(
                     mapOf(
                         "status" to 401,
                         "message" to "유효한 토큰이 필요합니다."
@@ -532,7 +450,7 @@ class RoomController(
                 )
             )
 
-        return roomService.createCharacterRoom(userId, idx)  // idx 파라미터 추가
+        return roomService.createCharacterRoom(userId, idx)
             .flatMap { response ->
                 val id = response["Document ID"] as? String
                     ?: return@flatMap Mono.just(
@@ -545,18 +463,28 @@ class RoomController(
                     )
 
                 roomService.saveCharacterRoomToMySQL(userId, idx, id)
-                    .map { savedCharacterRoom ->  // 변수명 변경
-                        ResponseEntity.ok(
-                            mapOf<String, Any>(
+                    .map { savedRoom ->
+                        ResponseEntity.ok<Map<String, Any>>(
+                            mapOf(
                                 "status" to 200,
                                 "message" to "채팅방이 성공적으로 생성되었습니다.",
-                                "mysql_characterroom" to savedCharacterRoom  // 키 이름 변경
+                                "mysql_characterroom" to savedRoom
                             )
                         )
                     }
             }
+            .onErrorResume { e ->
+                Mono.just(
+                    ResponseEntity.status(500).body<Map<String, Any>>(
+                        mapOf(
+                            "status" to 500,
+                            "message" to "에러 발생: ${e.message}"
+                        )
+                    )
+                )
+            }
             .defaultIfEmpty(
-                ResponseEntity.status(500).body(
+                ResponseEntity.status(500).body<Map<String, Any>>(
                     mapOf(
                         "status" to 500,
                         "message" to "채팅방 생성에 실패했습니다."
@@ -608,62 +536,62 @@ class RoomController(
                     )
                 )
             )
-            
-        val characterName = inputData["character_name"] as? String
-            ?: return Mono.just(
-                ResponseEntity.badRequest().body(
-                    mapOf(
-                        "status" to 400,
-                        "message" to "character_name 값이 필요합니다."
-                    )
-                )
-            )
 
-        val greeting = inputData["greeting"] as? String
-            ?: return Mono.just(
-                ResponseEntity.badRequest().body(
-                    mapOf(
-                        "status" to 400,
-                        "message" to "greeting 값이 필요합니다."
-                    )
-                )
-            )
-
-        val context = inputData["context"] as? String
-            ?: return Mono.just(
-                ResponseEntity.badRequest().body(
-                    mapOf(
-                        "status" to 400,
-                        "message" to "context 값이 필요합니다."
-                    )
-                )
-            )
-
-        return roomService.getCharacterResponse(inputDataSet, characterName, greeting, context)
-            .flatMap { response ->
-                roomService.addCharacterRoom(
-                    userid = userId,
-                    mongo_chatroomid = id,
-                    input_data_set = inputDataSet,
-                    output_data_set = response.toString()
-                ).map {
-                    ResponseEntity.ok(
-                        mapOf(
-                            "status" to 200,
-                            "message" to response.toString()
-                        ) as Map<String, Any>
-                    )
-                }
+        // characterIdx 먼저 추출
+        val characterIdx = roomService.loadCharacterRoomLogs(userId, id)
+            .map { logs ->
+                (logs["character_idx"] as? Number)?.toLong()
             }
-            .onErrorResume { e ->
+            .block() ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "캐릭터 정보를 찾을 수 없습니다."
+                    )
+                )
+            )
+
+        // character 정보 가져오기
+        val character = characterService.getCharacterByIdx(characterIdx)
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "해당 캐릭터를 찾을 수 없습니다."
+                    )
+                )
+            )
+
+        // 응답 생성 및 저장
+        return roomService.getCharacterResponse(
+            inputDataSet,
+            character.characterName ?: "",
+            character.greeting ?: "",
+            character.characterSetting ?: ""
+        ).flatMap { response ->
+            roomService.addCharacterRoom(
+                userid = userId,
+                mongo_chatroomid = id,
+                input_data_set = inputDataSet,
+                output_data_set = response,
+                image_set = character.image ?: ""
+            ).map { result ->
+                ResponseEntity.ok().body(
+                    mapOf(
+                        "status" to 200,
+                        "message" to response
+                    ) as Map<String, Any>
+                )
+            }.onErrorResume { e ->
                 Mono.just(
-                    ResponseEntity.status(500).body(
+                    ResponseEntity.status(422).body(
                         mapOf(
-                            "status" to 500,
-                            "message" to "에러 발생: ${e.message}"
+                            "status" to 422,
+                            "message" to "데이터 저장 실패: ${e.message}"
                         ) as Map<String, Any>
                     )
                 )
             }
+        }
     }
 }

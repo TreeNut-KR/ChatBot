@@ -20,19 +20,19 @@ data class Character(
     @Column(name = "character_name", nullable = false, length = 30)
     val characterName: String,
 
-    @Column(name = "character_setting", length = 255)
+    @Column(name = "character_setting", columnDefinition = "LONGTEXT")
     val characterSetting: String? = null,
 
-    @Column(name = "description", length = 255)
+    @Column(name = "description", columnDefinition = "LONGTEXT")
     val description: String? = null,
 
-    @Column(name = "greeting", columnDefinition = "TEXT")
+    @Column(name = "greeting", columnDefinition = "LONGTEXT")
     val greeting: String? = null,
 
-    @Column(name = "accessLevel")
+    @Column(name = "access_level")
     val accessLevel: Boolean? = true, // 공개여부 미선택 시 공개
 
-    @Column(name = "image")
+    @Column(name = "image", columnDefinition = "TEXT")
     val image: String? = null,
 
     @Column(name = "like_count")
