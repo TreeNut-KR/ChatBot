@@ -146,12 +146,12 @@ async def list_collections(db_name: str = Query(..., description="데이터베�
 office_router = APIRouter() # Office 관련 라우터 정의
 
 @office_router.post("/create", summary="유저 채팅방 ID 생성")
-async def create_chat(request: ChatModel.Id_Request):
+async def create_chat(request: ChatModel.Office_Id_Request):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
     '''
     try:
-        document_id = await mongo_handler.create_collection(
+        document_id = await mongo_handler.create_office_collection(
             user_id=request.user_id,
             router="office"
         )
@@ -279,13 +279,14 @@ async def delete_chat_room(request: ChatModel.Room_Delete_Request):
 chatbot_router = APIRouter() # Chatbot 관련 라우터 정의
 
 @chatbot_router.post("/create", summary="유저 채팅방 ID 생성")
-async def create_chat(request: ChatModel.Id_Request):
+async def create_chat(request: ChatModel.ChatBot_Id_Request):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
     '''
     try:
-        document_id = await mongo_handler.create_collection(
+        document_id = await mongo_handler.create_chatbot_collection(
             user_id=request.user_id,
+            character=request.character_idx,
             router="chatbot"
         )
         return {"Document ID": document_id}

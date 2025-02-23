@@ -61,6 +61,12 @@ id_set = Field(
     min_length=1, max_length=36,
     description="UUID 형식"
 )
+character_idx_set = Field(
+    examples=[1],
+    title="캐릭터 id",
+    min_length=1,
+    description="int 형식"
+)
 img_url_set = Field(
     examples=["https://drive.google.com/thumbnail?id=12PqUS6bj4eAO_fLDaWQmoq94-771xfim"],
     title="이미지 URL",
@@ -112,14 +118,14 @@ class Room_Delete_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
 
-class Id_Request(BaseModel):
-    user_id: str = user_id_set
-
 class Response(BaseModel):
     id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
     value: list = Field(examples=[{}], title="채팅 로그")
 
 # Office ---------------------------------------------------------------------------------------------------
+
+class Office_Id_Request(BaseModel):
+    user_id: str = user_id_set
 
 class Office_Create_Request(BaseModel):
     user_id: str = user_id_set
@@ -158,6 +164,11 @@ class Office_Update_Request(BaseModel):
 
 # ChatBot ---------------------------------------------------------------------------------------------------
 
+class ChatBot_Id_Request(BaseModel):
+    user_id: str = user_id_set
+    character_idx: int = character_idx_set
+    id: str = id_set
+    
 class ChatBot_Create_Request(BaseModel):
     user_id: str = user_id_set
     id: str = id_set
