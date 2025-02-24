@@ -102,3 +102,14 @@ jobs:
           tags: |
             ghcr.io/treenut-kr/springboot:latest
             ghcr.io/treenut-kr/springboot:${{ github.ref_name }}
+
+  notify-jenkins:
+    needs: build-and-push  # 이미지 빌드/푸시가 완료된 후 실행
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Jenkins Deploy
+        run: |
+          curl -X POST \
+          --fail \
+          -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
+          "${{ secrets.JENKINS_URL }}/job/chatbot-deploy/buildWithParameters?token=${{ secrets.JENKINS_BUILD_TOKEN }}&VERSION=${{ github.ref_name }}"
