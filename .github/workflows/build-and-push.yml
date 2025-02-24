@@ -112,4 +112,4 @@ jobs:
           curl -X POST \
           --fail \
           -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
-          "${{ secrets.JENKINS_URL }}/job/chatbot-deploy/buildWithParameters?token=${{ secrets.JENKINS_BUILD_TOKEN }}&VERSION=${{ github.ref_name }}"
+          "${{ secrets.JENKINS_URL }}/job/JMS_Chatbot/buildWithParameters?token=${{ secrets.JENKINS_BUILD_TOKEN }}&VERSION=${{ github.ref_name }}"
