@@ -119,6 +119,11 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository  # 이 단계 추가
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 모든 태그와 히스토리를 가져오기 위해 필요
+
       - name: Ensure Latest Git Tags in Jenkins
         run: |
           git fetch --tags --force  # 최신 태그 강제 업데이트
