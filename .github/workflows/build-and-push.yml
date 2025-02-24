@@ -52,6 +52,20 @@ jobs:
           echo "${{ secrets.SPRING_ENV }}" > ./springboot/src/main/resources/application.properties
           echo "${{ secrets.SPRING_SWAGGER_ENV }}" > ./springboot/src/main/resources/application.yml
 
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            .env
+            docker-compose.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build and push Nginx image
         uses: docker/build-push-action@v3
         with:
@@ -112,4 +126,5 @@ jobs:
           -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
           "${{ secrets.JENKINS_URL }}/job/JMS_Chatbot/buildWithParameters" \
           --data-urlencode "token=${{ secrets.JENKINS_BUILD_TOKEN }}" \
-          --data-urlencode "VERSION=${{ github.ref_name }}"
+          --data-urlencode "VERSION=${{ github.ref_name }}" \
+          --data-urlencode "RELEASE_URL=https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
