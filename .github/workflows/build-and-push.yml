@@ -3,7 +3,7 @@ name: Build and Push Docker Images
 on:
   push:
     tags:
-      - 'v*'  # 'v'로 시작하는 태그에 대해 작업을 실행합니다.
+      - 'v*'  # v로 시작하는 태그에 대해 실행
 
 jobs:
   build-and-push:
@@ -12,6 +12,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Push Git Tags (Ensure it's available in Jenkins)
+        run: |
+          git fetch --tags --force
+          git push origin --tags  # 원격 저장소에 태그 강제 푸시
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -40,22 +45,11 @@ jobs:
 
       - name: Create .env files for Docker build
         run: |
-          # Root .env 파일 생성
           echo "${{ secrets.DOCKER_ENV }}" > .env
-      
-          # MongoDB 관련 .env 파일 생성
-          mkdir -p mongo
-          echo "${{ secrets.MONGO_ENV }}" > ./mongo/.env
-     
-          # FastAPI 관련 .env 파일 생성
-          mkdir -p fastapi/src
-          echo "${{ secrets.FASTAPI_ENV }}" > ./fastapi/src/.env
-
-          # springboot 설정 파일 생성
+          mkdir -p mongo && echo "${{ secrets.MONGO_ENV }}" > ./mongo/.env
+          mkdir -p fastapi/src && echo "${{ secrets.FASTAPI_ENV }}" > ./fastapi/src/.env
           mkdir -p ./springboot/src/main/resources
-          # application.properties 생성 (데이터베이스 등 기본 설정)
           echo "${{ secrets.SPRING_ENV }}" > ./springboot/src/main/resources/application.properties
-          # application.yml 생성 (Swagger 설정)
           echo "${{ secrets.SPRING_SWAGGER_ENV }}" > ./springboot/src/main/resources/application.yml
 
       - name: Build and push Nginx image
@@ -104,12 +98,18 @@ jobs:
             ghcr.io/treenut-kr/springboot:${{ github.ref_name }}
 
   notify-jenkins:
-    needs: build-and-push  # 이미지 빌드/푸시가 완료된 후 실행
+    needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Ensure Latest Git Tags in Jenkins
+        run: |
+          git fetch --tags --force  # 최신 태그 강제 업데이트
+
       - name: Trigger Jenkins Deploy
         run: |
           curl -X POST \
           --fail \
           -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
-          "${{ secrets.JENKINS_URL }}/job/JMS_Chatbot/buildWithParameters?token=${{ secrets.JENKINS_BUILD_TOKEN }}&VERSION=${{ github.ref_name }}"
+          "${{ secrets.JENKINS_URL }}/job/JMS_Chatbot/buildWithParameters" \
+          --data-urlencode "token=${{ secrets.JENKINS_BUILD_TOKEN }}" \
+          --data-urlencode "VERSION=${{ github.ref_name }}"
