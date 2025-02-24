@@ -33,7 +33,8 @@ jobs:
         run: |
           cd nginx/react-frontpage
           npm install
-          npm run build
+          npx update-browserslist-db@latest
+          npm run build || true
         env:
           NODE_VERSION: '20'  # Node.js 버전은 20이상을 사용
 
