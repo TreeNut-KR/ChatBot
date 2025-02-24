@@ -56,129 +56,130 @@ class CharacterService(
         }
     }
 
-    fun BllossomIntegration(character: Character): Mono<Character> {
-        val savedCharacter = characterRepository.save(character)
+    // fun BllossomIntegration(character: Character): Mono<Character> {
+    //     val savedCharacter = characterRepository.save(character)
 
-        val inputDataSet = mapOf(
-            "character_name" to character.characterName,
-            "description" to character.description,
-            "greeting" to character.greeting,
-            "image" to character.image,
-            "character_setting" to character.characterSetting,
-            "access_level" to character.accessLevel
-        )
+    //     val inputDataSet = mapOf(
+    //         "character_name" to character.characterName,
+    //         "description" to character.description,
+    //         "greeting" to character.greeting,
+    //         "image" to character.image,
+    //         "character_setting" to character.characterSetting,
+    //         "access_level" to character.accessLevel
+    //     )
 
-        val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
-        val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
+    //     val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
+    //     val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
-        return roomService.getCharacterResponse(
-            inputDataSetJson,
-            character.characterName ?: "",
-            character.greeting ?: "",
-            character.characterSetting ?: ""
-        ).flatMap { bllossomResponse ->
-            val truncatedResponse = bllossomResponse.take(255)
+    //     return roomService.getCharacterResponse(
+    //         inputDataSetJson,
+    //         character.characterName ?: "",
+    //         character.greeting ?: "",
+    //         character.characterSetting ?: ""
+    //     ).flatMap { bllossomResponse ->
+    //         val truncatedResponse = bllossomResponse.take(255)
 
-            val chatroom = Chatroom(
-                userid = character.userid,
-                charactersIdx = savedCharacter.idx?.toInt() ?: 0,
-                mongo_chatroomid = truncatedResponse
-            )
+    //         val chatroom = Chatroom(
+    //             userid = character.userid,
+    //             charactersIdx = savedCharacter.idx?.toInt() ?: 0,
+    //             mongo_chatroomid = truncatedResponse
+    //         )
 
-            Mono.fromCallable { chatroomRepository.save(chatroom) }
-                .subscribeOn(Schedulers.boundedElastic())
-                .thenReturn(savedCharacter)
-        }
-    }
+    //         Mono.fromCallable { chatroomRepository.save(chatroom) }
+    //             .subscribeOn(Schedulers.boundedElastic())
+    //             .thenReturn(savedCharacter)
+    //     }
+    // }
 
-    fun editCharacter(
-        characterName: String,
-        updatedCharacter: Character,
-        userToken: String
-    ): Mono<ResponseEntity<Map<String, Any>>> {
-        val character = characterRepository.findByCharacterName(characterName)
-            .firstOrNull() ?: return Mono.just(
-            ResponseEntity.badRequest().body(
-                mapOf<String, Any>("status" to 404, "message" to "Character not found")
-            )
-        )
+    // fun editCharacter(
+    //     characterName: String,
+    //     updatedCharacter: Character,
+    //     userToken: String
+    // ): Mono<ResponseEntity<Map<String, Any>>> {
+    //     val character = characterRepository.findByCharacterName(characterName)
+    //         .firstOrNull() ?: return Mono.just(
+    //         ResponseEntity.badRequest().body(
+    //             mapOf<String, Any>("status" to 404, "message" to "Character not found")
+    //         )
+    //     )
 
-        val tokenUserId = tokenAuth.authGuard(userToken)
-            ?: return Mono.just(
-                ResponseEntity.badRequest().body(
-                    mapOf<String, Any>("status" to 401, "message" to "유효한 토큰이 필요합니다.")
-                )
-            )
+    //     val tokenUserId = tokenAuth.authGuard(userToken)
+    //         ?: return Mono.just(
+    //             ResponseEntity.badRequest().body(
+    //                 mapOf<String, Any>("status" to 401, "message" to "유효한 토큰이 필요합니다.")
+    //             )
+    //         )
 
-        if (tokenUserId != character.userid) {
-            return Mono.just(
-                ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                    mapOf<String, Any>("status" to 403, "message" to "User is not authorized to edit this character")
-                )
-            )
-        }
+    //     if (tokenUserId != character.userid) {
+    //         return Mono.just(
+    //             ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+    //                 mapOf<String, Any>("status" to 403, "message" to "User is not authorized to edit this character")
+    //             )
+    //         )
+    //     }
 
-        val editedCharacterEntity = character.copy(
-            characterName = updatedCharacter.characterName ?: character.characterName,
-            description = updatedCharacter.description ?: character.description,
-            greeting = updatedCharacter.greeting ?: character.greeting,
-            image = updatedCharacter.image ?: character.image,
-            characterSetting = updatedCharacter.characterSetting ?: character.characterSetting,
-            accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
-            updatedAt = LocalDateTime.now()
-        )
+    //     val editedCharacterEntity = character.copy(
+    //         characterName = updatedCharacter.characterName ?: character.characterName,
+    //         description = updatedCharacter.description ?: character.description,
+    //         greeting = updatedCharacter.greeting ?: character.greeting,
+    //         image = updatedCharacter.image ?: character.image,
+    //         characterSetting = updatedCharacter.characterSetting ?: character.characterSetting,
+    //         accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
+    //         updatedAt = LocalDateTime.now()
+    //     )
 
-        val savedCharacter = characterRepository.save(editedCharacterEntity)
+    //     val savedCharacter = characterRepository.save(editedCharacterEntity)
 
-        val inputDataSet = mapOf(
-            "character_name" to savedCharacter.characterName,
-            "description" to savedCharacter.description,
-            "greeting" to savedCharacter.greeting,
-            "image" to savedCharacter.image,
-            "character_setting" to savedCharacter.characterSetting,
-            "access_level" to savedCharacter.accessLevel
-        )
+    //     val inputDataSet = mapOf(
+    //         "character_name" to savedCharacter.characterName,
+    //         "description" to savedCharacter.description,
+    //         "greeting" to savedCharacter.greeting,
+    //         "image" to savedCharacter.image,
+    //         "character_setting" to savedCharacter.characterSetting,
+    //         "access_level" to savedCharacter.accessLevel
+    //     )
 
-        val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
-        val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
+    //     val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
+    //     val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
-        return roomService.getCharacterResponse(
-            inputDataSetJson,
-            savedCharacter.characterName ?: "",
-            savedCharacter.greeting ?: "",
-            savedCharacter.characterSetting ?: ""
-        ).flatMap { bllossomResponse ->
-            val chatroom = chatroomRepository.findByUserid(savedCharacter.userid)
-                ?: Chatroom(
-                    userid = savedCharacter.userid,
-                    charactersIdx = savedCharacter.idx?.toInt() ?: 0
-                )
+    //     return roomService.getCharacterResponse(
+    //         inputDataSetJson,
+    //         savedCharacter.characterName ?: "",
+    //         savedCharacter.greeting ?: "",
+    //         savedCharacter.characterSetting ?: "",
+    //         id,
+    //     ).flatMap { bllossomResponse ->
+    //         val chatroom = chatroomRepository.findByUserid(savedCharacter.userid)
+    //             ?: Chatroom(
+    //                 userid = savedCharacter.userid,
+    //                 charactersIdx = savedCharacter.idx?.toInt() ?: 0
+    //             )
 
-            val updatedChatroom = chatroom.copy(
-                mongo_chatroomid = bllossomResponse.take(255)
-            )
+    //         val updatedChatroom = chatroom.copy(
+    //             mongo_chatroomid = bllossomResponse.take(255)
+    //         )
 
-            Mono.fromCallable { chatroomRepository.save(updatedChatroom) }
-                .subscribeOn(Schedulers.boundedElastic())
-                .thenReturn(
-                    ResponseEntity.ok(
-                        mapOf<String, Any>(
-                            "status" to 200,
-                            "message" to "Character updated and integrated with Bllossom successfully"
-                        )
-                    )
-                )
-        }.onErrorResume { e ->
-            Mono.just(
-                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                    mapOf<String, Any>(
-                        "status" to 500,
-                        "message" to "Error during character update: ${e.message}"
-                    )
-                )
-            )
-        }
-    }
+    //         Mono.fromCallable { chatroomRepository.save(updatedChatroom) }
+    //             .subscribeOn(Schedulers.boundedElastic())
+    //             .thenReturn(
+    //                 ResponseEntity.ok(
+    //                     mapOf<String, Any>(
+    //                         "status" to 200,
+    //                         "message" to "Character updated and integrated with Bllossom successfully"
+    //                     )
+    //                 )
+    //             )
+    //     }.onErrorResume { e ->
+    //         Mono.just(
+    //             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+    //                 mapOf<String, Any>(
+    //                     "status" to 500,
+    //                     "message" to "Error during character update: ${e.message}"
+    //                 )
+    //             )
+    //         )
+    //     }
+    // }
 
     fun getCharacterById(request: HttpServletRequest, characterId: Long): Character? {
         val token = request.getHeader("Authorization")?.substring(7)

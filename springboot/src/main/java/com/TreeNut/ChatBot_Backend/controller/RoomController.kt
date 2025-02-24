@@ -138,32 +138,36 @@ class RoomController(
 
         val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
 
-        return roomService.getOfficeResponse(inputDataSet, googleAccessSet)
-            .flatMap { response ->
-                roomService.addOfficeRoom(
-                    userid = userId,
-                    mongo_chatroomid = id,
-                    input_data_set = inputDataSet,
-                    output_data_set = response.toString()
-                ).map {
-                    ResponseEntity.ok(
-                        mapOf(
-                            "status" to 200,
-                            "message" to response.toString()
-                        ) as Map<String, Any>
+        return roomService.getOfficeResponse(
+                inputDataSet = inputDataSet,
+                googleAccessSet = googleAccessSet,
+                mongodbId = id,
+                userId = userId,
+            ).flatMap { response ->
+                    roomService.addOfficeRoom(
+                        userid = userId,
+                        mongo_chatroomid = id,
+                        input_data_set = inputDataSet,
+                        output_data_set = response.toString()
+                    ).map {
+                        ResponseEntity.ok(
+                            mapOf(
+                                "status" to 200,
+                                "message" to response.toString()
+                            ) as Map<String, Any>
+                        )
+                    }
+                }
+                .onErrorResume { e ->
+                    Mono.just(
+                        ResponseEntity.status(500).body(
+                            mapOf(
+                                "status" to 500,
+                                "message" to "에러 발생: ${e.message}"
+                            ) as Map<String, Any>
+                        )
                     )
                 }
-            }
-            .onErrorResume { e ->
-                Mono.just(
-                    ResponseEntity.status(500).body(
-                        mapOf(
-                            "status" to 500,
-                            "message" to "에러 발생: ${e.message}"
-                        ) as Map<String, Any>
-                    )
-                )
-            }
     }
 
     @Operation(
@@ -564,10 +568,12 @@ class RoomController(
 
         // 응답 생성 및 저장
         return roomService.getCharacterResponse(
-            inputDataSet,
-            character.characterName ?: "",
-            character.greeting ?: "",
-            character.characterSetting ?: ""
+            inputDataSet = inputDataSet,
+            characterName = character.characterName ?: "",
+            greeting = character.greeting ?: "",
+            context =character.characterSetting ?: "",
+            mongodbId = id,
+            userId = userId,
         ).flatMap { response ->
             roomService.addCharacterRoom(
                 userid = userId,

@@ -25,7 +25,12 @@ class RoomService(
 /*
 오피스 응답을 요청하는 메소드
 */
-    fun getOfficeResponse(inputDataSet: String, googleAccessSet: Boolean): Mono<String> {
+    fun getOfficeResponse(
+        inputDataSet: String,
+        googleAccessSet: Boolean,
+        mongodbId: String,
+        userId: String,
+    ): Mono<String> {
         return webClient.build()
             .post()
             .uri("http://122.45.4.113:8001/office_stream")
@@ -33,7 +38,9 @@ class RoomService(
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
-                "google_access" to googleAccessSet
+                "google_access" to googleAccessSet,
+                "db_id" to mongodbId,
+                "user_id" to userId,
             ))
             .retrieve()
             .bodyToMono(Map::class.java)
@@ -140,7 +147,12 @@ class RoomService(
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getOfficeResponse(input_data_set, google_access_set).flatMap { output_data_set ->
+        return getOfficeResponse(
+            inputDataSet = input_data_set,
+            googleAccessSet = google_access_set,
+            mongodbId = mongo_chatroomid,
+            userId = userid
+        ).flatMap { output_data_set ->
             val truncatedOutputData = output_data_set.take(8191) // output_data의 길이를 8191자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
@@ -188,7 +200,14 @@ class RoomService(
 /*
 캐릭터 응답을 요청하는 메소드
 */
-    fun getCharacterResponse(inputDataSet: String, characterName: String, greeting: String, context: String): Mono<String> {
+    fun getCharacterResponse(
+        inputDataSet: String,
+        characterName: String,
+        greeting: String,
+        context: String,
+        mongodbId: String,
+        userId: String,
+    ): Mono<String> {
         return webClient.build()
             .post()
             .uri("http://122.45.4.113:8001/character_stream")
@@ -198,7 +217,9 @@ class RoomService(
                 "input_data" to inputDataSet,
                 "character_name" to characterName,
                 "greeting" to greeting,
-                "context" to context
+                "context" to context,
+                "db_id" to mongodbId,
+                "user_id" to userId,
             ))
             .retrieve()
             .bodyToMono(Map::class.java)

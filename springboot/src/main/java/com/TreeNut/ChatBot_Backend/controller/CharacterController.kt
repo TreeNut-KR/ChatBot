@@ -132,40 +132,40 @@ class CharacterController(
         }
     }
 
-    @PutMapping("/edit")
-    fun editCharacter(
-        @RequestParam character_name: String,
-        @RequestBody body: Map<String, Any>,
-        @RequestHeader("Authorization") userToken: String
-    ): ResponseEntity<Any> {
-        return try {
-            // 현재 캐릭터 찾기
-            val character = characterService.getCharacterByName(character_name).firstOrNull()
-                ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
+    // @PutMapping("/edit")
+    // fun editCharacter(
+    //     @RequestParam character_name: String,
+    //     @RequestBody body: Map<String, Any>,
+    //     @RequestHeader("Authorization") userToken: String
+    // ): ResponseEntity<Any> {
+    //     return try {
+    //         // 현재 캐릭터 찾기
+    //         val character = characterService.getCharacterByName(character_name).firstOrNull()
+    //             ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
 
-            // JWT에서 사용자 ID 추출
-            val tokenUserId = tokenAuth.authGuard(userToken)
-                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
+    //         // JWT에서 사용자 ID 추출
+    //         val tokenUserId = tokenAuth.authGuard(userToken)
+    //             ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-            // 캐릭터를 업데이트하기 위한 객체 생성
-            val editedCharacterEntity = character.copy(
-                characterName = body["character_name"] as? String ?: character.characterName,
-                description = body["description"] as? String ?: character.description,
-                greeting = body["greeting"] as? String ?: character.greeting,
-                image = body["image"] as? String ?: character.image,
-                characterSetting = body["character_setting"] as? String ?: character.characterSetting,
-                accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
-                userid = tokenUserId // 직접 가져온 userid로 설정
-            )
+    //         // 캐릭터를 업데이트하기 위한 객체 생성
+    //         val editedCharacterEntity = character.copy(
+    //             characterName = body["character_name"] as? String ?: character.characterName,
+    //             description = body["description"] as? String ?: character.description,
+    //             greeting = body["greeting"] as? String ?: character.greeting,
+    //             image = body["image"] as? String ?: character.image,
+    //             characterSetting = body["character_setting"] as? String ?: character.characterSetting,
+    //             accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
+    //             userid = tokenUserId // 직접 가져온 userid로 설정
+    //         )
 
-            // 업데이트 수행
-            characterService.editCharacter(character_name, editedCharacterEntity, userToken)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
-        }
-    }
+    //         // 업데이트 수행
+    //         characterService.editCharacter(character_name, editedCharacterEntity, userToken)
+    //         ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
+    //     } catch (e: Exception) {
+    //         e.printStackTrace()
+    //         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
+    //     }
+    // }
 
     @DeleteMapping("/delete")
     fun deleteCharacter(
@@ -199,45 +199,45 @@ class CharacterController(
         }
     }
 
-    @PutMapping("/manage_character_private")
-    fun manage_character_private(
-        @RequestParam character_name: String,
-        @RequestBody body: Map<String, Any>,
-        @RequestHeader("Authorization") userToken: String
-    ): ResponseEntity<Any> {
-        return try {
-            // 현재 캐릭터 찾기
-            val character = characterService.getCharacterByName(character_name).firstOrNull()
-                ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
+    // @PutMapping("/manage_character_private")
+    // fun manage_character_private(
+    //     @RequestParam character_name: String,
+    //     @RequestBody body: Map<String, Any>,
+    //     @RequestHeader("Authorization") userToken: String
+    // ): ResponseEntity<Any> {
+    //     return try {
+    //         // 현재 캐릭터 찾기
+    //         val character = characterService.getCharacterByName(character_name).firstOrNull()
+    //             ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
 
-            // JWT에서 사용자 ID 추출
-            val tokenUserId = tokenAuth.authGuard(userToken)
-                ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
+    //         // JWT에서 사용자 ID 추출
+    //         val tokenUserId = tokenAuth.authGuard(userToken)
+    //             ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-            val user = userRepository.findByUserid(tokenUserId.toString())
+    //         val user = userRepository.findByUserid(tokenUserId.toString())
 
-            if(user?.manager_boolean != true)
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("status" to 403, "message" to "권한이 없습니다. 관리자만 접근할 수 있습니다."))
+    //         if(user?.manager_boolean != true)
+    //             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("status" to 403, "message" to "권한이 없습니다. 관리자만 접근할 수 있습니다."))
 
-            // 캐릭터를 업데이트하기 위한 객체 생성
-            val editedCharacterEntity = character.copy(
-                characterName = character.characterName,
-                description = character.description,
-                greeting = character.greeting,
-                image = character.image,
-                characterSetting = character.characterSetting,
-                accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
-                userid = character.userid
-            )
+    //         // 캐릭터를 업데이트하기 위한 객체 생성
+    //         val editedCharacterEntity = character.copy(
+    //             characterName = character.characterName,
+    //             description = character.description,
+    //             greeting = character.greeting,
+    //             image = character.image,
+    //             characterSetting = character.characterSetting,
+    //             accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
+    //             userid = character.userid
+    //         )
 
-            // 업데이트 수행
-            characterService.editCharacter(character_name, editedCharacterEntity, userToken)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
-        }
-    }
+    //         // 업데이트 수행
+    //         characterService.editCharacter(character_name, editedCharacterEntity, userToken)
+    //         ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
+    //     } catch (e: Exception) {
+    //         e.printStackTrace()
+    //         ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
+    //     }
+    // }
 
     @GetMapping("/open_character_list")
     fun getOpenCharacterList(
