@@ -47,12 +47,15 @@ jobs:
           echo "${{ secrets.MONGO_ENV }}" > ./mongo/.env
      
           # FastAPI 관련 .env 파일 생성
-          mkdir -p fastapi/sources
-          echo "${{ secrets.FASTAPI_ENV }}" > ./fastapi/sources/.env
+          mkdir -p fastapi/src
+          echo "${{ secrets.FASTAPI_ENV }}" > ./fastapi/src/.env
 
-          # springboot 관련 application.properties 파일 생성
+          # springboot 설정 파일 생성
           mkdir -p ./springboot/src/main/resources
+          # application.properties 생성 (데이터베이스 등 기본 설정)
           echo "${{ secrets.SPRING_ENV }}" > ./springboot/src/main/resources/application.properties
+          # application.yml 생성 (Swagger 설정)
+          echo "${{ secrets.SPRING_SWAGGER_ENV }}" > ./springboot/src/main/resources/application.yml
 
       - name: Build and push Nginx image
         uses: docker/build-push-action@v3
