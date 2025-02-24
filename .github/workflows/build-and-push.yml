@@ -1,5 +1,9 @@
 name: Build and Push Docker Images
 
+permissions:
+  contents: write    # 리포지토리 컨텐츠 쓰기 권한
+  packages: write    # 패키지 쓰기 권한
+  
 on:
   push:
     tags:
