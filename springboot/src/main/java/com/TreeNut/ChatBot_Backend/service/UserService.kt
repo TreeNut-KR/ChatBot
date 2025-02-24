@@ -53,17 +53,6 @@ class UserService(
     }
 
     @Transactional
-    fun registerKakaoUser(kakaoId: String, username: String, email: String?): User {
-        val existingUser = userRepository.findByUserid("KAKAO_$kakaoId")
-        return existingUser ?: userRepository.save(User(
-            userid = "KAKAO_$kakaoId",
-            username = username,
-            email = email ?: "",
-            loginType = LoginType.KAKAO,
-            password = null
-        ))
-    }
-    @Transactional
     fun registerGoogleUser(googleId: String, username: String, email: String?): User {
         val existingUser = userRepository.findByUserid("GOOGLE_$googleId")
         return existingUser ?: userRepository.save(User(
@@ -71,6 +60,18 @@ class UserService(
             username = username,
             email = email ?: "",
             loginType = LoginType.GOOGLE,
+            password = null
+        ))
+    }
+
+    @Transactional
+    fun registerKakaoUser(kakaoId: String, username: String, email: String?): User {
+        val existingUser = userRepository.findByUserid("KAKAO_$kakaoId")
+        return existingUser ?: userRepository.save(User(
+            userid = "KAKAO_$kakaoId",
+            username = username,
+            email = email ?: "",
+            loginType = LoginType.KAKAO,
             password = null
         ))
     }
