@@ -118,7 +118,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository  # 이 단계 추가
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0  # 모든 태그와 히스토리를 가져오기 위해 필요
@@ -126,6 +126,19 @@ jobs:
       - name: Ensure Latest Git Tags in Jenkins
         run: |
           git fetch --tags --force  # 최신 태그 강제 업데이트
+
+      - name: Extract Branch Name from Tag
+        id: extract_branch
+        run: |
+          # GitHub의 ref 정보를 기반으로 브랜치 추출
+          BRANCH=$(git branch -r --contains ${{ github.ref }} | head -n 1 | awk -F'/' '{print $2}')
+          echo "BRANCH=${BRANCH}" >> $GITHUB_ENV
+
+      - name: Install jq (if not installed)
+        run: |
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
 
       - name: Trigger Jenkins Deploy
         run: |
@@ -142,6 +155,7 @@ jobs:
             "${{ secrets.JENKINS_URL }}/job/JMS_Chatbot/buildWithParameters" \
             --data-urlencode "token=${{ secrets.JENKINS_BUILD_TOKEN }}" \
             --data-urlencode "VERSION=${{ github.ref_name }}" \
+            --data-urlencode "BRANCH=${BRANCH}" \
             --data-urlencode "RELEASE_URL=https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
 
         env:
