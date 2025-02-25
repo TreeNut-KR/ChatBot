@@ -129,6 +129,7 @@ jobs:
 
       - name: Trigger Jenkins Deploy
         run: |
+          set -x  # 디버그 정보 활성화
           # Jenkins CSRF 토큰 가져오기
           CRUMB=$(curl -s \
             -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" \
