@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import reactor.core.publisher.Flux
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.atomic.AtomicBoolean
 import java.time.Duration
@@ -31,11 +32,13 @@ class RoomService(
         mongodbId: String,
         userId: String,
     ): Mono<String> {
+        val responseBuilder = StringBuilder()
+        
         return webClient.build()
             .post()
-            .uri("http://122.45.4.113:8001/office_stream")
+            .uri("http://192.168.219.100:8001/office_sse")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
+            .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
                 "google_access" to googleAccessSet,
@@ -43,21 +46,23 @@ class RoomService(
                 "user_id" to userId,
             ))
             .retrieve()
-            .bodyToMono(Map::class.java)
+            .bodyToFlux(String::class.java)  // Flux로 받아서 처리
             .timeout(Duration.ofMinutes(10))
-            .map { response ->
-                val responseData = response["response"] as? String
-                    ?: throw IllegalArgumentException("응답 데이터에 'response' 필드가 없습니다.")
-                responseData
+            .doOnNext { chunk ->
+                // 각 청크를 StringBuilder에 추가
+                responseBuilder.append(chunk)
             }
+            .doOnError { error ->
+                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
+            }
+            // 모든 스트리밍 데이터를 받은 후 하나의 문자열로 변환
+            .collectList()
+            .map { responseBuilder.toString() }
             .onErrorResume { throwable ->
                 when (throwable) {
                     is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
                     else -> Mono.error(throwable)
                 }
-            }
-            .doOnError { error ->
-                logger.error("[ERROR] 응답 처리 중 오류 발생: ${error.message}", error)
             }
     }
 
@@ -208,11 +213,12 @@ class RoomService(
         mongodbId: String,
         userId: String,
     ): Mono<String> {
+        val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
-            .uri("http://122.45.4.113:8001/character_stream")
+            .uri("http://192.168.219.100:8001/character_sse")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
+            .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
                 "character_name" to characterName,
@@ -222,21 +228,23 @@ class RoomService(
                 "user_id" to userId,
             ))
             .retrieve()
-            .bodyToMono(Map::class.java)
+            .bodyToFlux(String::class.java)  // Flux로 받아서 처리
             .timeout(Duration.ofMinutes(10))
-            .map { response ->
-                val responseData = response["response"] as? String
-                    ?: throw IllegalArgumentException("응답 데이터에 'response' 필드가 없습니다.")
-                responseData
+            .doOnNext { chunk ->
+                // 각 청크를 StringBuilder에 추가
+                responseBuilder.append(chunk)
             }
+            .doOnError { error ->
+                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
+            }
+            // 모든 스트리밍 데이터를 받은 후 하나의 문자열로 변환
+            .collectList()
+            .map { responseBuilder.toString() }
             .onErrorResume { throwable ->
                 when (throwable) {
                     is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
                     else -> Mono.error(throwable)
                 }
-            }
-            .doOnError { error ->
-                logger.error("[ERROR] 응답 처리 중 오류 발생: ${error.message}", error)
             }
     }
 
