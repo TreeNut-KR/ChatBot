@@ -27,9 +27,9 @@ CREATE TABLE characters (
     uuid CHAR(36) UNIQUE NOT NULL,
     userid VARCHAR(50),
     character_name VARCHAR(30) NOT NULL,
-    character_setting TEXT,
-    description TEXT,
-    greeting TEXT,
+    character_setting LONGTEXT,
+    description LONGTEXT,
+    greeting LONGTEXT,
     image TEXT,
     access_level BOOLEAN,
     like_count int DEFAULT 0,
@@ -40,11 +40,11 @@ CREATE TABLE characters (
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
--- 외래 키 삭제 후 chatroom 테이블 생성
-SET FOREIGN_KEY_CHECKS = 0;
+ALTER TABLE characters MODIFY character_setting LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS chatroom (
-    idx BIGINT AUTO_INCREMENT,
+-- 채팅방 (캐릭터 채팅)
+CREATE TABLE chatroom (
+    idx INT AUTO_INCREMENT,
     userid VARCHAR(100),
     characters_idx INT,
     mongo_chatroomid VARCHAR(512),

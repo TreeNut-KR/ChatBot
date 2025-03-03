@@ -10,6 +10,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
+import reactor.core.publisher.Flux
 import reactor.core.scheduler.Schedulers
 import java.util.concurrent.atomic.AtomicBoolean
 import java.time.Duration
@@ -25,32 +26,43 @@ class RoomService(
 /*
 오피스 응답을 요청하는 메소드
 */
-    fun getOfficeResponse(inputDataSet: String, googleAccessSet: Boolean): Mono<String> {
+    fun getOfficeResponse(
+        inputDataSet: String,
+        googleAccessSet: Boolean,
+        mongodbId: String,
+        userId: String,
+    ): Mono<String> {
+        val responseBuilder = StringBuilder()
+        
         return webClient.build()
             .post()
-            .uri("http://122.45.4.113:8001/office_stream")
+            .uri("http://192.168.219.100:8001/office_sse")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
+            .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
-                "google_access" to googleAccessSet
+                "google_access" to googleAccessSet,
+                "db_id" to mongodbId,
+                "user_id" to userId,
             ))
             .retrieve()
-            .bodyToMono(Map::class.java)
+            .bodyToFlux(String::class.java)  // Flux로 받아서 처리
             .timeout(Duration.ofMinutes(10))
-            .map { response ->
-                val responseData = response["response"] as? String
-                    ?: throw IllegalArgumentException("응답 데이터에 'response' 필드가 없습니다.")
-                responseData
+            .doOnNext { chunk ->
+                // 각 청크를 StringBuilder에 추가
+                responseBuilder.append(chunk)
             }
+            .doOnError { error ->
+                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
+            }
+            // 모든 스트리밍 데이터를 받은 후 하나의 문자열로 변환
+            .collectList()
+            .map { responseBuilder.toString() }
             .onErrorResume { throwable ->
                 when (throwable) {
                     is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
                     else -> Mono.error(throwable)
                 }
-            }
-            .doOnError { error ->
-                logger.error("[ERROR] 응답 처리 중 오류 발생: ${error.message}", error)
             }
     }
 
@@ -140,7 +152,12 @@ class RoomService(
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getOfficeResponse(input_data_set, google_access_set).flatMap { output_data_set ->
+        return getOfficeResponse(
+            inputDataSet = input_data_set,
+            googleAccessSet = google_access_set,
+            mongodbId = mongo_chatroomid,
+            userId = userid
+        ).flatMap { output_data_set ->
             val truncatedOutputData = output_data_set.take(8191) // output_data의 길이를 8191자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
@@ -188,40 +205,53 @@ class RoomService(
 /*
 캐릭터 응답을 요청하는 메소드
 */
-    fun getCharacterResponse(inputDataSet: String, characterName: String, greeting: String, context: String): Mono<String> {
+    fun getCharacterResponse(
+        inputDataSet: String,
+        characterName: String,
+        greeting: String,
+        context: String,
+        mongodbId: String,
+        userId: String,
+    ): Mono<String> {
+        val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
-            .uri("http://122.45.4.113:8001/character_stream")
+            .uri("http://192.168.219.100:8001/character_sse")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
+            .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
                 "character_name" to characterName,
                 "greeting" to greeting,
-                "context" to context
+                "context" to context,
+                "db_id" to mongodbId,
+                "user_id" to userId,
             ))
             .retrieve()
-            .bodyToMono(Map::class.java)
+            .bodyToFlux(String::class.java)  // Flux로 받아서 처리
             .timeout(Duration.ofMinutes(10))
-            .map { response ->
-                val responseData = response["response"] as? String
-                    ?: throw IllegalArgumentException("응답 데이터에 'response' 필드가 없습니다.")
-                responseData
+            .doOnNext { chunk ->
+                // 각 청크를 StringBuilder에 추가
+                responseBuilder.append(chunk)
             }
+            .doOnError { error ->
+                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
+            }
+            // 모든 스트리밍 데이터를 받은 후 하나의 문자열로 변환
+            .collectList()
+            .map { responseBuilder.toString() }
             .onErrorResume { throwable ->
                 when (throwable) {
                     is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
                     else -> Mono.error(throwable)
                 }
             }
-            .doOnError { error ->
-                logger.error("[ERROR] 응답 처리 중 오류 발생: ${error.message}", error)
-            }
     }
 
-    fun createCharacterRoom(userid: String): Mono<Map<String, Any>> {
+    fun createCharacterRoom(userid: String, characterIdx: Int): Mono<Map<String, Any>> {
         val requestBody = mapOf<String, Any>(
-            "user_id" to userid
+            "user_id" to userid,
+            "character_idx" to characterIdx
         )
 
         return webClient.build()
@@ -238,14 +268,16 @@ class RoomService(
         userid: String,
         mongo_chatroomid: String,
         input_data_set: String,
-        output_data_set: String
+        output_data_set: String,
+        image_set: String,
     ): Mono<Map<String, Any>> {
         val truncatedOutputData = output_data_set.take(8191)
         val requestBody = mapOf(
             "user_id" to userid,
             "id" to mongo_chatroomid,
             "input_data" to input_data_set,
-            "output_data" to truncatedOutputData
+            "output_data" to truncatedOutputData,
+            "img_url" to image_set,
         )
 
         return webClient.build()
@@ -280,5 +312,30 @@ class RoomService(
                 Mono.error(error)
             }
         }
+    }
+    
+    fun loadCharacterRoomLogs(
+        userid: String,
+        mongo_chatroomid: String
+    ): Mono<Map<String, Any>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid
+        )
+
+        return webClient.build()
+            .post()
+            .uri("/mongo/chatbot/load_log")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { response -> 
+                @Suppress("UNCHECKED_CAST")
+                response as Map<String, Any>
+            }
+            .onErrorMap { e ->
+                RuntimeException("채팅 로그 로드 실패: ${e.message}")
+            }
     }
 }
