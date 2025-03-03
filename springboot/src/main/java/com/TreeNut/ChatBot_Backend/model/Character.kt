@@ -15,7 +15,7 @@ data class Character(
     val uuid: String = UUID.randomUUID().toString(),
 
     @Column(name = "userid", length = 50)
-    val userid: String, // 외래 키로 설정될 수 있음
+    val userid: String,
 
     @Column(name = "character_name", nullable = false, length = 30)
     val characterName: String,
@@ -46,16 +46,23 @@ data class Character(
 
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
-)  {
-    constructor() : this( // 기본 생성자 추가
+) {
+    constructor() : this(
         idx = null,
         userid = "",
         characterName = "",
         characterSetting = null,
+        tone = null,
+        energyLevel = null,
+        politeness = null,
+        humor = null,
+        assertiveness = null,
         description = null,
         greeting = null,
-        accessLevel = null,
+        accessLevel = true,
         image = null,
+        like_count = 0,
+        liked_users = null,
         createdAt = LocalDateTime.now(),
         updatedAt = LocalDateTime.now()
     )

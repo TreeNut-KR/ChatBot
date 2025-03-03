@@ -14,6 +14,7 @@ CREATE TABLE users (
     password VARCHAR(255),
     access_token TEXT,
     refresh_token TEXT,
+    login_type ENUM('LOCAL', 'KAKAO', 'GOOGLE') DEFAULT 'LOCAL',
     manager_boolean BOOLEAN,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -24,7 +25,7 @@ CREATE TABLE users (
 CREATE TABLE characters (
     idx INT AUTO_INCREMENT,
     uuid CHAR(36) UNIQUE NOT NULL,
-    userid VARCHAR(50), 
+    userid VARCHAR(50),
     character_name VARCHAR(30) NOT NULL,
     character_setting TEXT,
     description TEXT,
@@ -35,13 +36,15 @@ CREATE TABLE characters (
     liked_users TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY(idx),
-    FOREIGN KEY (userid) REFERENCES users(userid)
+    PRIMARY KEY (idx),
+    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
--- 채팅방 (캐릭터 채팅)
-CREATE TABLE chatroom (
-    idx INT AUTO_INCREMENT,
+-- 외래 키 삭제 후 chatroom 테이블 생성
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE TABLE IF NOT EXISTS chatroom (
+    idx BIGINT AUTO_INCREMENT,
     userid VARCHAR(100),
     characters_idx INT,
     mongo_chatroomid VARCHAR(512),
