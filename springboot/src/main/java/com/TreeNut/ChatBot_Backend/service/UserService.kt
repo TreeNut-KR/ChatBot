@@ -2,6 +2,7 @@ package com.TreeNut.ChatBot_Backend.service
 
 import com.TreeNut.ChatBot_Backend.model.User
 import com.TreeNut.ChatBot_Backend.repository.UserRepository
+import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.beans.factory.annotation.Value
@@ -23,6 +24,7 @@ import java.sql.SQLIntegrityConstraintViolationException
 class UserService(
     private val userRepository: UserRepository,
     private val webClientBuilder: WebClient.Builder,
+    private val tokenAuth: TokenAuth,
     @Value("\${jwt.secret}") private val jwtSecret: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-id}") private val kakaoClientId: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.client-secret}") private val kakaoClientSecret: String,
@@ -147,7 +149,7 @@ class UserService(
         val kakaoId = userInfoResponse["id"].toString()
 
         val user = registerKakaoUser(kakaoId, nickname, null)
-        val token = generateToken(user)
+        val token = tokenAuth.generateToken(user.userid)
 
         return mapOf(
             "status" to 200,
@@ -212,9 +214,7 @@ class UserService(
     } */
 
     fun getUserid(token: String): String {
-        val key: SecretKey = Keys.hmacShaKeyFor(jwtSecret.toByteArray())
-        val userid = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).payload.subject
-        return userid
+        return tokenAuth.authGuard(token) ?: throw RuntimeException("Invalid token")
     }
 
     fun getUsername(userid: String): String {

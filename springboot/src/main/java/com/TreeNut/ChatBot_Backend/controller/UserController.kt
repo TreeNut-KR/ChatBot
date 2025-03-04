@@ -2,6 +2,7 @@ package com.TreeNut.ChatBot_Backend.controller
 
 import com.TreeNut.ChatBot_Backend.model.User
 import com.TreeNut.ChatBot_Backend.service.UserService
+import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -20,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 @RequestMapping("/server/user")
 class UserController(
     private val userService: UserService,
+    private val tokenAuth: TokenAuth,
     private val webClientBuilder: WebClient.Builder,
     @Value("\${spring.security.oauth2.client.registration.google.client-id}") private val googleClientId: String,
     @Value("\${spring.security.oauth2.client.registration.google.client-secret}") private val googleClientSecret: String,
@@ -39,7 +41,7 @@ class UserController(
         val user = User(userid = userid, username = username, email = email, password = password)
         val registeredUser = userService.register(user)
 
-        val token = userService.generateToken(registeredUser)
+        val token = tokenAuth.generateToken(registeredUser.userid)
         return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to registeredUser.username))
     } 
 
@@ -60,7 +62,7 @@ class UserController(
 
         val user = userService.login(userid, password)
         return if (user != null) {
-            val token = userService.generateToken(user)
+            val token = tokenAuth.generateToken(user.userid)
             ResponseEntity.ok(mapOf("token" to token, "name" to user.username))
         } else {
             ResponseEntity.status(401).body(mapOf("status" to 401, "message" to "Invalid credentials"))
@@ -99,7 +101,6 @@ class UserController(
         }
 
         return try {
-            //val encodedRedirectUri = URLEncoder.encode(googleRedirectUri, StandardCharsets.UTF_8.toString())
             val formData = LinkedMultiValueMap<String, String>().apply {
                 add("grant_type", googleGrantType)
                 add("client_id", googleClientId)
@@ -123,7 +124,7 @@ class UserController(
             val userInfoResponse = webClientBuilder.build()
                 .get()
                 .uri(googleUserInfoUrl)
-                .header("Authorization", "Bearer $accessToken")  // Bearer 토큰 형식으로 변경
+                .header("Authorization", "Bearer $accessToken")
                 .header("Content-type", "application/x-www-form-urlencoded;charset=utf-8")
                 .retrieve()
                 .bodyToMono(Map::class.java)
@@ -133,7 +134,7 @@ class UserController(
             val googleId = userInfoResponse["sub"].toString()
 
             val user = userService.registerGoogleUser(googleId, nickname, null)
-            val token = userService.generateToken(user)
+            val token = tokenAuth.generateToken(user.userid)
 
             ResponseEntity.ok(mapOf(
                 "status" to 200,
@@ -158,7 +159,6 @@ class UserController(
     ): ResponseEntity<Map<String, Any>> {
         return googleLogin(mapOf("code" to code))
     }
-    
     
     @GetMapping("/findmyinfo")
     fun findUserNameandEmail(@RequestHeader("Authorization") userToken:String): ResponseEntity<Map<String, Any>> {

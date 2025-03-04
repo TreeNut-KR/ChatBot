@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Value
 import java.security.Key
 import javax.crypto.SecretKey
+import java.util.*
 
 @Component
 class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
@@ -34,6 +35,15 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
         } catch (e: Exception) {
             throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
         }
+    }
+
+    fun generateToken(userId: String): String {
+        return Jwts.builder()
+            .setSubject(userId)
+            .setIssuedAt(Date())
+            .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
+            .signWith(key, SignatureAlgorithm.HS512)
+            .compact()
     }
 
     fun getJwtSecret(): String {
