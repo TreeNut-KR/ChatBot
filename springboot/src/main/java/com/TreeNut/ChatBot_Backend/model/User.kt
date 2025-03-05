@@ -41,4 +41,6 @@ data class User(
     fun onUpdate() {
         updatedAt = LocalDateTime.now()
     }
+
+    
 }
