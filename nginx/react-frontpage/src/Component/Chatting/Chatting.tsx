@@ -49,20 +49,32 @@ const ChatMessage: React.FC<{ user: string; text: string; className: string }> =
 
 const ChatContainer: React.FC<{ messages: Message[]; isLoading: boolean }> = ({ messages, isLoading }) => {
   const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   useEffect(() => {
+    if (isAtBottom && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isAtBottom]);
+
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
+  };
+
+  const scrollToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+    setIsAtBottom(true);
+  };
 
   return (
-    <div ref={chatContainerRef} className="flex-1 flex flex-col p-3 overflow-y-auto w-full max-w-6xl bg-gray-900">
+    <div className="relative flex-1 flex flex-col p-3 overflow-y-auto w-full max-w-6xl bg-gray-900" 
+         ref={chatContainerRef} onScroll={handleScroll}>
       {messages.map((msg, index) => (
-        <div
-          key={index}
-          className={`flex ${msg.user === '나' ? 'justify-end' : 'justify-start'} mb-4`}
-        >
+        <div key={index} className={`flex ${msg.user === '나' ? 'justify-end' : 'justify-start'} mb-4`}>
           <ChatMessage user={msg.user} text={msg.text} className={msg.className} />
         </div>
       ))}
@@ -70,6 +82,14 @@ const ChatContainer: React.FC<{ messages: Message[]; isLoading: boolean }> = ({ 
         <div className="flex justify-start mb-4">
           <ChatMessage user="AI" text="로딩 중..." className="bg-gray-600 text-white" />
         </div>
+      )}
+      {!isAtBottom && (
+        <button
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-indigo-500 text-white px-4 py-2 rounded-full shadow-lg hover:bg-indigo-600 transition"
+          onClick={scrollToBottom}
+        >
+          ↓
+        </button>
       )}
     </div>
   );
