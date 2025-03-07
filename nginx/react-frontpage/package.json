@@ -10,6 +10,7 @@
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "axios": "^1.7.9",
+    "dompurify": "^3.2.4",
     "frontpage-react": "file:",
     "jwt-decode": "^4.0.0",
     "marked": "^15.0.7",

@@ -36,7 +36,7 @@ class RoomService(
         
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/office_sse")
+            .uri("http://192.168.219.100:8001/office_stream")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
             .bodyValue(mapOf(
@@ -216,7 +216,7 @@ class RoomService(
         val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/character_sse")
+            .uri("http://192.168.219.100:8001/character_stream")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
             .bodyValue(mapOf(
