@@ -15,7 +15,7 @@ if [ "$(docker images -q)" ]; then
     docker rmi $(docker images -q)
 fi
 
-# 리빌드
+# 리빌드 
 docker compose up -d
 
 echo "도커 컨테이너 리빌드 완료"
