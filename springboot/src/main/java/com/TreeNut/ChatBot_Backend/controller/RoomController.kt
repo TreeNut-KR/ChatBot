@@ -171,6 +171,60 @@ class RoomController(
     }
 
     @Operation(
+        summary = "채팅방 조회",
+        description = "사용자의의 채팅방을 조회합니다."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "채팅방 조회 성공"),
+        ApiResponse(responseCode = "400", description = "채팅방 조회 실패"),
+        ApiResponse(responseCode = "401", description = "토큰 인증 실패")
+    ])
+    @GetMapping("/office/find_my_rooms")
+    fun findMyRooms(
+        @Parameter(description = "인증 토큰", required = true)
+        @RequestHeader("Authorization") authorization: String
+    ): Mono<ResponseEntity<Map<String, Any>>> {
+        val token = authorization
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "토큰 없음"
+                    )
+                )
+            )
+    
+        val userId = tokenAuth.authGuard(token)
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 401,
+                        "message" to "유효한 토큰이 필요합니다."
+                    )
+                )
+            )
+    
+        return roomService.findOfficeRoomUUIDByUserId(userId)
+            .collectList()
+            .map { rooms ->
+                ResponseEntity.ok(
+                    mapOf(
+                        "status" to 200,
+                        "rooms" to rooms
+                    )
+                )
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(400).body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "채팅방을 찾을 수 없습니다."
+                    )
+                )
+            )
+    }
+
+    @Operation(
         summary = "채팅 로그 불러오기",
         description = "특정 채팅방의 대화 로그를 불러옵니다."
     )

@@ -113,10 +113,25 @@ class RoomService(
         return officeroomRepository.save(newOfficeroom)
     }
 
+    fun findOfficeRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
+
+
+        // userid를 통해 mongo_chatroomid를 조회
+        return Flux.fromIterable(
+            officeroomRepository.findAll()
+                .filter { it.userid == userid }
+                .mapNotNull { it.mongo_chatroomid }
+                .map {
+                    mapOf(
+                        "roomid" to it
+                    )
+                } // mongo_chatroomid를 매핑
+        )
+    }
+
     fun loadOfficeRoomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
         val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid
+            "user_id" to userid
         )
 
         return webClient.build()
