@@ -36,9 +36,9 @@ class RoomService(
         
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/office_sse")
+            .uri("http://192.168.219.100:8001/office_stream")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
+            .accept(MediaType.TEXT_EVENT_STREAM)
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
                 "google_access" to googleAccessSet,
@@ -46,18 +46,28 @@ class RoomService(
                 "user_id" to userId,
             ))
             .retrieve()
-            .bodyToFlux(String::class.java)  // Flux로 받아서 처리
-            .timeout(Duration.ofMinutes(10))
+            .bodyToFlux(String::class.java)
             .doOnNext { chunk ->
-                // 각 청크를 StringBuilder에 추가
                 responseBuilder.append(chunk)
             }
+            .timeout(Duration.ofMinutes(10))
             .doOnError { error ->
                 logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
             }
-            // 모든 스트리밍 데이터를 받은 후 하나의 문자열로 변환
             .collectList()
-            .map { responseBuilder.toString() }
+            .map { 
+                val output = responseBuilder.toString()
+                
+                // output이 따옴표로 시작하고 끝나면 따옴표 제거
+                val cleanOutput = if (output.startsWith("\"") && output.endsWith("\"")) {
+                    output.substring(1, output.length - 1)
+                } else {
+                    output
+                }
+                
+                // 이스케이프된 따옴표를 실제 따옴표로 변환
+                cleanOutput.replace("\\\"", "\"")
+            }
             .onErrorResume { throwable ->
                 when (throwable) {
                     is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
@@ -78,7 +88,10 @@ class RoomService(
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
-            .map { it as Map<String, Any> }
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
+            }
     }
 
    fun addOfficeRoom(
@@ -102,7 +115,10 @@ class RoomService(
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
-            .map { it as Map<String, Any> }
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
+            }
     }
 
     fun saveOfficeRoom(userid: String, mongo_chatroomid: String): Officeroom {  // 필드명 변경
@@ -216,9 +232,9 @@ class RoomService(
         val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/character_sse")
+            .uri("http://192.168.219.100:8001/character_stream")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.TEXT_EVENT_STREAM)  // SSE 스트림 형식으로 변경
+            .accept(MediaType.TEXT_EVENT_STREAM)
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
                 "character_name" to characterName,
@@ -228,18 +244,28 @@ class RoomService(
                 "user_id" to userId,
             ))
             .retrieve()
-            .bodyToFlux(String::class.java)  // Flux로 받아서 처리
+            .bodyToFlux(String::class.java)
             .timeout(Duration.ofMinutes(10))
             .doOnNext { chunk ->
-                // 각 청크를 StringBuilder에 추가
                 responseBuilder.append(chunk)
             }
             .doOnError { error ->
                 logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
             }
-            // 모든 스트리밍 데이터를 받은 후 하나의 문자열로 변환
             .collectList()
-            .map { responseBuilder.toString() }
+            .map { 
+                val output = responseBuilder.toString()
+                
+                // output이 따옴표로 시작하고 끝나면 따옴표 제거
+                val cleanOutput = if (output.startsWith("\"") && output.endsWith("\"")) {
+                    output.substring(1, output.length - 1)
+                } else {
+                    output
+                }
+                
+                // 이스케이프된 따옴표를 실제 따옴표로 변환
+                cleanOutput.replace("\\\"", "\"")
+            }
             .onErrorResume { throwable ->
                 when (throwable) {
                     is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
@@ -261,7 +287,10 @@ class RoomService(
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
-            .map { it as Map<String, Any> }
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
+            }
     }
 
     fun addCharacterRoom(
@@ -287,7 +316,10 @@ class RoomService(
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
-            .map { it as Map<String, Any> }
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
+            }
     }
 
     fun saveCharacterRoomToMySQL(

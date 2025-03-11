@@ -121,15 +121,6 @@ class Room_Delete_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
 
-class Response(BaseModel):
-    id: str = id_set
-    character_idx: int = character_idx_set
-    value: list = value_set
-        
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
 # Office ---------------------------------------------------------------------------------------------------
 
 class Office_Id_Request(BaseModel):
@@ -169,6 +160,16 @@ class Office_Update_Request(BaseModel):
         필터링된 데이터만 반환하도록 수정할 수 있습니다.
         """
         return super().model_dump(**kwargs)
+    
+# Office용 새로운 응답 모델 추가
+class OfficeResponse(BaseModel):
+    id: str = id_set
+    value: list = value_set
+        
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
+
 
 # ChatBot ---------------------------------------------------------------------------------------------------
 
@@ -220,3 +221,12 @@ class ChatBot_Update_Request(BaseModel):
         필터링된 데이터만 반환하도록 수정할 수 있습니다.
         """
         return super().model_dump(**kwargs)
+
+class ChatBotResponse(BaseModel):
+    id: str = id_set
+    character_idx: int = character_idx_set
+    value: list = value_set
+        
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
