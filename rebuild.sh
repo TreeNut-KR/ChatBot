@@ -16,6 +16,6 @@ if [ "$(docker images -q)" ]; then
 fi
 
 # 리빌드 
-docker-compose up -d
+docker compose up -d
 
 echo "도커 컨테이너 리빌드 완료"
