@@ -1,0 +1,35 @@
+code {
+	padding: 3px 6px;
+  	border: none;
+  	border-radius: 3px;
+	font-size: 0.9rem;
+	font-family: "Pretendard", "Malgun Gothic", sans-serif;
+}
+
+@keyframes flash {
+    0% { opacity: 0; }
+    50% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  
+  .dot-flash {
+    animation: flash 1.5s infinite;
+  }
+  
+  .dot-flash.delay-200 {
+    animation-delay: 0.2s;
+  }
+  
+  .dot-flash.delay-400 {
+    animation-delay: 0.4s;
+  }
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
