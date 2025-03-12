@@ -68,7 +68,7 @@ class MongoDBHandler:
         :raises InternalServerErrorException: 컬렉션 이름을 가져오는 도중 문제가 발생할 경우
         """
         db_names = await self.get_db()
-        if database_name not in db_names:
+        if (database_name not in db_names):
             raise NotFoundException(f"Database '{database_name}' not found.")
         try:
             return await self.client[database_name].list_collection_names()
@@ -409,13 +409,13 @@ class MongoDBHandler:
         except Exception as e:
             raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
         
-    async def get_chatbot_log(self, user_id: str, document_id: str, router: str) -> List[Dict]:
+    async def get_chatbot_log(self, user_id: str, document_id: str, router: str):
         """
-        특정 문서의 'value' 필드를 반환합니다.
+        특정 문서의 'value' 필드와 'character_idx' 필드를 반환합니다.
         
         :param user_id: 사용자 ID
         :param document_id: 문서의 ID
-        :return: 해당 문서의 'value' 필드 데이터 또는 빈 배열
+        :return: 해당 문서의 'value' 필드 데이터와 'character_idx'
         :raises NotFoundException: 문서가 존재하지 않을 경우
         :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
         """
@@ -425,12 +425,13 @@ class MongoDBHandler:
 
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
-            character_idx = document.get("character_idx")
+
             value_list = document.get("value", [])
+            character_idx = document.get("character_idx", 0)  # character_idx가 없으면 0을 반환
 
             sorted_value_list = sorted(value_list, key=lambda x:x.get("index"))
 
-            # document에서 value를 반환
+            # document에서 value와 character_idx를 함께 반환
             return sorted_value_list, character_idx
         except PyMongoError as e:
             raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")

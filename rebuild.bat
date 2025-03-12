@@ -39,10 +39,10 @@ echo.
 echo Removing old folders...
 IF EXIST .\fastapi\sources\logs rmdir /s /q .\fastapi\sources\logs
 REM 유지할 데이터 폴더는 삭제하지 않습니다.
-IF EXIST .\mysql\data rmdir /s /q .\mysql\data
-IF EXIST .\mysql\logs rmdir /s /q .\mysql\logs
-IF EXIST .\mongo\data rmdir /s /q .\mongo\data
-IF EXIST .\mongo\log rmdir /s /q .\mongo\log
+@REM IF EXIST .\mysql\data rmdir /s /q .\mysql\data
+@REM IF EXIST .\mysql\logs rmdir /s /q .\mysql\logs
+@REM IF EXIST .\mongo\data rmdir /s /q .\mongo\data
+@REM IF EXIST .\mongo\log rmdir /s /q .\mongo\log
 echo.
 
 echo Removing __pycache__ folders in ./fastapi...

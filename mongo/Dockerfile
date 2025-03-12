@@ -4,6 +4,8 @@ FROM mongo:latest
 # 유지관리자를 설정합니다.
 LABEL maintainer="sjmbee04@gmail.com"
 
+ENV TZ=Asia/Seoul
+
 # MongoDB 설정 파일을 컨테이너 내 적절한 위치로 복사합니다.
 COPY mongod.conf /etc/mongod.conf
 
