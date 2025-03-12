@@ -38,7 +38,7 @@ class RoomService(
             .post()
             .uri("http://192.168.219.100:8001/office_stream")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.TEXT_EVENT_STREAM)
+            .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
                 "google_access" to googleAccessSet,
@@ -234,7 +234,7 @@ class RoomService(
             .post()
             .uri("http://192.168.219.100:8001/character_stream")
             .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.TEXT_EVENT_STREAM)
+            .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
                 "input_data" to inputDataSet,
                 "character_name" to characterName,

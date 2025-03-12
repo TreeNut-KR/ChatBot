@@ -1,5 +1,6 @@
 import os
 import uuid
+import datetime  # 날짜 시간 모듈 추가
 from typing import Dict, List
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -191,6 +192,10 @@ class MongoDBHandler:
                 key: value for key, value in new_data.items() if key not in ['id', 'user_id']
             }
 
+            # 현재 날짜 시간 정보 추가
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            new_data_filtered["timestamp"] = current_time
+
             new_index = len(document['value']) + 1
             new_data_with_index = {
                 "index": new_index,
@@ -233,6 +238,10 @@ class MongoDBHandler:
             }
 
             index = new_Data.get('index')
+            
+            # 현재 날짜 시간 정보 추가
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            update_data_filtered["timestamp"] = current_time
 
             update_data_with_index = {
                 "index":index,
@@ -341,6 +350,10 @@ class MongoDBHandler:
             new_data_filtered = {
                 key: value for key, value in new_data.items() if key not in ['id', 'user_id']
             }
+            
+            # 현재 날짜 시간 정보 추가
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            new_data_filtered["timestamp"] = current_time
 
             new_index = len(document['value']) + 1
             new_data_with_index = {
@@ -378,15 +391,18 @@ class MongoDBHandler:
             if document is None:
                 raise NotFoundException(f"No document found with ID: {document_id}")
 
-
             update_data_filtered = {
                 key: value for key, value in new_Data.items() if key not in ['user_id']
             }
 
             index = new_Data.get('index')
+            
+            # 현재 날짜 시간 정보 추가
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            update_data_filtered["timestamp"] = current_time
 
             update_data_with_index = {
-                "index":index,
+                "index": index,
                 **update_data_filtered
             }
 
