@@ -7,7 +7,7 @@
 | [이준호 (qwer9679)](https://github.com/qwer9679) | 백엔드, AI | Spring Boot, FastAPI, PyTorch |  
 | [모현준 (Flattt12)](https://github.com/Flattt12) | 백엔드 | Spring Boot |  
 | [권재현 (donismoney)](https://github.com/donismoney) | 백엔드 | Spring Boot |  
-| [오동현 (GingGang)](https://github.com/GingGang) | 백엔드 | Spring Boot |  
+| [오동현 (odh1231)](https://github.com/odh1231) | 백엔드 | Spring Boot |  
 | [백성현 (Seonghyeon8983)](https://github.com/Seonghyeon8983) | 프론트엔드 | React, TypeScript |  
 | [손유노 (GingGang)](https://github.com/GingGang) | 프론트엔드 | React, TypeScript |  
 
