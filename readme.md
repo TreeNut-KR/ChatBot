@@ -1,14 +1,17 @@
 # 프로젝트 구성원
-| 구성원 | 업무 |
-|--------|--------|
-|[김준건 (jgkim14)](https://github.com/jgkim14)|백엔드|
-|[서정훈 (CutTheWire)](https://github.com/CutTheWire)|백엔드, AI|
-|[이준호 (qwer9679)](https://github.com/qwer9679)|백엔드, AI|
-|[모현준 (Flattt12)](https://github.com/Flattt12)|백엔드|
-|[권재현 (donismoney)](https://github.com/donismoney)|백엔드|
-|[오동현 (GingGang)](https://github.com/GingGang)|백엔드|
-|[백성현 (Seonghyeon8983)](https://github.com/Seonghyeon8983)|프론트엔드|
-|[손유노 (GingGang)](https://github.com/GingGang)|프론트엔드|
+
+| 구성원 | 업무 | 사용 기술 |  
+|--------|--------|------------|  
+| [김준건 (jgkim14)](https://github.com/jgkim14) | 백엔드 | Spring Boot |  
+| [서정훈 (CutTheWire)](https://github.com/CutTheWire) | 백엔드, AI | Spring Boot, FastAPI, PyTorch, Llama-cpp-python |  
+| [이준호 (qwer9679)](https://github.com/qwer9679) | 백엔드, AI | Spring Boot, FastAPI, PyTorch |  
+| [모현준 (Flattt12)](https://github.com/Flattt12) | 백엔드 | Spring Boot |  
+| [권재현 (donismoney)](https://github.com/donismoney) | 백엔드 | Spring Boot |  
+| [오동현 (GingGang)](https://github.com/GingGang) | 백엔드 | Spring Boot |  
+| [백성현 (Seonghyeon8983)](https://github.com/Seonghyeon8983) | 프론트엔드 | React, TypeScript |  
+| [손유노 (GingGang)](https://github.com/GingGang) | 프론트엔드 | React, TypeScript |  
+
+이렇게 하면 구성원이 주로 사용하는 기술이 한눈에 들어올 거야! 😊
 
 # 구성도
 ![image](https://github.com/user-attachments/assets/03921907-2512-4f6b-bd51-fbdd3783bedb)
