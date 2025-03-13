@@ -7,7 +7,7 @@
 |[모현준 (Flattt12)](https://github.com/Flattt12)|백엔드|
 |[권재현 (donismoney)](https://github.com/donismoney)|백엔드|
 |[오동현 (GingGang)](https://github.com/GingGang)|백엔드|
-|[백성현 (qortjdgus8999)](https://github.com/qortjdgus8999)|프론트엔드|
+|[백성현 (Seonghyeon8983)](https://github.com/Seonghyeon8983)|프론트엔드|
 |[손유노 (GingGang)](https://github.com/GingGang)|프론트엔드|
 
 # 구성도
