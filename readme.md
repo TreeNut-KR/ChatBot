@@ -3,7 +3,7 @@
 | 구성원 | 업무 | 사용 기술 |  
 |--------|--------|------------|  
 | [김준건 (jgkim14)](https://github.com/jgkim14) | 백엔드 | Spring Boot |  
-| [서정훈 (CutTheWire)](https://github.com/CutTheWire) | 백엔드, AI | Spring Boot, FastAPI, PyTorch, Llama-cpp-python |  
+| [서정훈 (CutTheWire)](https://github.com/CutTheWire) | 백엔드, AI | Spring Boot, FastAPI, PyTorch |  
 | [이준호 (qwer9679)](https://github.com/qwer9679) | 백엔드, AI | Spring Boot, FastAPI, PyTorch |  
 | [모현준 (Flattt12)](https://github.com/Flattt12) | 백엔드 | Spring Boot |  
 | [권재현 (donismoney)](https://github.com/donismoney) | 백엔드 | Spring Boot |  
