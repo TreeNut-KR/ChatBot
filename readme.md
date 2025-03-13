@@ -11,8 +11,6 @@
 | [백성현 (Seonghyeon8983)](https://github.com/Seonghyeon8983) | 프론트엔드 | React, TypeScript |  
 | [손유노 (GingGang)](https://github.com/GingGang) | 프론트엔드 | React, TypeScript |  
 
-이렇게 하면 구성원이 주로 사용하는 기술이 한눈에 들어올 거야! 😊
-
 # 구성도
 ![image](https://github.com/user-attachments/assets/03921907-2512-4f6b-bd51-fbdd3783bedb)
 
