@@ -1,3 +1,15 @@
+# 프로젝트 구성원
+| 구성원 | 업무 |
+|--------|--------|
+|[김준건 (jgkim14)](https://github.com/jgkim14)|백엔드|
+|[서정훈 (CutTheWire)](https://github.com/CutTheWire)|백엔드, AI|
+|[이준호 (qwer9679)](https://github.com/qwer9679)|백엔드, AI|
+|[모현준 (Flattt12)](https://github.com/Flattt12)|백엔드|
+|[권재현 (donismoney)](https://github.com/donismoney)|백엔드|
+|[오동현 (odh1231)](https://github.com/odh1231)|백엔드|
+|백성현|프론트엔드|
+|손유노|프론트엔드|
+
 # 구성도
 ![image](https://github.com/user-attachments/assets/03921907-2512-4f6b-bd51-fbdd3783bedb)
 
