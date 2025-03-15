@@ -20,7 +20,7 @@ data class User(
     val email: String,
 
     @Column(name = "password", length = 255)
-    val password: String,
+    val password: String? = null,
 
     @Column(name = "access_token", columnDefinition = "TEXT")
     val accessToken: String? = null,
@@ -28,17 +28,29 @@ data class User(
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     val refreshToken: String? = null,
 
-    @Column(name = "created_at", updatable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "login_type", nullable = false)
+    val loginType: LoginType = LoginType.LOCAL,
+
+    @Column(name = "manager_boolean", nullable = false)
+    val manager_boolean: Boolean = false,
+
+    @Column(name = "created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
-    // 기본 생성자 추가
-    constructor() : this(null, "", "", "", "", null, null, LocalDateTime.now(), LocalDateTime.now())
+    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, LocalDateTime.now(), LocalDateTime.now())
 
     @PreUpdate
     fun onUpdate() {
         updatedAt = LocalDateTime.now()
     }
+}
+
+enum class LoginType {
+    LOCAL,
+    KAKAO,
+    GOOGLE
 }

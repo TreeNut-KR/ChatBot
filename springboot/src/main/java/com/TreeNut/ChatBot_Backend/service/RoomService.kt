@@ -4,12 +4,17 @@ import com.TreeNut.ChatBot_Backend.model.Chatroom
 import com.TreeNut.ChatBot_Backend.model.Officeroom
 import com.TreeNut.ChatBot_Backend.repository.ChatroomRepository
 import com.TreeNut.ChatBot_Backend.repository.OfficeroomRepository
+import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
+import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
-import org.springframework.http.HttpMethod
+import reactor.core.publisher.Flux
 import reactor.core.scheduler.Schedulers
+import java.util.concurrent.atomic.AtomicBoolean
+import java.time.Duration
+import java.util.concurrent.TimeoutException
 
 @Service
 class RoomService(
@@ -17,9 +22,62 @@ class RoomService(
     private val officeroomRepository: OfficeroomRepository,
     private val webClient: WebClient.Builder
 ) {
+    private val logger = LoggerFactory.getLogger(RoomService::class.java)
+/*
+오피스 응답을 요청하는 메소드
+*/
+    fun getOfficeResponse(
+        inputDataSet: String,
+        googleAccessSet: Boolean,
+        mongodbId: String,
+        userId: String,
+    ): Mono<String> {
+        val responseBuilder = StringBuilder()
+        
+        return webClient.build()
+            .post()
+            .uri("http://192.168.3.145:8001/office_stream")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(mapOf(
+                "input_data" to inputDataSet,
+                "google_access" to googleAccessSet,
+                "db_id" to mongodbId,
+                "user_id" to userId,
+            ))
+            .retrieve()
+            .bodyToFlux(String::class.java)
+            .doOnNext { chunk ->
+                responseBuilder.append(chunk)
+            }
+            .timeout(Duration.ofMinutes(10))
+            .doOnError { error ->
+                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
+            }
+            .collectList()
+            .map { 
+                val output = responseBuilder.toString()
+                
+                // output이 따옴표로 시작하고 끝나면 따옴표 제거
+                val cleanOutput = if (output.startsWith("\"") && output.endsWith("\"")) {
+                    output.substring(1, output.length - 1)
+                } else {
+                    output
+                }
+                
+                // 이스케이프된 따옴표를 실제 따옴표로 변환
+                cleanOutput.replace("\\\"", "\"")
+            }
+            .onErrorResume { throwable ->
+                when (throwable) {
+                    is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
+                    else -> Mono.error(throwable)
+                }
+            }
+    }
 
-    fun createOfficeroom(userid: String): Mono<Map<*, *>> {
-        val requestBody = mapOf(
+    fun createOfficeRoom(userid: String): Mono<Map<String, Any>> {
+        val requestBody = mapOf<String, Any>(
             "user_id" to userid
         )
 
@@ -30,75 +88,68 @@ class RoomService(
             .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
-    }
-
-    // Llama 모델로 input_data_set을 보내고 스트리밍 응답을 받는 함수
-    private fun getLlamaResponse(inputDataSet: String): Mono<String> {
-        val llamaRequestBody = mapOf(
-            "input_data" to inputDataSet
-        )
-
-        return webClient.build()
-            .post()
-            .uri("http://192.168.219.100:8000/Llama_stream")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(llamaRequestBody)
-            .retrieve()
-            .bodyToFlux(String::class.java)  // 스트리밍 응답 받기
-            .reduce { accumulated, chunk -> accumulated + chunk }  // 스트림을 하나의 문자열로 합치기
-            .map { response ->
-                response.ifEmpty { "Llama 응답 실패" }
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
             }
     }
 
-
-    fun addOfficeroom(
+   fun addOfficeRoom(
         userid: String,
-        mongo_officeroomid: String,
-        input_data_set: String
-    ): Mono<Map<*, *>> {
+        mongo_chatroomid: String,
+        input_data_set: String,
+        output_data_set: String
+    ): Mono<Map<String, Any>> {
+        val truncatedOutputData = output_data_set.take(8191)
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid,
+            "input_data" to input_data_set,
+            "output_data" to truncatedOutputData
+        )
 
-        // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
-
-            val requestBody = mapOf(
-                "user_id" to userid,
-                "id" to mongo_officeroomid,
-                "input_data" to input_data_set,
-                "output_data" to output_data_set
-            )
-
-            webClient.build()
-                .put()
-                .uri("/mongo/office/save_log")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(Map::class.java)
-        }
+        return webClient.build()
+            .put()
+            .uri("/mongo/office/save_log")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
+            }
     }
 
-    fun saveOfficeroom(userid: String, mongo_officeroomid: String): Officeroom {
+    fun saveOfficeRoom(userid: String, mongo_chatroomid: String): Officeroom {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongo_officeroomid = mongo_officeroomid
+            mongo_chatroomid = mongo_chatroomid  // 필드명 변경
         )
         return officeroomRepository.save(newOfficeroom)
     }
 
-    fun saveChatroom(userid: String, charactersIdx: Int = 0, mongo_chatroomid: String): Chatroom {
-        val newChatroom = Chatroom(
-            userid = userid,
-            charactersIdx = charactersIdx,
-            mongo_chatroomid = mongo_chatroomid
+    fun findOfficeRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
+
+
+        // userid를 통해 mongo_chatroomid를 조회
+        return Flux.fromIterable(
+            officeroomRepository.findAll()
+                .filter { it.userid == userid }
+                .mapNotNull { it.mongo_chatroomid }
+                .map {
+                    mapOf(
+                        "roomid" to it
+                    )
+                } // mongo_chatroomid를 매핑
         )
-        return chatroomRepository.save(newChatroom)
     }
 
-    fun loadOfficeroomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
+    fun loadOfficeRoomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
         val requestBody = mapOf(
             "user_id" to userid,
             "id" to mongo_chatroomid
+
         )
 
         return webClient.build()
@@ -110,10 +161,10 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun deleteOfficeroom(userid: String, mongo_officeroomid: String): Mono<Map<*, *>> {
+    fun deleteOfficeRoom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_officeroomid
+            "id" to mongo_chatroomid
         )
 
         return webClient.build()
@@ -125,22 +176,28 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun updateOfficeroomLog(
+    fun updateOfficeRoomLog(
         userid: String,
-        mongo_officeroomid: String,
+        mongo_chatroomid: String,  // 필드명 변경
         index: Int,
-        input_data_set: String
+        input_data_set: String,
+        google_access_set: Boolean
     ): Mono<Map<*, *>> {
 
         // Llama 모델에 input_data_set을 보내고 응답을 받음
-        return getLlamaResponse(input_data_set).flatMap { output_data_set ->
-
+        return getOfficeResponse(
+            inputDataSet = input_data_set,
+            googleAccessSet = google_access_set,
+            mongodbId = mongo_chatroomid,
+            userId = userid
+        ).flatMap { output_data_set ->
+            val truncatedOutputData = output_data_set.take(8191) // output_data의 길이를 8191자로 제한
             val requestBody = mapOf(
                 "user_id" to userid,
-                "id" to mongo_officeroomid,
+                "id" to mongo_chatroomid,  // 필드명 변경
                 "index" to index,
                 "input_data" to input_data_set,
-                "output_data" to output_data_set
+                "output_data" to truncatedOutputData
             )
 
             webClient.build()
@@ -153,10 +210,10 @@ class RoomService(
         }
     }
 
-    fun deleteOfficeroomLog(userid: String, mongo_officeroomid: String, index: Int): Mono<Map<*, *>> {
+    fun deleteOfficeRoomLog(userid: String, mongo_chatroomid: String, index: Int): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_officeroomid,
+            "id" to mongo_chatroomid,  // 필드명 변경
             "index" to index
         )
 
@@ -169,12 +226,165 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
-    fun saveOfficeroomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {
+    fun saveOfficeRoomToMySQL(userid: String, mongo_chatroomid: String): Mono<Officeroom> {  // 필드명 변경
         val newOfficeroom = Officeroom(
             userid = userid,
-            mongo_officeroomid = mongo_chatroomid
+            mongo_chatroomid = mongo_chatroomid  // 필드명 변경
         )
         return Mono.fromCallable { officeroomRepository.save(newOfficeroom) }
             .subscribeOn(Schedulers.boundedElastic())
+    }
+
+/*
+캐릭터 응답을 요청하는 메소드
+*/
+    fun getCharacterResponse(
+        inputDataSet: String,
+        characterName: String,
+        greeting: String,
+        context: String,
+        mongodbId: String,
+        userId: String,
+    ): Mono<String> {
+        val responseBuilder = StringBuilder()
+        return webClient.build()
+            .post()
+            .uri("http://192.168.3.145:8001/character_stream")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .bodyValue(mapOf(
+                "input_data" to inputDataSet,
+                "character_name" to characterName,
+                "greeting" to greeting,
+                "context" to context,
+                "db_id" to mongodbId,
+                "user_id" to userId,
+            ))
+            .retrieve()
+            .bodyToFlux(String::class.java)
+            .timeout(Duration.ofMinutes(10))
+            .doOnNext { chunk ->
+                responseBuilder.append(chunk)
+            }
+            .doOnError { error ->
+                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
+            }
+            .collectList()
+            .map { 
+                val output = responseBuilder.toString()
+                
+                // output이 따옴표로 시작하고 끝나면 따옴표 제거
+                val cleanOutput = if (output.startsWith("\"") && output.endsWith("\"")) {
+                    output.substring(1, output.length - 1)
+                } else {
+                    output
+                }
+                
+                // 이스케이프된 따옴표를 실제 따옴표로 변환
+                cleanOutput.replace("\\\"", "\"")
+            }
+            .onErrorResume { throwable ->
+                when (throwable) {
+                    is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
+                    else -> Mono.error(throwable)
+                }
+            }
+    }
+
+    fun createCharacterRoom(userid: String, characterIdx: Int): Mono<Map<String, Any>> {
+        val requestBody = mapOf<String, Any>(
+            "user_id" to userid,
+            "character_idx" to characterIdx
+        )
+
+        return webClient.build()
+            .post()
+            .uri("/mongo/chatbot/create")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
+            }
+    }
+
+    fun addCharacterRoom(
+        userid: String,
+        mongo_chatroomid: String,
+        input_data_set: String,
+        output_data_set: String,
+        image_set: String,
+    ): Mono<Map<String, Any>> {
+        val truncatedOutputData = output_data_set.take(8191)
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid,
+            "input_data" to input_data_set,
+            "output_data" to truncatedOutputData,
+            "img_url" to image_set,
+        )
+
+        return webClient.build()
+            .put()
+            .uri("/mongo/chatbot/save_log")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { 
+                @Suppress("UNCHECKED_CAST")
+                it as Map<String, Any> 
+            }
+    }
+
+    fun saveCharacterRoomToMySQL(
+        userid: String,
+        charactersid: Int,
+        mongo_chatroomid: String
+    ): Mono<Chatroom> {
+        return Mono.fromCallable {
+            // 새로운 채팅방 생성
+            val newCharacterroom = Chatroom(
+                userid = userid,
+                charactersIdx = charactersid,
+                mongo_chatroomid = mongo_chatroomid
+            )
+            chatroomRepository.save(newCharacterroom)
+        }.subscribeOn(Schedulers.boundedElastic())
+        .onErrorResume { error ->
+            // 외래 키 제약 조건 위반 시 에러 처리
+            if (error.message?.contains("foreign key constraint fails") == true) {
+                Mono.error(RuntimeException("선택한 캐릭터가 존재하지 않습니다: $charactersid"))
+            } else {
+                Mono.error(error)
+            }
+        }
+    }
+    
+    fun loadCharacterRoomLogs(
+        userid: String,
+        mongo_chatroomid: String
+    ): Mono<Map<String, Any>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid
+        )
+
+        return webClient.build()
+            .post()
+            .uri("/mongo/chatbot/load_log")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .map { response -> 
+                @Suppress("UNCHECKED_CAST")
+                response as Map<String, Any>
+            }
+            .onErrorMap { e ->
+                RuntimeException("채팅 로그 로드 실패: ${e.message}")
+            }
     }
 }

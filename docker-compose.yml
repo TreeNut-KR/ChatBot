@@ -10,6 +10,8 @@ services:
     depends_on:
       - fastapi
       - springboot  # Spring Boot 서비스 추가
+    environment:
+      - TZ=Asia/Seoul  # 한국 시간대 설정
 
   fastapi:
     restart: always
@@ -18,11 +20,13 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./fastapi/sources:/app/sources
-      - ./fastapi/sources/logs:/app/sources/logs
+      - ./fastapi/src:/app/src
+      - ./fastapi/src/logs:/app/src/logs
     depends_on:
       - mysql
       - mongodb
+    environment:
+      - TZ=Asia/Seoul  # 한국 시간대 설정
     command: [
       "/usr/local/bin/wait-for-it",
       "mysql:3306", "--",
@@ -36,6 +40,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    environment:
+      - TZ=Asia/Seoul  # 한국 시간대 설정
     command: ["./gradlew build -x test --no-daemon"] # 테스트를 건너뛰고 빌드
     depends_on:
       - mysql  # MySQL 서비스에 의존
@@ -50,13 +56,16 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: Asia/Seoul  # 한국 시간대 설정
     volumes:
       - ./mysql/data:/var/lib/mysql
       - ./mysql/log.cnf:/etc/mysql/conf.d/log.cnf:ro
       - ./mysql/logs:/var/log/mysql
     command: [
-      "--character-set-server=utf8mb4",
-      "--collation-server=utf8mb4_unicode_ci"
+      "--character-set-server=utf8mb4", 
+      "--collation-server=utf8mb4_unicode_ci",
+      "--skip-host-cache",
+      "--skip-name-resolve"
       ]
 
   mongodb:
@@ -70,6 +79,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD}
       MONGO_DATABASE: ${MONGO_DATABASE}
       GOOGLE_APPLICATION_CREDENTIALS: /app/JSON_KEY.json  # 환경 변수 설정
+      TZ: Asia/Seoul  # 한국 시간대 설정
     volumes:
       - ./mongo/data:/data/db
       - ./mongo/log:/var/log/mongodb

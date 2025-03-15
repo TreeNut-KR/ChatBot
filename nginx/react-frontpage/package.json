@@ -3,14 +3,33 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "axios": "^1.7.9",
+    "dompurify": "^3.2.4",
     "frontpage-react": "file:",
+    "jwt-decode": "^4.0.0",
+    "marked": "^15.0.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-frontpage": "file:",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.28.2",
     "react-scripts": "5.0.1",
+    "react-syntax-highlighter": "^15.6.1",
+    "rehype-raw": "^7.0.0",
+    "remark": "^15.0.1",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-html": "^16.0.1",
+    "remark-parse": "^11.0.0",
+    "swiper": "^11.1.15",
+    "typescript": "^4.9.5",
+    "unified": "^11.0.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
@@ -36,5 +55,12 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/jwt-decode": "^3.1.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17"
   }
 }

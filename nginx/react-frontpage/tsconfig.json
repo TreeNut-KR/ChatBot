@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es5",           // JavaScript의 타겟 버전
+    "lib": ["dom", "esnext"],  // 필요한 라이브러리 설정
+    "jsx": "react-jsx",        // JSX 처리를 위한 설정
+    "strict": true,            // 엄격한 타입 검사
+    "moduleResolution": "node", // 모듈 해석 방식
+    "esModuleInterop": true,    // CommonJS 모듈과의 호환성
+    "skipLibCheck": true,       // 라이브러리 타입 체크 건너뛰기
+    "resolveJsonModule": true,
+    "baseUrl": "./src", // 'src' 폴더를 기준으로 설정
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["src","declarations.d.ts"],           // 컴파일할 디렉토리 설정
+  "exclude": ["node_modules"]   // 제외할 디렉토리 설정
+}
