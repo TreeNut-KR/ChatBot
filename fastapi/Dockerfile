@@ -14,21 +14,25 @@ RUN apt-get update && apt-get install -y locales \
 # 필요한 패키지 설치
 RUN apt-get update && apt-get install -y netcat-openbsd
 
+# 시간대 설정 (Python 이미지는 Debian 기반이므로 apt-get 사용)
+RUN apt-get update && apt-get install -y tzdata
+RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+ENV TZ=Asia/Seoul
+
 # 환경 변수 설정
 ENV LANG ko_KR.UTF-8
 ENV LC_ALL ko_KR.UTF-8
-ENV TZ=Asia/Seoul
 
 # 작업 디렉토리 설정
-WORKDIR /app/sources
+WORKDIR /app/src
 
 # 의존성 파일 복사 및 설치
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 소스 코드 및 .env 파일 복사
-COPY sources /app/sources
-COPY sources/.env /app/sources/.env
+COPY src /app/src
+COPY src/.env /app/src/.env
 
 # 어플리케이션 실행 (MySQL 준비 대기)
 CMD ["/usr/local/bin/wait-for-it", "mysql:3306", "--", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]

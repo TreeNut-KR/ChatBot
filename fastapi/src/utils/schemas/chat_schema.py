@@ -61,6 +61,11 @@ id_set = Field(
     min_length=1, max_length=36,
     description="UUID 형식"
 )
+character_idx_set = Field(
+    examples=[1],
+    title="캐릭터 id",
+    description="int 형식"
+)
 img_url_set = Field(
     examples=["https://drive.google.com/thumbnail?id=12PqUS6bj4eAO_fLDaWQmoq94-771xfim"],
     title="이미지 URL",
@@ -76,13 +81,17 @@ input_data_set = Field(
 output_data_set = Field(
     examples=["안녕하세요! 무엇을 도와드릴까요?"],
     title="챗봇 출력 문장",
-    min_length=1, max_length=500,
+    min_length=1, max_length=8191,
     description="챗봇 출력 문장 길이 제약"
 )
 index_set = Field(
     examples=[1],
     title="채팅방 log index",
     description="int 형식"
+)
+value_set = Field(
+    examples=[{}],
+    title="채팅 로그"
 )
 
 # Public ---------------------------------------------------------------------------------------------------
@@ -112,14 +121,10 @@ class Room_Delete_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
 
-class Id_Request(BaseModel):
-    user_id: str = user_id_set
-
-class Response(BaseModel):
-    id: str = Field(examples=["123e4567-e89b-12d3-a456-426614174000"], title="채팅 id")
-    value: list = Field(examples=[{}], title="채팅 로그")
-
 # Office ---------------------------------------------------------------------------------------------------
+
+class Office_Id_Request(BaseModel):
+    user_id: str = user_id_set
 
 class Office_Create_Request(BaseModel):
     user_id: str = user_id_set
@@ -155,9 +160,23 @@ class Office_Update_Request(BaseModel):
         필터링된 데이터만 반환하도록 수정할 수 있습니다.
         """
         return super().model_dump(**kwargs)
+    
+# Office용 새로운 응답 모델 추가
+class OfficeResponse(BaseModel):
+    id: str = id_set
+    value: list = value_set
+        
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)
+
 
 # ChatBot ---------------------------------------------------------------------------------------------------
 
+class ChatBot_Id_Request(BaseModel):
+    user_id: str = user_id_set
+    character_idx: int = character_idx_set
+    
 class ChatBot_Create_Request(BaseModel):
     user_id: str = user_id_set
     id: str = id_set
@@ -169,9 +188,9 @@ class ChatBot_Create_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
     
-    @field_validator('img_url', mode='before')
-    def check_img_url(cls, v):
-        return Validators.validate_URL(v)
+    # @field_validator('img_url', mode='before')
+    # def check_img_url(cls, v):
+    #     return Validators.validate_URL(v)
     
     def model_dump(self, **kwargs):
         """
@@ -192,9 +211,9 @@ class ChatBot_Update_Request(BaseModel):
     def check_id(cls, v):
         return Validators.validate_uuid(v)
     
-    @field_validator('img_url', mode='before')
-    def check_img_url(cls, v):
-        return Validators.validate_URL(v)
+    # @field_validator('img_url', mode='before')
+    # def check_img_url(cls, v):
+    #     return Validators.validate_URL(v)
     
     def model_dump(self, **kwargs):
         """
@@ -202,3 +221,12 @@ class ChatBot_Update_Request(BaseModel):
         필터링된 데이터만 반환하도록 수정할 수 있습니다.
         """
         return super().model_dump(**kwargs)
+
+class ChatBotResponse(BaseModel):
+    id: str = id_set
+    character_idx: int = character_idx_set
+    value: list = value_set
+        
+    @field_validator('id', mode='before')
+    def check_id(cls, v):
+        return Validators.validate_uuid(v)

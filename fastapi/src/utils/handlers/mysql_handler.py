@@ -7,7 +7,7 @@ from databases import Database
 class MySQLDBHandler:
     def __init__(self) -> NoReturn:
         current_directory = os.path.dirname(os.path.abspath(__file__))
-        env_file_path = os.path.join(current_directory, '../.env')
+        env_file_path = os.path.join(current_directory, '../../.env')
         load_dotenv(env_file_path)
 
         self.database = Database(

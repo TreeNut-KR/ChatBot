@@ -10,10 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 
-import utils.Models as ChatModel
-import utils.Error_handlers as ChatError
-from utils.DB_mongo import MongoDBHandler
-from utils.DB_mysql import MySQLDBHandler
+from utils  import ChatError, ChatModel, MongoDBHandler, MySQLDBHandler
 
 mysql_handler = MySQLDBHandler()  # MySQL 핸들러 초기화
 mongo_handler = MongoDBHandler()  # MongoDB 핸들러 초기화
@@ -149,12 +146,12 @@ async def list_collections(db_name: str = Query(..., description="데이터베�
 office_router = APIRouter() # Office 관련 라우터 정의
 
 @office_router.post("/create", summary="유저 채팅방 ID 생성")
-async def create_chat(request: ChatModel.Id_Request):
+async def create_chat(request: ChatModel.Office_Id_Request):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
     '''
     try:
-        document_id = await mongo_handler.create_collection(
+        document_id = await mongo_handler.create_office_collection(
             user_id=request.user_id,
             router="office"
         )
@@ -215,19 +212,19 @@ async def update_chat_log(request: ChatModel.Office_Update_Request):
         raise ChatError.InternalServerErrorException(detail=str(e))
     
 
-@office_router.post("/load_log", response_model=ChatModel.Response, summary="유저 채팅 불러오기")
-async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.Response:
+@office_router.post("/load_log", response_model=ChatModel.OfficeResponse, summary="유저 채팅 불러오기")
+async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.OfficeResponse:
     '''
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
     '''
     try:
-        chat_logs = await mongo_handler.get_log(
+        chat_logs = await mongo_handler.get_offic_log(
             user_id=request.user_id,
             document_id=request.id,
             router="office"
         )
 
-        response_data = ChatModel.Response(
+        response_data = ChatModel.OfficeResponse(
             id=request.id,
             value=chat_logs
         )
@@ -282,15 +279,24 @@ async def delete_chat_room(request: ChatModel.Room_Delete_Request):
 chatbot_router = APIRouter() # Chatbot 관련 라우터 정의
 
 @chatbot_router.post("/create", summary="유저 채팅방 ID 생성")
-async def create_chat(request: ChatModel.Id_Request):
+async def create_chat(request: ChatModel.ChatBot_Id_Request):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
     '''
     try:
-        document_id = await mongo_handler.create_collection(
+        # character_idx가 양수인지 확인
+        if request.character_idx <= 0:
+            raise ChatError.BadRequestException("character_idx는 양수여야 합니다.")
+            
+        document_id = await mongo_handler.create_chatbot_collection(
             user_id=request.user_id,
+            character=request.character_idx,
             router="chatbot"
         )
+        
+        if not document_id:
+            raise ChatError.InternalServerErrorException("문서 ID 생성 실패")
+            
         return {"Document ID": document_id}
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
@@ -350,19 +356,20 @@ async def update_chat_log(request: ChatModel.ChatBot_Update_Request):
         raise ChatError.InternalServerErrorException(detail=str(e))
     
 
-@chatbot_router.post("/load_log", response_model=ChatModel.Response, summary="유저 채팅 불러오기")
-async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.Response:
+@chatbot_router.post("/load_log", response_model=ChatModel.ChatBotResponse, summary="유저 채팅 불러오기")
+async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.ChatBotResponse:
     '''
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
     '''
     try:
-        chat_logs = await mongo_handler.get_log(
+        chat_logs, character_idx = await mongo_handler.get_chatbot_log(
             user_id=request.user_id,
             document_id=request.id,
             router="chatbot"
         )
-        response_data = ChatModel.Response(
+        response_data = ChatModel.ChatBotResponse(
             id=request.id,
+            character_idx=character_idx,
             value=chat_logs,
         )
         return response_data

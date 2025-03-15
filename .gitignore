@@ -189,10 +189,10 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
 
-
+# spirngboot
 springboot/src/main/resources/application.properties
+springboot/src/main/resources/application.yml
 springboot/gradlew
 springboot/HELP.md
 springboot/.gradle
