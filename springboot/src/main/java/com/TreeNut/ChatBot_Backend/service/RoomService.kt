@@ -36,7 +36,7 @@ class RoomService(
         
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/office_stream")
+            .uri("http://192.168.3.145:8001/office_stream")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
@@ -232,7 +232,7 @@ class RoomService(
         val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
-            .uri("http://192.168.219.100:8001/character_stream")
+            .uri("http://192.168.3.145:8001/character_stream")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
