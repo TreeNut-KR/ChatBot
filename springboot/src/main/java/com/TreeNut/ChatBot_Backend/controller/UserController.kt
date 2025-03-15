@@ -88,7 +88,6 @@ class UserController(
     @GetMapping("/oauth/callback/kakao")
     fun kakaoCallback(
         @RequestParam code: String,
-        request: HttpServletRequest
     ): ResponseEntity<Map<String, Any>> {
         return kakaoLogin(mapOf("code" to code))
     }
@@ -155,7 +154,6 @@ class UserController(
     @GetMapping("/oauth/callback/google")
     fun googleCallback(
         @RequestParam code: String,
-        request: HttpServletRequest
     ): ResponseEntity<Map<String, Any>> {
         return googleLogin(mapOf("code" to code))
     }

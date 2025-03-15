@@ -147,7 +147,9 @@ class RoomService(
 
     fun loadOfficeRoomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
         val requestBody = mapOf(
-            "user_id" to userid
+            "user_id" to userid,
+            "id" to mongo_chatroomid
+
         )
 
         return webClient.build()
@@ -162,7 +164,7 @@ class RoomService(
     fun deleteOfficeRoom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {  // 필드명 변경
         val requestBody = mapOf(
             "user_id" to userid,
-            "id" to mongo_chatroomid  // 필드명 변경
+            "id" to mongo_chatroomid
         )
 
         return webClient.build()

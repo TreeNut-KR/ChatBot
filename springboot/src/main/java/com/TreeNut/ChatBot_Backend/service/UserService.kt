@@ -4,7 +4,6 @@ import com.TreeNut.ChatBot_Backend.model.User
 import com.TreeNut.ChatBot_Backend.repository.UserRepository
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
@@ -90,16 +89,6 @@ class UserService(
     @Transactional(readOnly = true)
     fun findUserByUserid(userid: String): User? {
         return userRepository.findByUserid(userid)
-    }
-
-    fun generateToken(user: User): String {
-        val key: SecretKey = Keys.hmacShaKeyFor(jwtSecret.toByteArray())
-        return Jwts.builder()
-            .setSubject(user.userid)
-            .setIssuedAt(Date())
-            .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
-            .signWith(key, SignatureAlgorithm.HS512)
-            .compact()
     }
 
     @Transactional
