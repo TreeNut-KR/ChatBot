@@ -4,6 +4,7 @@ import com.TreeNut.ChatBot_Backend.service.CharacterService
 import org.springframework.web.reactive.function.client.WebClient
 import com.TreeNut.ChatBot_Backend.service.RoomService
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
+import com.TreeNut.ChatBot_Backend.model.MembershipType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
@@ -136,38 +137,59 @@ class RoomController(
                 )
             )
 
+        val routeSet = inputData["route_set"] as? String
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "route_set 값이 필요합니다."
+                    )
+                )
+            )
+
         val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
 
-        return roomService.getOfficeResponse(
+        // 사용자의 멤버십 정보 확인
+        return roomService.getUserMembership(userId).flatMap { membership ->
+            // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
+            val finalRoute = if (membership == MembershipType.BASIC && routeSet != "Llama") {
+                "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
+            } else {
+                routeSet // VIP 멤버십은 요청한 route 그대로 사용
+            }
+
+            roomService.getOfficeResponse(
                 inputDataSet = inputDataSet,
                 googleAccessSet = googleAccessSet,
                 mongodbId = id,
                 userId = userId,
+                route = finalRoute
             ).flatMap { response ->
-                    roomService.addOfficeRoom(
-                        userid = userId,
-                        mongo_chatroomid = id,
-                        input_data_set = inputDataSet,
-                        output_data_set = response.toString()
-                    ).map {
-                        ResponseEntity.ok(
-                            mapOf(
-                                "status" to 200,
-                                "message" to response.toString()
-                            ) as Map<String, Any>
-                        )
-                    }
-                }
-                .onErrorResume { e ->
-                    Mono.just(
-                        ResponseEntity.status(500).body(
-                            mapOf(
-                                "status" to 500,
-                                "message" to "에러 발생: ${e.message}"
-                            ) as Map<String, Any>
-                        )
+                roomService.addOfficeRoom(
+                    userid = userId,
+                    mongo_chatroomid = id,
+                    input_data_set = inputDataSet,
+                    output_data_set = response.toString()
+                ).map {
+                    ResponseEntity.ok(
+                        mapOf(
+                            "status" to 200,
+                            "message" to response.toString()
+                        ) as Map<String, Any>
                     )
                 }
+            }
+            .onErrorResume { e ->
+                Mono.just(
+                    ResponseEntity.status(500).body(
+                        mapOf(
+                            "status" to 500,
+                            "message" to "에러 발생: ${e.message}"
+                        ) as Map<String, Any>
+                    )
+                )
+            }
+        }
     }
 
     @Operation(
@@ -182,10 +204,10 @@ class RoomController(
     @GetMapping("/office/find_my_rooms")
     fun findMyRooms(
         @Parameter(description = "인증 토큰", required = true)
-        @RequestHeader("Authorization") authorization: String
+        @RequestHeader("Authorization") authorization: String?
     ): Mono<ResponseEntity<Map<String, Any>>> {
-        val token = authorization
-            ?: return Mono.just(
+        if (authorization == null) {
+            return Mono.just(
                 ResponseEntity.badRequest().body(
                     mapOf(
                         "status" to 401,
@@ -193,6 +215,8 @@ class RoomController(
                     )
                 )
             )
+        }
+        val token = authorization
     
         val userId = tokenAuth.authGuard(token)
             ?: return Mono.just(
@@ -392,28 +416,47 @@ class RoomController(
                     )
                 )
             )
-
-        val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
         
-        return roomService.updateOfficeRoomLog(userId, id, index, inputDataSet, googleAccessSet)
-            .map { response ->
-                ResponseEntity.ok(
-                    mapOf(
-                        "status" to 200,
-                        "message" to "채팅 로그가 성공적으로 수정되었습니다.",
-                        "response" to response
 
-                    )
-                )
-            }
-            .defaultIfEmpty(
-                ResponseEntity.status(400).body(
+        val routeSet = inputData["route_set"] as? String
+            ?: return Mono.just(
+                ResponseEntity.badRequest().body(
                     mapOf(
                         "status" to 400,
-                        "message" to "채팅 로그 수정 실패"
+                        "message" to "route_set 값이 필요합니다."
                     )
                 )
             )
+
+        val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
+        // 사용자의 멤버십 정보 확인 후 업데이트 수행
+        return roomService.getUserMembership(userId).flatMap { membership ->
+            // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
+            val finalRoute = if (membership == MembershipType.BASIC && routeSet != "Llama") {
+                "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
+            } else {
+                routeSet // VIP 멤버십은 요청한 route 그대로 사용
+            }
+            
+            roomService.updateOfficeRoomLog(userId, id, index, inputDataSet, googleAccessSet, finalRoute)
+                .map { response ->
+                    ResponseEntity.ok(
+                        mapOf(
+                            "status" to 200,
+                            "message" to "채팅 로그가 성공적으로 수정되었습니다.",
+                            "response" to response
+                        )
+                    )
+                }
+                .defaultIfEmpty(
+                    ResponseEntity.status(400).body(
+                        mapOf(
+                            "status" to 400,
+                            "message" to "채팅 로그 수정 실패"
+                        )
+                    )
+                )
+        }
     }
 
     @Operation(

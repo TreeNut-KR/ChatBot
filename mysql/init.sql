@@ -16,6 +16,7 @@ CREATE TABLE users (
     refresh_token TEXT,
     login_type ENUM('LOCAL', 'KAKAO', 'GOOGLE') DEFAULT 'LOCAL',
     manager_boolean BOOLEAN,
+    membership ENUM('BASIC', 'VIP') DEFAULT 'BASIC',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (idx)
