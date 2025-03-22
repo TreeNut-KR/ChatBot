@@ -1,14 +1,48 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import axios from 'axios';
 import logo_naver_kr from './logo/logo_naver_kr.png';
 import logo_kakao_kr from './logo/logo_kakao_kr.png';
 import logo_google_kr from './logo/logo_google_kr.png';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const Login: React.FC = () => {
   const [Id, setId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      console.log('📩 받은 메시지:', event.data);
+      const { token } = event.data;
+      if (token) {
+        console.log('✅ 토큰 저장 성공:', token);
+        localStorage.setItem('jwt-token', token);
+        window.location.href = '/';
+      } else {
+        console.error('❌ 받은 토큰이 없음');
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+  
+  const googleLogin = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      console.log('구글 로그인 성공:', tokenResponse);
+      localStorage.setItem('jwt-token', tokenResponse.access_token);
+      window.location.href = '/';
+    },
+    onError: () => {
+      console.error('구글 로그인 실패');
+      setError('구글 로그인 실패. 다시 시도해 주세요.');
+    },
+  });
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,13 +78,13 @@ const Login: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen w-[90vw]">
-      <form onSubmit={handleSubmit} className="bg-white p-12 rounded-md text-left w-full max-w-sm ">
+      <form className="bg-white p-12 rounded-md text-left w-full max-w-sm" onSubmit={handleSubmit}>
         <div className="flex justify-center items-center">
-          <h2 className="text-green-600 text-2xl mb-2 whitespace-nowrap">{`TreeNut`}</h2>
+          <h2 className="text-green-600 text-2xl mb-2 whitespace-nowrap">TreeNut</h2>
         </div>
 
         <div className="flex justify-center items-center">
-          <h2 className="text-lg mb-3 whitespace-nowrap">{`AI 어시스턴트한테 도움을 받아보세요!`}</h2>
+          <h2 className="text-lg mb-3 whitespace-nowrap">AI 어시스턴트한테 도움을 받아보세요!</h2>
         </div>
 
         <h2 className="text-center text-sm mb-6 text-gray-600">
@@ -71,7 +105,8 @@ const Login: React.FC = () => {
           <img
             src={logo_google_kr}
             alt="Google Logo"
-            className="w-72 transition-transform transform hover:translate-y-[-5px]"
+            className="w-72 mb-4 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
+            onClick={() => googleLogin()} // ✅ 클릭 시 구글 로그인 실행
           />
         </div>
 
