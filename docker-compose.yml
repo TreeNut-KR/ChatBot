@@ -5,11 +5,15 @@ services:
     restart: always
     build:
       context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "443:443"
+    volumes:
+      # React 빌드 결과물을 Nginx 컨테이너에 마운트 (선택적)
+      - ./nginx/react-frontpage/build:/usr/share/nginx/html
     depends_on:
       - fastapi
-      - springboot  # Spring Boot 서비스 추가
+      - springboot
     environment:
       - TZ=Asia/Seoul  # 한국 시간대 설정
 

@@ -5,6 +5,23 @@ import logo_kakao_kr from './logo/logo_kakao_kr.png';
 import logo_google_kr from './logo/logo_google_kr.png';
 import { useGoogleLogin } from '@react-oauth/google';
 
+// 인앱 브라우저 감지 함수
+const isInAppBrowser = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  
+  // 카카오톡 인앱 브라우저 감지
+  if (/KAKAOTALK/i.test(userAgent)) {
+    return true;
+  }
+  
+  // 기타 일반적인 인앱 브라우저 감지
+  if (/FB_IAB|FBAN|FBAV|Instagram|Line|NAVER|NaverSearch/i.test(userAgent)) {
+    return true;
+  }
+  
+  return false;
+};
+
 const Login: React.FC = () => {
   const [Id, setId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -43,6 +60,29 @@ const Login: React.FC = () => {
       setError('구글 로그인 실패. 다시 시도해 주세요.');
     },
   });
+
+  const handleGoogleLogin = () => {
+    if (isInAppBrowser()) {
+      // 현재 URL을 저장하고 외부 브라우저로 리다이렉션
+      const currentUrl = window.location.href;
+      localStorage.setItem('redirectAfterLogin', currentUrl);
+      
+      // URL 스키마 또는 Intent를 사용하여 외부 브라우저 열기 (OS에 따라 다름)
+      if (/android/i.test(navigator.userAgent)) {
+        // 안드로이드
+        window.location.href = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=${window.location.protocol.slice(0, -1)};package=com.android.chrome;end`;
+      } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+        // iOS
+        window.location.href = currentUrl;
+      } else {
+        // 기타 경우 그냥 링크 열기 시도
+        window.open(currentUrl, '_system');
+      }
+    } else {
+      // 일반 브라우저에서는 직접 구글 로그인 실행
+      googleLogin();
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -106,7 +146,8 @@ const Login: React.FC = () => {
             src={logo_google_kr}
             alt="Google Logo"
             className="w-72 mb-4 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
-            onClick={() => googleLogin()} // ✅ 클릭 시 구글 로그인 실행
+            onClick={() => handleGoogleLogin()} // 새로운 핸들러 사용
+            onTouchStart={() => handleGoogleLogin()} // 새로운 핸들러 사용
           />
         </div>
 
