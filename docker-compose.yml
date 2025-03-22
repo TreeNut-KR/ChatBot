@@ -6,7 +6,7 @@ services:
     build:
       context: ./nginx
     ports:
-      - "80:80"
+      - "443:443"
     depends_on:
       - fastapi
       - springboot  # Spring Boot 서비스 추가
