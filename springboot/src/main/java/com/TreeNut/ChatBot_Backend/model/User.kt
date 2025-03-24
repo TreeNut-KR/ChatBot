@@ -34,6 +34,10 @@ data class User(
 
     @Column(name = "manager_boolean", nullable = false)
     val manager_boolean: Boolean = false,
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "membership", nullable = false)
+    val membership: MembershipType = MembershipType.BASIC,
 
     @Column(name = "created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -41,7 +45,7 @@ data class User(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
-    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, LocalDateTime.now(), LocalDateTime.now())
+    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, MembershipType.BASIC, LocalDateTime.now(), LocalDateTime.now())
 
     @PreUpdate
     fun onUpdate() {
@@ -53,4 +57,9 @@ enum class LoginType {
     LOCAL,
     KAKAO,
     GOOGLE
+}
+
+enum class MembershipType {
+    BASIC,
+    VIP
 }
