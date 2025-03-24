@@ -133,33 +133,33 @@ class RoomService(
         return officeroomRepository.save(newOfficeroom)
     }
 
-fun findOfficeRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
-    // userid를 통해 mongo_chatroomid를 조회
-    return Flux.fromIterable(
-        officeroomRepository.findAll()
-            .filter { it.userid == userid }
-            .mapNotNull { it.mongo_chatroomid }
-            .map { roomid ->
-                // roomid에 대한 첫 번째 채팅 메시지 조회
-                loadOfficeRoomLogs(userid, roomid)
-                    .map { chatLog ->
-                        val messages = chatLog["value"] as? List<Map<String, Any>> // 'value' 키로 접근
-                        val Title = messages?.firstOrNull { it["index"] == 1 }?.get("input_data") as? String ?: ""
+    fun findOfficeRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
+        // userid를 통해 mongo_chatroomid를 조회
+        return Flux.fromIterable(
+            officeroomRepository.findAll()
+                .filter { it.userid == userid }
+                .mapNotNull { it.mongo_chatroomid }
+                .map { roomid ->
+                    // roomid에 대한 첫 번째 채팅 메시지 조회
+                    loadOfficeRoomLogs(userid, roomid)
+                        .map { chatLog ->
+                            val messages = chatLog["value"] as? List<Map<String, Any>> // 'value' 키로 접근
+                            val Title = messages?.firstOrNull { it["index"] == 1 }?.get("input_data") as? String ?: ""
 
-                        // inputData의 글자 수가 10글자 이상일 경우 처리
-                        val formattedTitle = if (Title.length > 10) {
-                            Title.substring(0, 10) + "..."
-                        } else {
-                            Title
-                        }
-                        mapOf(
-                            "roomid" to roomid,
-                            "Title" to formattedTitle
-                        )
-                    }.defaultIfEmpty(mapOf("roomid" to roomid, "Title" to ""))
-            }
-    ).flatMap { it }
-}
+                            // inputData의 글자 수가 10글자 이상일 경우 처리
+                            val formattedTitle = if (Title.length > 10) {
+                                Title.substring(0, 10) + "..."
+                            } else {
+                                Title
+                            }
+                            mapOf(
+                                "roomid" to roomid,
+                                "Title" to formattedTitle
+                            )
+                        }.defaultIfEmpty(mapOf("roomid" to roomid, "Title" to ""))
+                }
+        ).flatMap { it }
+    }
 
     fun loadOfficeRoomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
         val requestBody = mapOf(
@@ -414,6 +414,34 @@ fun findOfficeRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
             }
         }
     }
+
+    fun findCharacterRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
+        // userid를 통해 mongo_chatroomid를 조회
+        return Flux.fromIterable(
+            chatroomRepository.findAll()
+                .filter { it.userid == userid }
+                .mapNotNull { it.mongo_chatroomid }
+                .map { roomid ->
+                    // roomid에 대한 첫 번째 채팅 메시지 조회
+                    loadCharacterRoomLogs(userid, roomid)
+                        .map { chatLog ->
+                            val messages = chatLog["value"] as? List<Map<String, Any>> // 'value' 키로 접근
+                            val Title = messages?.firstOrNull { it["index"] == 1 }?.get("input_data") as? String ?: ""
+
+                            // inputData의 글자 수가 10글자 이상일 경우 처리
+                            val formattedTitle = if (Title.length > 10) {
+                                Title.substring(0, 10) + "..."
+                            } else {
+                                Title
+                            }
+                            mapOf(
+                                "roomid" to roomid,
+                                "Title" to formattedTitle
+                            )
+                        }.defaultIfEmpty(mapOf("roomid" to roomid, "Title" to ""))
+                }
+        ).flatMap { it }
+    }
     
     fun loadCharacterRoomLogs(
         userid: String,
@@ -447,19 +475,6 @@ fun findOfficeRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
             mongo_chatroomid = mongo_chatroomid
         )
         return chatroomRepository.save(newCharacterRoom)
-    }
-
-    fun findCharacterRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
-        return Flux.fromIterable(
-            chatroomRepository.findAll()
-                .filter { it.userid == userid }
-                .mapNotNull { it.mongo_chatroomid }
-                .map {
-                    mapOf(
-                        "roomid" to it
-                    )
-                }
-        )
     }
 
     fun deleteCharacterRoom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
