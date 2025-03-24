@@ -40,7 +40,7 @@ class RoomService(
         
         return webClient.build()
             .post()
-            .uri("http://192.168.3.145:8001/office/{route}", route)
+            .uri("http://192.168.3.145:8001/office/{route}", route) 
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
@@ -179,21 +179,38 @@ class RoomService(
             .retrieve()
             .bodyToMono(Map::class.java)
     }
+    
+    // MongoDB 채팅방 삭제와 함께 MySQL에서도 Office 채팅방 정보 삭제
+    fun deleteOfficeRoomFromMySQL(userid: String, mongo_chatroomid: String): Mono<Void> {
+        return Mono.fromCallable {
+            val officeRooms = officeroomRepository.findAll()
+                .filter { it.userid == userid && it.mongo_chatroomid == mongo_chatroomid }
+            
+            if (officeRooms.isNotEmpty()) {
+                officeroomRepository.deleteAll(officeRooms)
+                logger.info("MySQL에서 Office 채팅방 정보 삭제 완료: $mongo_chatroomid (사용자: $userid)")
+            } else {
+                logger.warn("MySQL에서 삭제할 Office 채팅방 정보를 찾을 수 없음: $mongo_chatroomid (사용자: $userid)")
+            }
+        }
+        .subscribeOn(Schedulers.boundedElastic())
+        .then()
+    }
 
-    fun updateOfficeRoomLog(
+    fun updateOfficeRoomLog( 
         userid: String,
         mongo_chatroomid: String,  // 필드명 변경
         index: Int,
         input_data_set: String,
         google_access_set: Boolean,
-        route_set: String
+        route: String
     ): Mono<Map<*, *>> {
         return getUserMembership(userid).flatMap { membership ->
             // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
-            val finalRoute = if (membership == MembershipType.BASIC && route_set != "Llama") {
+            val finalRoute = if (membership == MembershipType.BASIC && route != "Llama") {
                 "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
             } else {
-                route_set // VIP 멤버십은 요청한 route 그대로 사용
+                route // VIP 멤버십은 요청한 route 그대로 사용
             }
 
             // Llama 모델에 input_data_set을 보내고 응답을 받음
@@ -202,7 +219,7 @@ class RoomService(
                 googleAccessSet = google_access_set,
                 mongodbId = mongo_chatroomid,
                 userId = userid,
-                route = finalRoute
+                route = finalRoute,
             ).flatMap { output_data_set ->
                 val truncatedOutputData = output_data_set.take(8191) // output_data의 길이를 8191자로 제한
                 val requestBody = mapOf(
@@ -267,11 +284,12 @@ class RoomService(
         context: String,
         mongodbId: String,
         userId: String,
+        route: String = "Llama",
     ): Mono<String> {
         val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
-            .uri("http://192.168.3.145:8001/character_stream")
+            .uri("http://192.168.3.145:8001/character/{route}", route)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
@@ -447,6 +465,22 @@ class RoomService(
             .bodyToMono(Map::class.java)
     }
 
+    fun deleteCharacterRoomFromMySQL(userid: String, mongo_chatroomid: String): Mono<Void> {
+        return Mono.fromCallable {
+            val characterRooms = chatroomRepository.findAll()
+                .filter { it.userid == userid && it.mongo_chatroomid == mongo_chatroomid }
+            
+            if (characterRooms.isNotEmpty()) {
+                chatroomRepository.deleteAll(characterRooms)
+                logger.info("MySQL에서 Character 채팅방 정보 삭제 완료: $mongo_chatroomid (사용자: $userid)")
+            } else {
+                logger.warn("MySQL에서 삭제할 Character 채팅방 정보를 찾을 수 없음: $mongo_chatroomid (사용자: $userid)")
+            }
+        }
+        .subscribeOn(Schedulers.boundedElastic())
+        .then()
+    }
+
     fun updateCharacterRoomLog(
         userid: String,
         mongo_chatroomid: String,
@@ -454,32 +488,45 @@ class RoomService(
         input_data_set: String,
         characterName: String,
         greeting: String,
-        context: String
+        context: String,
+        image_set: String,
+        route: String
     ): Mono<Map<*, *>> {
-        return getCharacterResponse(
-            inputDataSet = input_data_set,
-            characterName = characterName,
-            greeting = greeting,
-            context = context,
-            mongodbId = mongo_chatroomid,
-            userId = userid
-        ).flatMap { output_data_set ->
-            val truncatedOutputData = output_data_set.take(8191)
-            val requestBody = mapOf(
-                "user_id" to userid,
-                "id" to mongo_chatroomid,
-                "index" to index,
-                "input_data" to input_data_set,
-                "output_data" to truncatedOutputData
-            )
+        return getUserMembership(userid).flatMap { membership ->
+            // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
+            val finalRoute = if (membership == MembershipType.BASIC && route != "Llama") {
+                "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
+            } else {
+                route // VIP 멤버십은 요청한 route 그대로 사용
+            }
+        
+            getCharacterResponse(
+                inputDataSet = input_data_set,
+                characterName = characterName,
+                greeting = greeting,
+                context = context,
+                mongodbId = mongo_chatroomid,
+                userId = userid,
+                route = finalRoute,
+            ).flatMap { output_data_set ->
+                val truncatedOutputData = output_data_set.take(8191)
+                val requestBody = mapOf(
+                    "user_id" to userid,
+                    "id" to mongo_chatroomid,
+                    "index" to index,
+                    "input_data" to input_data_set,
+                    "output_data" to truncatedOutputData,
+                    "img_url" to image_set,
+                )
 
-            webClient.build()
-                .put()
-                .uri("/mongo/chatbot/update_log")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(Map::class.java)
+                webClient.build()
+                    .put()
+                    .uri("/mongo/chatbot/update_log")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(Map::class.java)
+            }
         }
     }
 
@@ -492,7 +539,7 @@ class RoomService(
 
         return webClient.build()
             .method(HttpMethod.DELETE)
-            .uri("/mongo/chatbot/delete_log")햐
+            .uri("/mongo/chatbot/delete_log")
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
