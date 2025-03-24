@@ -47,6 +47,7 @@ services:
       - mysql  # MySQL 서비스에 의존
 
   mysql:
+    image: mysql:latest
     restart: unless-stopped
     build:
       context: ./mysql
@@ -69,6 +70,7 @@ services:
       ]
 
   mongodb:
+    image: mongo:latest
     restart: unless-stopped
     build:
       context: ./mongo
