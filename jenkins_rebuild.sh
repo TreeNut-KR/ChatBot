@@ -16,6 +16,6 @@ if [ "$(docker images -aq)" ]; then
 fi
 
 # 이미지 빌드
-jenkins_docker-compose up -d --build
+docker-compose up -d --build
 
 echo "jenkins_rebuild.sh is done"
