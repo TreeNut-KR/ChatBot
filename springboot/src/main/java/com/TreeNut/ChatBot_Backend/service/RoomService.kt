@@ -409,4 +409,93 @@ class RoomService(
                 RuntimeException("채팅 로그 로드 실패: ${e.message}")
             }
     }
+
+    fun saveCharacterRoom(userid: String, charactersid: Int, mongo_chatroomid: String): Chatroom {
+        val newCharacterRoom = Chatroom(
+            userid = userid,
+            charactersIdx = charactersid,
+            mongo_chatroomid = mongo_chatroomid
+        )
+        return chatroomRepository.save(newCharacterRoom)
+    }
+
+    fun findCharacterRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
+        return Flux.fromIterable(
+            chatroomRepository.findAll()
+                .filter { it.userid == userid }
+                .mapNotNull { it.mongo_chatroomid }
+                .map {
+                    mapOf(
+                        "roomid" to it
+                    )
+                }
+        )
+    }
+
+    fun deleteCharacterRoom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid
+        )
+
+        return webClient.build()
+            .method(HttpMethod.DELETE)
+            .uri("/mongo/chatbot/delete_room")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+    }
+
+    fun updateCharacterRoomLog(
+        userid: String,
+        mongo_chatroomid: String,
+        index: Int,
+        input_data_set: String,
+        characterName: String,
+        greeting: String,
+        context: String
+    ): Mono<Map<*, *>> {
+        return getCharacterResponse(
+            inputDataSet = input_data_set,
+            characterName = characterName,
+            greeting = greeting,
+            context = context,
+            mongodbId = mongo_chatroomid,
+            userId = userid
+        ).flatMap { output_data_set ->
+            val truncatedOutputData = output_data_set.take(8191)
+            val requestBody = mapOf(
+                "user_id" to userid,
+                "id" to mongo_chatroomid,
+                "index" to index,
+                "input_data" to input_data_set,
+                "output_data" to truncatedOutputData
+            )
+
+            webClient.build()
+                .put()
+                .uri("/mongo/chatbot/update_log")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(Map::class.java)
+        }
+    }
+
+    fun deleteCharacterRoomLog(userid: String, mongo_chatroomid: String, index: Int): Mono<Map<*, *>> {
+        val requestBody = mapOf(
+            "user_id" to userid,
+            "id" to mongo_chatroomid,
+            "index" to index
+        )
+
+        return webClient.build()
+            .method(HttpMethod.DELETE)
+            .uri("/mongo/chatbot/delete_log")햐
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(requestBody)
+            .retrieve()
+            .bodyToMono(Map::class.java)
+    }
 }
