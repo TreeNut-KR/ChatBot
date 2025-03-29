@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value
 import java.security.Key
 import javax.crypto.SecretKey
 import java.util.*
+import org.springframework.util.StringUtils
 
 @Component
 class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
@@ -17,11 +18,19 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
     private val key: SecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret.padEnd(64, '0')))
 
     fun authGuard(token: String): String? {
+        if (!StringUtils.hasText(token)) {
+            throw TokenMalformedException("토큰이 존재하지 않습니다.")
+        }
+        val tokenWithoutBearer = if (token.startsWith("Bearer ")) {
+            token.substring(7) // "Bearer " 접두사 제거 (길이: 7)
+        } else {
+            token
+        }
         return try {
             val claims: Claims = Jwts.parser()
                 .setSigningKey(key)
                 .build()
-                .parseSignedClaims(token)
+                .parseSignedClaims(tokenWithoutBearer) // 수정된 토큰 사용
                 .payload
             claims.subject
         } catch (e: ExpiredJwtException) {
