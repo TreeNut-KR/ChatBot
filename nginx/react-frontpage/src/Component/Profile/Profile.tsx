@@ -7,7 +7,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('http://localhost:8080/server/user/findmyinfo', {
+        const response = await fetch('https://treenut.ddns.net/server/user/findmyinfo', {
           method: 'GET',
           headers: {
             'Authorization': localStorage.getItem('jwt-token') || ''
@@ -28,7 +28,7 @@ const Profile: React.FC = () => {
   const handleUpdate = async () => {
     try {
       console.log('Updating User Info:', editedInfo);
-      const response = await fetch('http://localhost:8080/server/user/changeUsername', {
+      const response = await fetch('https://treenut.ddns.net/server/user/changeUsername', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
