@@ -1,4 +1,9 @@
-FROM mysql/mysql-server:5.7
+# x86 전용 이미지
+# FROM mysql/mysql-server:5.7
+
+# ARM 전용 이미지
+FROM biarms/mysql:5.7
+
 
 ENV TZ=Asia/Seoul
 
