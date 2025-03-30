@@ -334,6 +334,17 @@ class CharacterController(
         }
     }
 
+    // 추가 테스트 엔드포인트
+    @GetMapping("/test")
+    fun testEndpoint(): ResponseEntity<Map<String, Any>> {
+        println("CharacterController - /test 엔드포인트 호출됨")
+        return ResponseEntity.ok(mapOf(
+            "status" to "success",
+            "message" to "API is working",
+            "timestamp" to System.currentTimeMillis()
+        ))
+    }
+
     @PostMapping("/upload_image")
     fun uploadCharacterImage(
         @RequestParam("file") file: MultipartFile,
@@ -403,6 +414,40 @@ class CharacterController(
             ResponseEntity.ok(mapOf("status" to "success", "url" to imageUrl))
         } catch (e: Exception) {
             ResponseEntity.status(500).body(mapOf("status" to "error", "message" to (e.message ?: "An error occurred")))
+        }
+    }
+
+    @GetMapping("/public")
+    fun getAllPublicCharacters(): ResponseEntity<Any> {
+        return try {
+            val publicCharacters = characterService.getAllPublicCharacters()
+            if (publicCharacters.isEmpty()) {
+                ResponseEntity.ok(mapOf(
+                    "status" to 200,
+                    "message" to "No public characters found",
+                    "data" to emptyList<Map<String, Any>>()
+                ))
+            } else {
+                // CharacterChat 페이지에서 사용할 데이터 형식으로 변환
+                val characterData = publicCharacters.map { character ->
+                    val username = userRepository.findByUserid(character["userid"] as String)?.username ?: "Unknown"
+                    mapOf(
+                        "characterName" to character["character_name"],
+                        "description" to character["description"],
+                        "image" to character["image"],
+                        "creator" to username // username을 반환
+                    )
+                }
+                ResponseEntity.ok(mapOf(
+                    "status" to 200,
+                    "message" to "Public characters retrieved successfully",
+                    "data" to characterData
+                ))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("status" to 500, "message" to "Error retrieving public characters: ${e.message}"))
         }
     }
 }

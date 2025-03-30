@@ -7,7 +7,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('http://localhost:8080/server/user/findmyinfo', {
+        const response = await fetch('/server/user/findmyinfo', { // Nginx 경로 사용
           method: 'GET',
           headers: {
             'Authorization': localStorage.getItem('jwt-token') || ''
@@ -28,7 +28,7 @@ const Profile: React.FC = () => {
   const handleUpdate = async () => {
     try {
       console.log('Updating User Info:', editedInfo);
-      const response = await fetch('http://localhost:8080/server/user/changeUsername', {
+      const response = await fetch('/server/user/changeUsername', { // Nginx 경로 사용
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

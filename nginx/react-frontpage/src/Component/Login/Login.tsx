@@ -16,7 +16,7 @@ const Login: React.FC = () => {
     setSuccess(false);
 
     try {
-      const response = await axios.post('http://localhost:8080/server/user/login', {
+      const response = await axios.post('/server/user/login', { // Nginx 경로 사용
         id: Id,
         pw: password,
       });
