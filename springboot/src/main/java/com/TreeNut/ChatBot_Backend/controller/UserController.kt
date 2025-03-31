@@ -186,7 +186,7 @@ class UserController(
         return ResponseEntity.ok(mapOf("status" to 200, "membership" to membership))
     }
 
-    @PostMapping("/membership")
+    @PostMapping("/membership/update")
     fun updateMembership(
         @RequestHeader("Authorization") userToken: String,
         @RequestBody body: Map<String, String>
