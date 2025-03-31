@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 import com.TreeNut.ChatBot_Backend.model.LoginType
+import com.TreeNut.ChatBot_Backend.model.MembershipType
 import io.jsonwebtoken.security.Keys
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.util.LinkedMultiValueMap
@@ -234,5 +235,20 @@ class UserService(
         } catch (e: Exception) {
             throw RuntimeException("Error during user information update", e)
         }
+    }
+
+    @Transactional(readOnly = true)
+    fun getMembership(userid: String): String {
+        val user = userRepository.findByUserid(userid)
+            ?: throw RuntimeException("User not found")
+        return user.membership.name
+    }
+
+    @Transactional
+    fun updateMembership(userid: String, membership: String): User {
+        val user = userRepository.findByUserid(userid)
+            ?: throw RuntimeException("User not found")
+        val updatedUser = user.copy(membership = MembershipType.valueOf(membership.uppercase()))
+        return userRepository.save(updatedUser)
     }
 }
