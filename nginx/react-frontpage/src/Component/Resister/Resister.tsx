@@ -25,7 +25,7 @@ const Resister: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:8080/server/user/register', {
+      const response = await axios.post('https://treenut.ddns.net/server/user/register', {
         id: Id,
         pw: password,
         name: username,

@@ -7,7 +7,7 @@ services:
       context: ./nginx
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "443:443"
     volumes:
       # React 빌드 결과물을 Nginx 컨테이너에 마운트 (선택적)
       - ./nginx/react-frontpage/build:/usr/share/nginx/html
