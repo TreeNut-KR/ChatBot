@@ -435,7 +435,9 @@ class CharacterController(
                         "characterName" to character["character_name"],
                         "description" to character["description"],
                         "image" to character["image"],
-                        "creator" to username // username을 반환
+                        "creator" to username, // username을 반환
+                        "uuid" to character["uuid"],
+                        "idx" to character["idx"],
                     )
                 }
                 ResponseEntity.ok(mapOf(

@@ -9,7 +9,9 @@ interface Character {
   characterName: string;
   description: string;
   image: string;
-  creator: string; // 만든 사람 이름
+  creator: string; 
+  uuid: string;  // uuid 속성 추가
+  idx: number;   // idx 속성 추가
 }
 
 interface ApiResponse {
@@ -31,6 +33,7 @@ const CharacterSwiper: React.FC = () => {
         
         if (response.data && response.data.data) {
           setCharacters(response.data.data);
+          console.log('Fetched characters:', response.data.data);
         } else {
           setCharacters([]);
         }
@@ -45,8 +48,9 @@ const CharacterSwiper: React.FC = () => {
     fetchCharacters();
   }, []);
 
-  const handleCharacterClick = (characterName: string) => {
-    navigate(`/chat/${characterName}`);
+  const handleCharacterClick = (character: Character) => {
+    console.log('Navigating to character with UUID:', character.uuid);
+    navigate(`/chat/${character.uuid}`);
   };
 
   const truncateText = (text: string, maxLength: number) => {
@@ -71,7 +75,7 @@ const CharacterSwiper: React.FC = () => {
         <div
           key={index}
           className="character-card"
-          onClick={() => handleCharacterClick(character.characterName)} // 카드 클릭 시 이동
+          onClick={() => handleCharacterClick(character)}
         >
           <div className="character-image-container">
             <img
@@ -85,7 +89,7 @@ const CharacterSwiper: React.FC = () => {
             <p className="character-description">
               {truncateText(character.description, 30)}
             </p>
-            <p className="character-creator">@{character.creator}</p> {/* 만든 사람 이름 */}
+            <p className="character-creator">@{character.creator}</p>
           </div>
         </div>
       ))}

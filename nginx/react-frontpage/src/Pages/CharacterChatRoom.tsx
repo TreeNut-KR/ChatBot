@@ -3,16 +3,19 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../Component/Header/Header';
 
+// Character 인터페이스 정의
 interface Character {
-  id: number;
+  idx: number;
   uuid: string;
   characterName: string;
   description: string;
-  greeting: string;
   image: string;
-  characterSetting: string;
+  greeting?: string;
+  creator?: string;
+  // 필요한 다른 속성들도 추가할 수 있습니다.
 }
 
+// Message 인터페이스 정의
 interface Message {
   id: number;
   sender: 'user' | 'character';
@@ -21,56 +24,94 @@ interface Message {
 }
 
 const CharacterChatRoom: React.FC = () => {
-  const { characterId } = useParams<{ characterId: string }>();
+  const { uuid } = useParams<{ uuid: string }>();
+  const decodedUuid = decodeURIComponent(uuid || '');
+  console.log('Decoded URL UUID:', decodedUuid); // URL에서 받은 UUID 값 확인
+
   const [character, setCharacter] = useState<Character | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   useEffect(() => {
     const fetchCharacterDetails = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('로그인이 필요합니다.');
-          setLoading(false);
-          return;
-        }
+        const publicResponse = await axios.get('/server/character/public');
+        const publicData = publicResponse.data;
 
-        const response = await axios.get(`/server/character/${characterId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        console.log('API Public Characters:', publicData.data);
+        console.log('UUID Comparison:', {
+          urlUuid: decodedUuid,
+          foundCharacter: publicData.data.find((char: { uuid: string }) => 
+            char.uuid.toLowerCase() === decodedUuid.toLowerCase()
+          )
         });
 
-        setCharacter(response.data);
-        // 인사말 메시지를 초기 메시지로 추가
-        if (response.data.greeting) {
+        if (!publicData || !publicData.data) {
+          throw new Error('캐릭터 목록을 가져오는데 실패했습니다.');
+        }
+
+        // 타입 명시적으로 지정
+        const characterInfo = publicData.data.find(
+          (char: { uuid: string; idx?: number }) => 
+            char.uuid.toLowerCase() === decodedUuid.toLowerCase()
+        );
+        console.log('Found character by UUID:', characterInfo);
+
+        if (!characterInfo || !characterInfo.idx) {
+          setDebugInfo({
+            uuidFromUrl: decodedUuid,
+            publicData: publicData.data,
+            foundCharacter: characterInfo,
+          });
+          throw new Error('요청한 캐릭터를 찾을 수 없습니다.');
+        }
+
+        const detailsResponse = await axios.get(`/server/character/details/idx/${characterInfo.idx}`);
+        const detailsData = detailsResponse.data;
+
+        if (!detailsData) {
+          setDebugInfo({
+            uuidFromUrl: decodedUuid,
+            publicData: publicData.data,
+            foundCharacter: characterInfo,
+            detailsResponse: detailsResponse,
+          });
+          throw new Error('캐릭터 상세 정보를 가져오는데 실패했습니다.');
+        }
+
+        setCharacter(detailsData);
+
+        if (detailsData.greeting) {
           setMessages([
             {
               id: 1,
               sender: 'character',
-              content: response.data.greeting,
+              content: detailsData.greeting,
               timestamp: new Date().toISOString(),
             },
           ]);
         }
+
         setLoading(false);
-      } catch (err) {
-        console.error('캐릭터 정보를 불러오는데 실패했습니다:', err);
+      } catch (err: any) {
+        setDebugInfo({
+          errorMessage: err.message,
+          errorResponse: err.response || null,
+        });
         setError('캐릭터 정보를 불러오는데 실패했습니다.');
         setLoading(false);
       }
     };
 
     fetchCharacterDetails();
-  }, [characterId]);
+  }, [decodedUuid]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !character) return;
+    if (!newMessage.trim()) return;
 
-    // 사용자 메시지 추가
     const userMessage: Message = {
       id: Date.now(),
       sender: 'user',
@@ -78,44 +119,32 @@ const CharacterChatRoom: React.FC = () => {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
     setNewMessage('');
 
     try {
-      const token = localStorage.getItem('token');
-      // 서버로 메시지 전송 및 응답 받기
-      const response = await axios.post(
-        '/server/chat/message',
-        {
-          characterId,
-          message: newMessage,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axios.post('/server/chat/message', {
+        characterId: character?.idx,
+        message: newMessage,
+      });
 
-      // 캐릭터 응답 메시지 추가
-      const characterMessage: Message = {
+      const characterResponse: Message = {
         id: Date.now() + 1,
         sender: 'character',
         content: response.data.response || '응답을 받지 못했습니다.',
         timestamp: new Date().toISOString(),
       };
 
-      setMessages((prev) => [...prev, characterMessage]);
+      setMessages((prevMessages) => [...prevMessages, characterResponse]);
     } catch (err) {
       console.error('메시지 전송 중 오류가 발생했습니다:', err);
-      // 오류 메시지 추가
       const errorMessage: Message = {
         id: Date.now() + 1,
         sender: 'character',
         content: '메시지 전송 중 오류가 발생했습니다. 다시 시도해주세요.',
         timestamp: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
     }
   };
 
@@ -137,6 +166,14 @@ const CharacterChatRoom: React.FC = () => {
         <div className="flex w-full max-w-[1280px] justify-center p-4 text-red-500 text-center py-10">
           {error || '캐릭터 정보를 불러올 수 없습니다.'}
         </div>
+        {debugInfo && (
+          <div className="flex flex-col items-start w-full max-w-[1280px] p-4 text-white bg-[#2a2928] rounded-lg">
+            <h3 className="text-lg font-bold mb-4">디버깅 정보</h3>
+            <pre className="text-sm whitespace-pre-wrap">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     );
   }
@@ -147,7 +184,7 @@ const CharacterChatRoom: React.FC = () => {
       <div className="flex w-full max-w-[1280px] justify-center p-4">
         <div className="w-full h-[calc(100vh-120px)] flex flex-col">
           <div className="flex items-center mb-6 p-4 bg-[#2a2928] rounded-lg">
-            <img 
+            <img
               src={character.image || '/default-character.png'}
               alt={character.characterName}
               className="w-12 h-12 rounded-full object-cover mr-4"

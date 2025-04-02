@@ -228,6 +228,7 @@ class CharacterService(
             .map {
                 mapOf(
                     "idx" to (it.idx ?: 0),
+                    "uuid" to (it.uuid ?: ""),
                     "character_name" to (it.characterName ?: ""),
                     "userid" to (it.userid ?: ""),
                     "description" to (it.description ?: ""),
