@@ -10,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 
-from utils  import ChatError, ChatModel, MongoDBHandler, MySQLDBHandler
+from utils  import ChatError, ChatModel, MongoDBHandler, MySQLDBHandler, SMTPHandler
 
 mysql_handler = MySQLDBHandler()  # MySQL 핸들러 초기화
 mongo_handler = MongoDBHandler()  # MongoDB 핸들러 초기화
@@ -420,14 +420,89 @@ async def delete_chat_room(request: ChatModel.Room_Delete_Request):
         raise ChatError.InternalServerErrorException(detail=str(e))
 
 # mongo_router에 세분화된 라우터 추가
-mongo_router.include_router(office_router, prefix="/office", tags=["MongoDB Router / Office Router"])
-mongo_router.include_router(chatbot_router, prefix="/chatbot", tags=["MongoDB Router / Chatbot Router"])
+mongo_router.include_router(
+    office_router,
+    prefix="/office",
+    tags=["MongoDB Router / Office Router"]
+)
+mongo_router.include_router(
+    chatbot_router,
+    prefix="/chatbot", 
+    tags=["MongoDB Router / Chatbot Router"]
+)
 
 # FastAPI 애플리케이션에 mongo_router를 추가
 app.include_router(
     mongo_router,
     prefix="/mongo",
     tags=["MongoDB Router"],
+    responses={500: {"description": "Internal Server Error"}}
+)
+
+# SMTP 핸들러 초기화
+smtp_handler = SMTPHandler()  # SMTP 핸들러 초기화
+smtp_router = APIRouter()  # SMTP 관련 라우터 정의
+
+@smtp_router.post("/send-verification", summary="이메일 인증 코드 전송")
+async def send_verification_email(request: ChatModel.EmailSchema):
+    '''
+    사용자 이메일로 인증 코드를 전송합니다.
+    '''
+    try:
+        success = await smtp_handler.send_verification_email(request.email)
+        if success:
+            return {"status": "success", "message": "인증 코드가 전송되었습니다. 이메일을 확인해주세요."}
+        else:
+            raise ChatError.InternalServerErrorException(detail="이메일 전송에 실패했습니다.")
+    except Exception as e:
+        raise ChatError.InternalServerErrorException(detail=str(e))
+
+@smtp_router.post("/verify-code", summary="이메일 인증 코드 확인")
+async def verify_email_code(request: ChatModel.VerificationSchema):
+    '''
+    사용자로부터 받은 인증 코드를 검증합니다.
+    '''
+    try:
+        # 입력값 디버깅 출력
+        print(f"인증 코드 검증 요청: 이메일={request.email}, 코드={request.code}")
+        
+        # 현재 저장된 코드 출력 (디버깅 목적)
+        if request.email in smtp_handler.verification_codes:
+            stored = smtp_handler.verification_codes[request.email]
+            print(f"저장된 코드 정보: {stored['code']}, 만료시간: {stored['expiry']}")
+        else:
+            print(f"이메일 {request.email}에 대한 저장된 코드가 없습니다")
+            
+        is_valid = smtp_handler.verify_code(request.email, request.code)
+        
+        if is_valid:
+            return {"status": "success", "message": "인증이 완료되었습니다."}
+        else:
+            # 400 오류를 직접 반환하지 않고, JSONResponse를 반환
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error", 
+                    "detail": "인증 코드가 유효하지 않거나 만료되었습니다.",
+                    "code": "invalid_verification_code"
+                }
+            )
+    except Exception as e:
+        print(f"인증 코드 검증 중 오류 발생: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "detail": str(e),
+                "code": "verification_error"
+            }
+        )
+
+# FastAPI 애플리케이션에 smtp_router를 추가
+app.include_router(
+    smtp_router,
+    prefix="/auth",
+    tags=["Authentication"],
     responses={500: {"description": "Internal Server Error"}}
 )
 
