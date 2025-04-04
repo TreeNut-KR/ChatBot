@@ -36,7 +36,7 @@ class TokenAuth(
         }
         return try {
             // JWT 토큰 검증
-            val claims: Claims = Jwts.parserBuilder()
+            val claims: Claims = Jwts.parser()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(tokenWithoutBearer)
