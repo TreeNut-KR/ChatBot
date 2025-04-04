@@ -388,6 +388,22 @@ const LoadingMessage: React.FC = () => {
   );
 };
 
+// 토큰 가져오기 및 형식 처리 함수
+const getAuthHeader = () => {
+  const token = localStorage.getItem('jwt-token');
+  if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
+
+  // Bearer 접두사가 이미 있는지 확인하고 제거
+  const tokenValue = token.startsWith('Bearer ') 
+    ? token.substring(7) // 'Bearer ' 접두사 제거
+    : token;
+  
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${tokenValue}`
+  };
+};
+
 const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
   const [userInput, setUserInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -521,17 +537,21 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       setIsLoading(true);
       showToast('새 채팅방을 생성하는 중...', 'info');
       
-      // 새 채팅방 생성 요청
       const token = localStorage.getItem('jwt-token');
       if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
 
+      // JWT 토큰 형식 확인 및 수정
+      const tokenValue = token.startsWith('Bearer ') 
+        ? token.substring(7) // 'Bearer ' 접두사 제거
+        : token;
+      
       const url = new URL("https://treenut.ddns.net/server/chatroom/office");
 
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `${token}`,
+          'Authorization': `Bearer ${tokenValue}`,  // 형식에 맞게 Bearer 접두사 추가
         },
       });
 
@@ -710,51 +730,59 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     onSend(message);
   };
 
-  const getFromServer = async (model: string, inputText?: string) => {
-    try {
-      const token = localStorage.getItem('jwt-token');
-      if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
+  // getFromServer 함수 수정
+const getFromServer = async (model: string, inputText?: string) => {
+  try {
+    const token = localStorage.getItem('jwt-token');
+    if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
 
-      const url = new URL("https://treenut.ddns.net/server/chatroom/office");
+    // JWT 토큰 형식 확인 및 수정
+    // 1. 현재 token 형식 확인
+    console.log('현재 토큰 형식:', token.substring(0, 20) + '...');
+    
+    // 2. 'Bearer ' 접두사가 이미 있는지 확인하고 제거
+    const tokenValue = token.startsWith('Bearer ') 
+      ? token.substring(7) // 'Bearer ' 접두사 제거
+      : token;
+    
+    const url = new URL("https://treenut.ddns.net/server/chatroom/office");
 
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `${token}`,
-        },
-      });
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: getAuthHeader(),
+    });
 
-      if (!response.ok) {
-        console.error('응답 상태 코드:', response.status);
-        throw new Error('서버 요청 실패');
-      }
-
-      const responseData = await response.json();
-      console.log('응답 데이터:', responseData);
-
-      const aiMessage = responseData.message.replace(/\\n/g, '\n').replace(/\\(?!n)/g, '');
-      const roomId = responseData.mysql_officeroom.mongo_chatroomid;
-
-      localStorage.setItem('mongo_chatroomid', roomId);
-
-      appendMessage({
-        user: 'AI',
-        text: aiMessage,
-        className: 'bg-gray-600 text-white self-start',
-        type: '',
-      });
-    } catch (error) {
-      console.error('에러 발생:', error);
-      appendMessage({
-        user: '시스템',
-        text: '서버와의 연결 중 문제가 발생했습니다.',
-        className: 'bg-gray-600 text-white self-start',
-        type: 'client',
-      });
-      showToast('서버와의 연결 중 문제가 발생했습니다.', 'error');
+    // 나머지 코드는 동일
+    if (!response.ok) {
+      console.error('응답 상태 코드:', response.status);
+      throw new Error('서버 요청 실패');
     }
-  };
+
+    const responseData = await response.json();
+    console.log('응답 데이터:', responseData);
+
+    const aiMessage = responseData.message.replace(/\\n/g, '\n').replace(/\\(?!n)/g, '');
+    const roomId = responseData.mysql_officeroom.mongo_chatroomid;
+
+    localStorage.setItem('mongo_chatroomid', roomId);
+
+    appendMessage({
+      user: 'AI',
+      text: aiMessage,
+      className: 'bg-gray-600 text-white self-start',
+      type: '',
+    });
+  } catch (error) {
+    console.error('에러 발생:', error);
+    appendMessage({
+      user: '시스템',
+      text: '서버와의 연결 중 문제가 발생했습니다.',
+      className: 'bg-gray-600 text-white self-start',
+      type: 'client',
+    });
+    showToast('서버와의 연결 중 문제가 발생했습니다.', 'error');
+  }
+};
 
   const postToServer = async (model: string, inputText: string) => {
     try {
@@ -778,10 +806,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `${token}`,
-        },
+        headers: getAuthHeader(),
         body: JSON.stringify(requestBody),
       });
 
