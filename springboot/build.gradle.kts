@@ -34,15 +34,15 @@ dependencies {
     implementation(kotlin("stdlib"))
 
     // MySQL Connector: MySQL 5.7 호환 버전
-    runtimeOnly("mysql:mysql-connector-java:8.0.28") // ✅ MySQL 5.7과 안정적으로 호환되는 버전
+    runtimeOnly("mysql:mysql-connector-java:8.0.28")
 
     // Reactor 및 WebFlux 관련 의존성
     implementation("io.projectreactor:reactor-core:3.4.30")
-    implementation("io.projectreactor.netty:reactor-netty:1.0.24") // ✅ MySQL 5.7에 적합한 WebFlux 버전
+    implementation("io.projectreactor.netty:reactor-netty:1.0.24")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     // Hibernate와 Jakarta Persistence
-    implementation("org.hibernate.orm:hibernate-core:6.2.7.Final") // ✅ Spring Boot 3.x 권장 Hibernate 버전
+    implementation("org.hibernate.orm:hibernate-core:6.2.7.Final")
     implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
 
     // JWT 토큰 관련 의존성
@@ -50,10 +50,10 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-impl:0.12.3")
     implementation("io.jsonwebtoken:jjwt-jackson:0.12.3") 
 
-    // JSON 파싱 라이브러리 (JWT 파싱 관련 문제 방지)
+    // JSON 파싱 라이브러리
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.0")
     
-    // 서블릿 API (✅ Spring Boot 3.x에서는 Jakarta 버전만 필요)
+    // 서블릿 API
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
 
     // Kotlin 관련 의존성
@@ -80,4 +80,11 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// JAR 파일에 메인 클래스를 지정
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "com.TreeNut.ApplicationKt" // 실제 메인 클래스 경로로 수정
+    }
 }
