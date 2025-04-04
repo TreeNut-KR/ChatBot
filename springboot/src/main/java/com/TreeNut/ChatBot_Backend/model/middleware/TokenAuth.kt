@@ -1,4 +1,5 @@
 package com.TreeNut.ChatBot_Backend.middleware
+
 import com.TreeNut.ChatBot_Backend.exceptions.*
 import io.jsonwebtoken.*
 import io.jsonwebtoken.io.Decoders
@@ -14,7 +15,7 @@ import org.springframework.util.StringUtils
 class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
 
     // ✅ Secret Key 변환 (HS512에 적합한 길이 보장)
-    private val key: SecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret)) // padEnd 제거
+    private val key: SecretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret))
 
     fun authGuard(token: String): String? {
         if (!StringUtils.hasText(token)) {
@@ -26,11 +27,11 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
             token
         }
         return try {
-            val claims: Claims = Jwts.parserBuilder() // Jwts.parser() -> Jwts.parserBuilder() 변경
+            val claims: Claims = Jwts.parser()
                 .setSigningKey(key)
                 .build()
-                .parseClaimsJws(tokenWithoutBearer) // parseSignedClaims(token) -> parseClaimsJws(token) 변경
-                .body // .payload -> .body 변경
+                .parseSignedClaims(tokenWithoutBearer) // 수정된 토큰 사용
+                .payload
             claims.subject
         } catch (e: ExpiredJwtException) {
             throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
