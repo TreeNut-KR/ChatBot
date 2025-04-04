@@ -12,9 +12,13 @@ import java.util.*
 import org.springframework.util.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.web.reactive.function.client.WebClient
 
 @Component
-class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
+class TokenAuth(
+    @Value("\${jwt.secret}") private val jwtSecret: String,
+    @Value("\${google.user-info-url}") private val googleUserInfoUrl: String // Google userinfo 엔드포인트
+) {
 
     private val logger: Logger = LoggerFactory.getLogger(TokenAuth::class.java)
 
@@ -31,28 +35,46 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
             token
         }
         return try {
-            val claims: Claims = Jwts.parser()
+            // JWT 토큰 검증
+            val claims: Claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
-                .parseSignedClaims(tokenWithoutBearer) // 수정된 토큰 사용
-                .payload
+                .parseClaimsJws(tokenWithoutBearer)
+                .body
             claims.subject
-        } catch (e: ExpiredJwtException) {
-            logger.error("Token expired: ${e.message}", e) // 로그 추가
-            throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
         } catch (e: MalformedJwtException) {
-            logger.error("Token malformed: ${e.message}", e) // 로그 추가
-            throw TokenMalformedException("잘못된 토큰입니다.")
+            // Google Access Token 검증
+            try {
+                val userInfo = verifyGoogleToken(tokenWithoutBearer)
+                userInfo // Google 사용자 ID 반환
+            } catch (e: Exception) {
+                logger.error("Google token malformed: ${e.message}", e)
+                throw TokenMalformedException("잘못된 토큰입니다.")
+            }
+        } catch (e: ExpiredJwtException) {
+            logger.error("Token expired: ${e.message}", e)
+            throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
         } catch (e: SignatureException) {
-            logger.error("Token signature invalid: ${e.message}", e) // 로그 추가
+            logger.error("Token signature invalid: ${e.message}", e)
             throw TokenSignatureException("토큰 서명 검증에 실패했습니다.")
         } catch (e: JwtException) {
-            logger.error("JWT exception: ${e.message}", e) // 로그 추가
+            logger.error("JWT exception: ${e.message}", e)
             throw TokenJwtException("토큰 처리 중 오류가 발생했습니다: ${e.message}")
         } catch (e: Exception) {
-            logger.error("Unknown exception: ${e.message}", e) // 로그 추가
+            logger.error("Unknown exception: ${e.message}", e)
             throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
         }
+    }
+
+    // Google Access Token 검증 및 사용자 정보 가져오기
+    private fun verifyGoogleToken(accessToken: String): String {
+        val webClient = WebClient.create()
+        return webClient.get()
+            .uri(googleUserInfoUrl)
+            .header("Authorization", "Bearer $accessToken")
+            .retrieve()
+            .bodyToMono(Map::class.java)
+            .block()?.get("sub")?.toString() ?: throw RuntimeException("Failed to retrieve Google user info")
     }
 
     fun generateToken(userId: String): String {
