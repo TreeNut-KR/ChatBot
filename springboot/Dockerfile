@@ -30,7 +30,6 @@ RUN sed -i 's/\r$//' /wait-for-it && chmod +x /wait-for-it
 
 # JAR 파일 복사 (목적지를 디렉토리로 설정)
 COPY --from=build /app/build/libs/*.jar /app/app.jar
-WORKDIR /app
 
 # 로그 파일 설정 (JAR 파일 이름을 명시)
 ENTRYPOINT ["./wait-for-it", "mysql:3306", "--", "sh", "-c", "java -Djava.security.egd=file:/dev/./urandom -jar /app/app.jar --logging.file.name=logs/spring-boot-app.log"]
