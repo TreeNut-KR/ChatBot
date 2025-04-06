@@ -24,6 +24,7 @@
     "react-router-dom": "^6.28.2",
     "react-scripts": "5.0.1",
     "react-syntax-highlighter": "^15.6.1",
+    "react-zoom-pan-pinch": "^3.7.0",
     "rehype-raw": "^7.0.0",
     "remark": "^15.0.1",
     "remark-breaks": "^4.0.0",
