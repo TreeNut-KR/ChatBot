@@ -215,44 +215,75 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         const urlParams = new URLSearchParams(window.location.search);
         const urlRoomId = urlParams.get('roomId');
         
-        // URL에 roomId가 있으면 쿠키에 저장
+        // 쿠키에서 채팅방 ID와 사용자 정보 가져오기
+        const cookieRoomId = getCookie('mongo_chatroomid');
+        const userId = getCookie('user_id');
+        const username = getCookie('username');
+        
+        console.log('💬 세션 초기화 - URL 채팅방 ID:', urlRoomId, '쿠키 채팅방 ID:', cookieRoomId);
+        console.log('💬 사용자 정보 - ID:', userId, ', 이름:', username);
+        
+        // URL에 roomId가 있으면 해당 roomId 사용
         if (urlRoomId) {
           console.log('💬 URL에서 채팅방 ID 감지:', urlRoomId);
           setCookie('mongo_chatroomid', urlRoomId);
           
-          // URL에서 roomId 파라미터 제거 (히스토리 관리를 위해)
-          if (window.history.replaceState) {
-            const cleanUrl = new URL(window.location.href);
-            cleanUrl.searchParams.delete('roomId');
-            window.history.replaceState({}, document.title, cleanUrl.toString());
-          }
-        }
-        
-        // 쿠키에서 채팅방 ID와 사용자 정보 가져오기
-        const roomId = getCookie('mongo_chatroomid');
-        const userId = getCookie('user_id');
-        const username = getCookie('username');
-        
-        console.log('💬 세션 초기화 - 채팅방 ID:', roomId);
-        console.log('💬 사용자 정보 - ID:', userId, ', 이름:', username);
-        
-        // 채팅방 ID 관련 처리
-        if (roomId) {
-          // 채팅방 ID가 있는 경우, 채팅 로그 로드 시도
+          // 채팅 로그 로드 - URL에 방 ID가 있을 때도 로드 추가
+          await loadChatLogs(urlRoomId);
+        } 
+        // URL에 roomId가 없고 쿠키에 있는 경우
+        else if (cookieRoomId) {
+          console.log('💬 쿠키에서 채팅방 ID 감지, 최신 방 확인:', cookieRoomId);
           try {
-            console.log('💬 채팅방 ID가 있음, 채팅 로그 로딩 시도:', roomId);
-            await loadChatLogs(roomId);
-          } catch (loadError) {
-            console.error('💬 채팅 로그 로드 실패:', loadError);
-            showToast('채팅 내역을 불러올 수 없습니다. 새로고침을 시도해보세요.', 'error');
+            const rooms = await fetchChatRooms();
             
-            // 로그 로드 실패 메시지 표시
-            appendMessage({
-              user: '시스템',
-              text: '채팅 로그를 불러오는데 실패했습니다. 새로고침 후 다시 시도해주세요.',
-              className: 'bg-red-600 text-white',
-              type: 'error',
-            } as Message);
+            if (rooms && rooms.length > 0) {
+              // 최신 채팅방 선택 (서버에서 이미 정렬된 상태로 옴)
+              const latestRoom = rooms[0];
+              const latestRoomId = latestRoom.mongo_chatroomid || latestRoom.roomid || latestRoom.id || latestRoom.chatroom_id;
+              
+              console.log('💬 최신 채팅방 ID:', latestRoomId);
+              
+              // 최신 채팅방 ID로 쿠키 업데이트
+              if (latestRoomId) {
+                setCookie('mongo_chatroomid', latestRoomId);
+                
+                // URL 업데이트 (페이지 새로고침 없이)
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('roomId', latestRoomId);
+                window.history.replaceState({}, document.title, newUrl.toString());
+                
+                // 채팅 로그 로드
+                await loadChatLogs(latestRoomId);
+                return; // 함수 종료
+              }
+            }
+            
+            // 최신 방이 없거나 찾지 못한 경우 기존 쿠키의 방 사용
+            console.log('💬 기존 채팅방 ID 사용:', cookieRoomId);
+            
+            // URL 업데이트 (페이지 새로고침 없이)
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('roomId', cookieRoomId);
+            window.history.replaceState({}, document.title, newUrl.toString());
+            
+            // 기존 채팅방의 로그 로드 - 이 부분이 누락되어 있었음
+            await loadChatLogs(cookieRoomId);
+          } catch (error) {
+            console.error('💬 채팅방 목록 불러오기 오류:', error);
+            showToast('채팅방 목록을 불러올 수 없습니다.', 'error');
+            
+            // 오류가 발생해도 기존 채팅방 로그 로드 시도
+            if (cookieRoomId) {
+              console.log('💬 오류 발생, 기존 채팅방 로그 로드 시도:', cookieRoomId);
+              
+              // URL 업데이트 (페이지 새로고침 없이)
+              const newUrl = new URL(window.location.href);
+              newUrl.searchParams.set('roomId', cookieRoomId);
+              window.history.replaceState({}, document.title, newUrl.toString());
+              
+              await loadChatLogs(cookieRoomId);
+            }
           }
         } else {
           // 채팅방 ID가 없는 경우 - 자동 생성하지 않고 메시지만 표시
