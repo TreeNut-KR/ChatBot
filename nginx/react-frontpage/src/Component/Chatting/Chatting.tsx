@@ -14,6 +14,7 @@ import {
   loadChatLogs as apiLoadChatLogs
 } from './Services/api';
 import { processLogMessage } from './Utils/messageUtils';
+import { setCookie, getCookie, removeCookie } from '../../Cookies';
 
 interface ChattingProps {
   messages: Message[];
@@ -40,33 +41,63 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
-  // 채팅방 삭제 함수 수정 - 올바른 API 엔드포인트 사용
+  // handleDeleteChatRoom 함수 수정 - 자동 방생성 제거
   const handleDeleteChatRoom = async (roomId: string, title?: string) => {
+    if (!roomId) {
+      console.error('삭제 실패: 채팅방 ID가 없습니다');
+      showToast('채팅방 ID가 없어 삭제할 수 없습니다', 'error');
+      return;
+    }
+  
     try {
+      // 디버깅 로그 추가
+      console.log(`채팅방 삭제 시도: ID=${roomId}, 제목="${title || '제목 없음'}", 타입=${typeof roomId}`);
+      
       // 삭제 전에 먼저 UI 변경 - 사용자에게 피드백 제공
       showToast(`채팅방 "${title || '제목 없음'}" 삭제 중...`, 'info');
-
+  
+      // 삭제 요청 전에 UI에서 먼저 제거
+      setChatRooms(prev => prev.filter(room => {
+        // 모든 가능한 ID 필드를 확인하여 비교
+        const roomIdToCompare = room.mongo_chatroomid || room.roomid || room.id || room.chatroom_id;
+        return roomIdToCompare !== roomId;
+      }));
+  
+      // API 호출로 채팅방 삭제 - URL 인코딩 추가
       await apiDeleteChatRoom(roomId);
-
+      console.log(`채팅방 삭제 성공: ${roomId}`);
+  
       // 현재 보고 있는 채팅방을 삭제한 경우
-      const currentRoomId = localStorage.getItem('mongo_chatroomid');
+      const currentRoomId = getCookie('mongo_chatroomid');
       if (currentRoomId === roomId) {
-        // 로컬스토리지의 채팅방 ID 제거
-        localStorage.removeItem('mongo_chatroomid');
+        console.log('현재 보고 있는 채팅방 삭제됨, 쿠키 제거');
+        // 쿠키에서 채팅방 ID 제거
+        removeCookie('mongo_chatroomid');
         
-        // 새 채팅방 생성으로 리디렉션 또는 홈으로 이동
-        showToast('현재 채팅방이 삭제되었습니다. 새 채팅방을 생성합니다...', 'info');
+        // 새 채팅방 생성 대신 안내 메시지
+        showToast('현재 채팅방이 삭제되었습니다. 새 채팅방을 생성해주세요.', 'info');
         
-        // 페이지 새로고침 (현재 채팅방 삭제 후 새로운 세션 시작)
-        window.location.reload();
+        // 페이지 새로고침
+        setTimeout(() => {
+          window.location.reload();
+        }, 300);
       } else {
         // 다른 채팅방을 삭제한 경우 채팅방 목록만 갱신
-        await fetchChatRoomList(); // await로 목록 갱신 완료 대기
+        console.log('다른 채팅방 삭제됨, 목록 갱신');
+        
+        // 약간의 지연 후 API에서 최신 목록 다시 가져오기
+        setTimeout(async () => {
+          await fetchChatRoomList();
+        }, 300);
+        
         showToast(`채팅방 "${title || '제목 없음'}"이 삭제되었습니다.`, 'success');
       }
     } catch (error) {
       console.error('채팅방 삭제 오류:', error);
       showToast('채팅방을 삭제하는 데 실패했습니다.', 'error');
+      
+      // 삭제 실패 시 목록 다시 가져오기
+      await fetchChatRoomList();
     }
   };
 
@@ -85,18 +116,10 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     try {
       setIsLoadingRooms(true);
       
-      const data = await fetchChatRooms();
+      const rooms = await fetchChatRooms();
       
-      // API 응답 형식에 따라 적절히 구조화
-      if (Array.isArray(data)) {
-        // 기존 순서 유지를 위해 ID를 기준으로 정렬
-        setChatRooms(data);
-      } else if (data.rooms && Array.isArray(data.rooms)) {
-        setChatRooms(data.rooms);
-      } else {
-        console.error('예상치 못한 API 응답 형식:', data);
-        setChatRooms([]);
-      }
+      // fetchChatRooms에서 이미 정렬된 배열을 반환하므로 바로 설정
+      setChatRooms(rooms);
     } catch (error) {
       console.error('채팅방 목록 불러오기 오류:', error);
       showToast('채팅방 목록을 불러올 수 없습니다.', 'error');
@@ -106,14 +129,14 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     }
   };
 
-  // 새 채팅방 생성 핸들러 수정 - 삭제 후 새로운 채팅 흐름 개선
+  // 새 채팅방 생성 핸들러 수정 - localStorage 대신 쿠키 사용
   const handleCreateNewChat = async () => {
     try {
       // 사이드바 닫기
       setIsSidebarOpen(false);
       
       // 기존 채팅방 ID 초기화
-      localStorage.removeItem('mongo_chatroomid');
+      removeCookie('mongo_chatroomid');
       
       // 로딩 상태 표시
       setIsLoading(true);
@@ -122,8 +145,8 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       const responseData = await createNewChatRoom();
       const roomId = responseData.mysql_officeroom.mongo_chatroomid;
       
-      // 새 채팅방 ID 저장
-      localStorage.setItem('mongo_chatroomid', roomId);
+      // 새 채팅방 ID 저장 (쿠키)
+      setCookie('mongo_chatroomid', roomId);
       
       // URL에 채팅방 ID 추가하고 페이지 새로고침
       const pageUrl = new URL(window.location.href);
@@ -141,21 +164,21 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         text: '새 채팅방을 생성하는 데 실패했습니다. 다시 시도해주세요.',
         className: 'bg-red-600 text-white',
         type: 'error',
-      });
+      } as Message);
       setIsLoading(false);
     }
   };
 
-  // 채팅방 선택 핸들러 개선
+  // 채팅방 선택 핸들러 개선 - localStorage 대신 쿠키 사용
   const handleSelectRoom = async (roomId: string) => {
     try {
       // 이전 선택된 채팅방 ID 저장
-      const previousRoomId = localStorage.getItem('mongo_chatroomid');
+      const previousRoomId = getCookie('mongo_chatroomid');
       
       // 다른 방을 선택한 경우에만 처리
       if (previousRoomId !== roomId) {
-        // 새로 선택한 채팅방 ID 저장
-        localStorage.setItem('mongo_chatroomid', roomId);
+        // 새로 선택한 채팅방 ID 저장 (쿠키)
+        setCookie('mongo_chatroomid', roomId);
         
         // URL에 채팅방 ID 추가하고 페이지 새로고침
         const url = new URL(window.location.href);
@@ -180,10 +203,11 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         text: '채팅방을 변경하는 데 실패했습니다. 다시 시도해주세요.',
         className: 'bg-red-600 text-white',
         type: 'error',
-      });
+      } as Message);
     }
   };
 
+  // useEffect 내 initializeChatSession 함수 수정
   useEffect(() => {
     const initializeChatSession = async () => {
       try {
@@ -191,10 +215,10 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         const urlParams = new URLSearchParams(window.location.search);
         const urlRoomId = urlParams.get('roomId');
         
-        // URL에 roomId가 있으면 localStorage에 저장
+        // URL에 roomId가 있으면 쿠키에 저장
         if (urlRoomId) {
           console.log('💬 URL에서 채팅방 ID 감지:', urlRoomId);
-          localStorage.setItem('mongo_chatroomid', urlRoomId);
+          setCookie('mongo_chatroomid', urlRoomId);
           
           // URL에서 roomId 파라미터 제거 (히스토리 관리를 위해)
           if (window.history.replaceState) {
@@ -204,38 +228,46 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
           }
         }
         
-        // 로컬 스토리지에서 채팅방 ID 가져오기
-        const roomId = localStorage.getItem('mongo_chatroomid');
+        // 쿠키에서 채팅방 ID와 사용자 정보 가져오기
+        const roomId = getCookie('mongo_chatroomid');
+        const userId = getCookie('user_id');
+        const username = getCookie('username');
         
-        // 계정 ID 확인 (계정 식별자로 사용)
-        const currentUserId = localStorage.getItem('user_id');
-        const previousUserId = localStorage.getItem('previous_user_id');
+        console.log('💬 세션 초기화 - 채팅방 ID:', roomId);
+        console.log('💬 사용자 정보 - ID:', userId, ', 이름:', username);
         
-        console.log('💬 세션 초기화 - 채팅방 ID:', roomId, '메시지 수:', messages.length);
-        
-        // 채팅방 ID가 있을 때
+        // 채팅방 ID 관련 처리
         if (roomId) {
+          // 채팅방 ID가 있는 경우, 채팅 로그 로드 시도
           try {
-            console.log('💬 채팅방 ID가 있음, 채팅 로그 로딩 시도');
+            console.log('💬 채팅방 ID가 있음, 채팅 로그 로딩 시도:', roomId);
             await loadChatLogs(roomId);
           } catch (loadError) {
             console.error('💬 채팅 로그 로드 실패:', loadError);
-            // 로드 실패 시 새 채팅방 생성 시도
-            localStorage.removeItem('mongo_chatroomid');
-            await getFromServer(model);
+            showToast('채팅 내역을 불러올 수 없습니다. 새로고침을 시도해보세요.', 'error');
+            
+            // 로그 로드 실패 메시지 표시
+            appendMessage({
+              user: '시스템',
+              text: '채팅 로그를 불러오는데 실패했습니다. 새로고침 후 다시 시도해주세요.',
+              className: 'bg-red-600 text-white',
+              type: 'error',
+            } as Message);
           }
-        } 
-        // 채팅방 ID가 없거나 사용자가 변경된 경우
-        else if (!roomId || (currentUserId && currentUserId !== previousUserId)) {
-          console.log('💬 새 채팅방 생성 필요');
-          // 사용자 변경된 경우 이전 채팅방 정보 초기화
-          if (currentUserId && currentUserId !== previousUserId) {
-            localStorage.removeItem('mongo_chatroomid');
-            localStorage.setItem('previous_user_id', currentUserId);
-          }
+        } else {
+          // 채팅방 ID가 없는 경우 - 자동 생성하지 않고 메시지만 표시
+          console.log('💬 채팅방 ID가 없습니다. 채팅을 시작하려면 새 채팅방을 생성하세요.');
           
-          // 새 채팅방 생성
-          await getFromServer(model);
+          // 안내 메시지 표시
+          appendMessage({
+            user: '시스템',
+            text: '채팅을 시작하려면 좌측 상단의 메뉴를 열고 "새 채팅 시작" 버튼을 클릭하세요.',
+            className: 'bg-indigo-600 text-white',
+            type: 'info',
+          } as Message);
+          
+          // 사이드바 열기 제안 토스트 표시
+          showToast('새 채팅방을 생성하려면 메뉴를 열어주세요', 'info');
         }
       } catch (error) {
         console.error('채팅 세션 초기화 실패:', error);
@@ -247,7 +279,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
           text: '채팅 연결에 실패했습니다. 페이지를 새로고침하거나 나중에 다시 시도해주세요.',
           className: 'bg-red-600 text-white',
           type: 'error',
-        });
+        } as Message);
       }
     };
     
@@ -258,6 +290,8 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     if (model && messages.length > 0) {
       // 서버 메시지 대신 토스트 메시지만 표시
       showToast(`모델이 ${model}로 변경되었습니다.`, 'success');
+      // 선택한 모델 쿠키로 저장 (선택 사항)
+      setCookie('selected_model', model);
     }
   }, [model]); // model이 변경될 때만 실행
 
@@ -266,8 +300,19 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     if (messages.length > 0) {
       // 서버 메시지 대신 토스트 메시지만 표시
       showToast(`Google 접근이 ${googleAccess === "true" ? '활성화' : '비활성화'}되었습니다.`, 'info');
+      // Google 접근 설정 쿠키로 저장 (선택 사항)
+      setCookie('google_access', googleAccess);
     }
   }, [googleAccess]); // googleAccess 변경 시 실행
+
+  // 컴포넌트 마운트 시 쿠키에서 설정 로드 (선택 사항)
+  useEffect(() => {
+    const savedModel = getCookie('selected_model');
+    const savedGoogleAccess = getCookie('google_access');
+    
+    if (savedModel) setModel(savedModel);
+    if (savedGoogleAccess) setGoogleAccess(savedGoogleAccess);
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -278,7 +323,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       text: userInput,
       className: 'bg-indigo-500 text-black',
       type: '',
-    });
+    } as Message);
     setUserInput('');
     setIsLoading(true);
 
@@ -287,10 +332,24 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
   };
 
   const appendMessage = (message: Message) => {
-    onSend(message);
+    // 사용자 메시지일 경우 쿠키에서 사용자 이름을 가져와 표시
+    if (message.user === '나') {
+      const username = getCookie('username');
+      if (username) {
+        message.user = username; // 쿠키에서 이름 가져오기
+      }
+    }
+    
+    // type이 없으면 빈 문자열 할당
+    if (message.type === undefined) {
+      message.type = '';
+    }
+    
+    // 이제 안전하게 onSend 호출
+    onSend(message as Message);
   };
 
-  // getFromServer 함수 수정
+  // getFromServer 함수 수정 - localStorage 대신 쿠키 사용
   const getFromServer = async (model: string, inputText?: string) => {
     try {
       const responseData = await createNewChatRoom();
@@ -298,14 +357,14 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       const aiMessage = responseData.message.replace(/\\n/g, '\n').replace(/\\(?!n)/g, '');
       const roomId = responseData.mysql_officeroom.mongo_chatroomid;
 
-      localStorage.setItem('mongo_chatroomid', roomId);
+      setCookie('mongo_chatroomid', roomId);
 
       appendMessage({
         user: 'AI',
         text: aiMessage,
         className: 'bg-gray-600 text-white self-start',
         type: '',
-      });
+      } as Message);
     } catch (error) {
       console.error('에러 발생:', error);
       appendMessage({
@@ -313,14 +372,14 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         text: '서버와의 연결 중 문제가 발생했습니다.',
         className: 'bg-gray-600 text-white self-start',
         type: 'client',
-      });
+      } as Message);
       showToast('서버와의 연결 중 문제가 발생했습니다.', 'error');
     }
   };
 
   const postToServer = async (model: string, inputText: string) => {
     try {
-      const roomId = localStorage.getItem('mongo_chatroomid');
+      const roomId = getCookie('mongo_chatroomid');
       if (!roomId) throw new Error('채팅방 ID가 없습니다.');
       
       // 요청 body 콘솔에 출력
@@ -338,7 +397,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       );
       
       const aiMessage = responseData.message.replace(/\\n/g, '\n').replace(/\\(?!n)/g, '');
-      appendMessage({ user: 'AI', text: aiMessage, className: 'bg-gray-600 text-white', type: '' });
+      appendMessage({ user: 'AI', text: aiMessage, className: 'bg-gray-600 text-white', type: '' } as Message);
     } catch (error) {
       console.error('에러 발생:', error);
       
@@ -348,7 +407,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         text: '응답을 받는 중 오류가 발생했습니다. 다시 시도해주세요.', 
         className: 'bg-red-600 text-white', 
         type: 'error' 
-      });
+      } as Message);
       showToast('응답을 받는 중 오류가 발생했습니다. 다시 시도해주세요.', 'error');
     }
   };
@@ -363,9 +422,9 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       setIsLoading(true);
       
       const data = await apiLoadChatLogs(roomId);
-      
-      // 메시지 초기화
-      onSend({ type: 'clear_messages', user: '', text: '', className: '' });
+  
+      // 메시지 초기화 
+      onSend({ type: 'clear_messages', user: '', text: '', className: '' } as Message);
       
       // 로그 데이터 확인 및 처리
       if (data && data.status === 200 && data.logs) {
@@ -389,12 +448,12 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
             
             // 사용자 메시지 추가
             if (userMessage) {
-              appendMessage(userMessage);
+              appendMessage(userMessage as Message);
             }
             
             // AI 응답 메시지 추가
             if (aiMessage) {
-              appendMessage(aiMessage);
+              appendMessage(aiMessage as Message);
             }
           });
           
@@ -409,7 +468,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
             text: '안녕하세요! 이 채팅방에서 새로운 대화를 시작해보세요.',
             className: 'bg-gray-600 text-white',
             type: '',
-          });
+          } as Message);
         }
       } else {
         console.error('잘못된 응답 형식:', data);
@@ -425,7 +484,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         text: '채팅 내역을 불러오는데 실패했습니다. 다시 시도해주세요.',
         className: 'bg-red-600 text-white', 
         type: 'error' 
-      });
+      } as Message);
     } finally {
       setIsLoading(false);
     }
