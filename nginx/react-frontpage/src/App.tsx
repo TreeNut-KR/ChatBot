@@ -2,11 +2,11 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './Pages/Home';
 import SideBar from './Component/SideBar/SideBar';
-import './App.css';
 import Resister from './Component/Resister/Resister';
 import Login from './Component/Login/Login';
 import CharacterChat from './Pages/CharacterChat';
 import Profile from './Component/Profile/Profile';
+import CharacterChatRoom from './Pages/CharacterChatRoom';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +19,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/CharacterChat" element={<CharacterChat />} />
+            <Route path="/chat/:uuid" element={<CharacterChatRoom />} />
             <Route path="/login" element={<Login />} />
             <Route path="/resister" element={<Resister />} />
             <Route path="/profile" element={<Profile />} />

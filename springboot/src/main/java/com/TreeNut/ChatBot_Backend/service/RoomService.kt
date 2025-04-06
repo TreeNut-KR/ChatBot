@@ -138,25 +138,29 @@ class RoomService(
         return Flux.fromIterable(
             officeroomRepository.findAll()
                 .filter { it.userid == userid }
-                .mapNotNull { it.mongo_chatroomid }
-                .map { roomid ->
-                    // roomid에 대한 첫 번째 채팅 메시지 조회
-                    loadOfficeRoomLogs(userid, roomid)
-                        .map { chatLog ->
-                            val messages = chatLog["value"] as? List<Map<String, Any>> // 'value' 키로 접근
-                            val Title = messages?.firstOrNull { it["index"] == 1 }?.get("input_data") as? String ?: ""
-
-                            // inputData의 글자 수가 10글자 이상일 경우 처리
-                            val formattedTitle = if (Title.length > 10) {
-                                Title.substring(0, 10) + "..."
-                            } else {
-                                Title
-                            }
-                            mapOf(
-                                "roomid" to roomid,
-                                "Title" to formattedTitle
-                            )
-                        }.defaultIfEmpty(mapOf("roomid" to roomid, "Title" to ""))
+                .mapNotNull { officeroom ->
+                    officeroom.mongo_chatroomid?.let { roomid ->
+                        // roomid에 대한 첫 번째 채팅 메시지 조회
+                        loadOfficeRoomLogs(userid, roomid)
+                            .map { chatLog ->
+                                val messages = chatLog["value"] as? List<Map<String, Any>> // 'value' 키로 접근
+                                val title = messages?.firstOrNull { it["index"] == 1 }?.get("input_data") as? String ?: ""
+    
+                                // inputData의 글자 수가 10글자 이상일 경우 처리
+                                val formattedTitle = if (title.length > 10) {
+                                    title.substring(0, 10) + "..."
+                                } else {
+                                    title
+                                }
+    
+                                // 결과 맵 생성
+                                mapOf(
+                                    "roomid" to roomid,
+                                    "Title" to formattedTitle,
+                                    "updatedAt" to officeroom.updatedAt // updatedAt을 추가
+                                )
+                            }.defaultIfEmpty(mapOf("roomid" to roomid, "Title" to "", "updatedAt" to ""))
+                    }
                 }
         ).flatMap { it }
     }

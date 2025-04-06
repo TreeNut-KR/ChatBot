@@ -230,3 +230,45 @@ class ChatBotResponse(BaseModel):
     @field_validator('id', mode='before')
     def check_id(cls, v):
         return Validators.validate_uuid(v)
+
+# SMTP 이메일 인증 관련 모델 --------------------------------------------------------------------
+class EmailSchema(BaseModel):
+    email: str = Field(
+        examples=["user@example.com"],
+        title="이메일 주소",
+        description="인증 코드를 전송할 이메일 주소",
+    )
+    
+    @field_validator('email')
+    def validate_email(cls, v):
+        email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        if not email_pattern.match(v):
+            raise ValueError('유효한 이메일 형식이 아닙니다.')
+        return v
+
+class VerificationSchema(BaseModel):
+    email: str = Field(
+        examples=["user@example.com"],
+        title="이메일 주소",
+        description="인증 코드를 전송한 이메일 주소",
+    )
+    code: str = Field(
+        examples=["123456"],
+        title="인증 코드",
+        description="6자리 인증 코드",
+        min_length=6,
+        max_length=6,
+    )
+    
+    @field_validator('email')
+    def validate_email(cls, v):
+        email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        if not email_pattern.match(v):
+            raise ValueError('유효한 이메일 형식이 아닙니다.')
+        return v
+    
+    @field_validator('code')
+    def validate_code(cls, v):
+        if not v.isdigit() or len(v) != 6:
+            raise ValueError('인증 코드는 6자리 숫자여야 합니다.')
+        return v

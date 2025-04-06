@@ -220,6 +220,24 @@ class CharacterService(
             "like_count" to (character.like_count ?: 0) // null 처리
         )
     }
+
+    fun getAllPublicCharacters(): List<Map<String, Any>> {
+        // accessLevel이 true인 모든 캐릭터를 가져옴
+        return characterRepository.findAll()
+            .filter { it.accessLevel == true }
+            .map {
+                mapOf(
+                    "idx" to (it.idx ?: 0),
+                    "uuid" to (it.uuid ?: ""),
+                    "character_name" to (it.characterName ?: ""),
+                    "userid" to (it.userid ?: ""),
+                    "description" to (it.description ?: ""),
+                    "image" to (it.image ?: ""),
+                    "like_count" to (it.like_count ?: 0),
+                    "created_at" to (it.createdAt?.toString() ?: "")
+                )
+            }
+    }
 }
 
 //이미지 업로드 서비스를 위한 클래스
