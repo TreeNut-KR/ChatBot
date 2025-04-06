@@ -25,7 +25,7 @@ const Resister: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('https://treenut.ddns.net/server/user/register', {
+      const response = await axios.post('/server/user/register', {
         id: Id,
         pw: password,
         name: username,
@@ -84,6 +84,8 @@ const Resister: React.FC = () => {
             required
             className="w-full p-2 border-b-2 border-gray-300 text-gray-700 focus:outline-none focus:border-blue-500"
             autoComplete="off"
+            aria-label="이름"
+            placeholder="이름을 입력하세요"
           />
         </div>
 
@@ -95,6 +97,8 @@ const Resister: React.FC = () => {
             value={Id}
             onChange={handleIdChange}
             required
+            placeholder="아이디를 입력하세요"
+            aria-label="아이디"
             className="w-full p-2 border-b-2 text-gray-700 border-gray-300 focus:outline-none focus:border-blue-500"
           />
           {idError && <p className="text-red-600 text-sm mt-2">{idError}</p>}
@@ -108,6 +112,8 @@ const Resister: React.FC = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            placeholder="비밀번호를 입력하세요"
+            aria-label="비밀번호"
             className="w-full p-2 border-b-2 border-gray-300 focus:outline-none text-gray-700 focus:border-blue-500"
           />
         </div>
@@ -120,6 +126,8 @@ const Resister: React.FC = () => {
             value={email}
             onChange={handleEmailChange}
             required
+            placeholder="이메일을 입력하세요"
+            aria-label="이메일"
             className="w-full p-2 border-b-2 text-gray-700 border-gray-300 focus:outline-none focus:border-blue-500"
           />
           {emailError && <p className="text-red-600 text-sm mt-2">{emailError}</p>}

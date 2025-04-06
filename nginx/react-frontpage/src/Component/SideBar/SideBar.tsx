@@ -45,7 +45,7 @@ const Sidebar: React.FC = () => {
     <aside className="h-screen max-w-[80px] min-w-[60px] px-2 py-5 bg-[#161514] flex flex-col justify-between">
       <div>
         <div className="mb-4 cursor-pointer" onClick={() => handleNavigation('/')}>
-          <img src="images/logo.png" alt="Logo" className="w-full h-auto" />
+          <img src="/images/logo.png" alt="Logo" className="w-full h-auto" />
         </div>
         <div className="mt-4 flex flex-col gap-5">
           <button

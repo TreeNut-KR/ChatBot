@@ -110,6 +110,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ model, setModel, googleAccess, 
           value={model}
           onChange={(e) => setModel(e.target.value)}
           className="bg-gray-800 text-white px-2 py-1 rounded-md border border-gray-700 hover:border-indigo-500 cursor-pointer transition-all text-sm"
+          aria-label="모델 선택"
         >
           <option value="Llama">Llama</option>
           <option value="gpt4o_mini">gpt4o_mini</option>
@@ -353,7 +354,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       const token = localStorage.getItem('jwt-token');
       if (!token) throw new Error('JWT 토큰이 없습니다. 로그인 해주세요.');
 
-      const url = new URL("https://treenut.ddns.net/server/chatroom/office");
+      const url = new URL("/server/chatroom/office");
 
       const response = await fetch(url.toString(), {
         method: 'GET',
@@ -402,7 +403,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       const roomId = localStorage.getItem('mongo_chatroomid');
       if (!roomId) throw new Error('채팅방 ID가 없습니다.');
 
-      const url = `https://treenut.ddns.net/server/chatroom/office/${roomId}/get_response`;
+      const url = `/server/chatroom/office/${roomId}/get_response`;
 
       const response = await fetch(url, {
         method: 'POST',

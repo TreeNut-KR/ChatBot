@@ -7,7 +7,7 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
-        const response = await fetch('https://treenut.ddns.net/server/user/findmyinfo', {
+        const response = await fetch('/server/user/findmyinfo', {
           method: 'GET',
           headers: {
             'Authorization': localStorage.getItem('jwt-token') || ''
@@ -28,7 +28,7 @@ const Profile: React.FC = () => {
   const handleUpdate = async () => {
     try {
       console.log('Updating User Info:', editedInfo);
-      const response = await fetch('https://treenut.ddns.net/server/user/changeUsername', {
+      const response = await fetch('/server/user/changeUsername', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,6 +64,9 @@ const Profile: React.FC = () => {
             value={editedInfo.name}
             onChange={(e) => setEditedInfo({ ...editedInfo, name: e.target.value })}
             className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white bg-transparent text-lg"
+            placeholder="닉네임을 입력하세요"
+            title="닉네임"
+            aria-label="닉네임"
           />
         </div>
 
@@ -75,6 +78,8 @@ const Profile: React.FC = () => {
             value={editedInfo.email}
             readOnly
             className="bg-transparent w-full text-white focus:outline-none text-lg border border-gray-300 rounded-lg px-4 py-2 cursor-not-allowed"
+            aria-label="계정 이메일"
+            title="계정 이메일"
           />
         </div>
 
