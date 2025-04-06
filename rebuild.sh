@@ -2,7 +2,7 @@
 
 # 도커 데몬 상태 확인
 echo "Checking Docker daemon status..."
-if ! docker info > /dev/null 2>&1; then
+if ! sudo docker info > /dev/null 2>&1; then
     echo "Error: Docker daemon is not running. Please start Docker first."
     exit 1
 else
@@ -12,16 +12,16 @@ echo ""
 
 # 도커 컴포즈 다운
 echo "Docker Compose down..."
-docker-compose down -v
-if [ $? -ne 0 ]; then
-    echo "Failed to execute docker-compose down. Exiting..."
-    exit 1
-fi
+sudo docker-compose down -v || {
+    echo "Failed to execute docker-compose down. Forcing container stop..."
+    sudo docker ps -q | xargs -r sudo docker stop
+    sudo docker ps -aq | xargs -r sudo docker rm
+}
 echo ""
 
 # 오래된 도커 이미지 제거
 echo "Removing old Docker images..."
-docker images -q --filter "dangling=false" | xargs -r docker rmi
+sudo docker images -q --filter "dangling=false" | xargs -r sudo docker rmi
 echo ""
 
 # 오래된 폴더 제거
@@ -43,7 +43,7 @@ echo ""
 
 # 도커 컴포즈 빌드
 echo "Docker Compose build..."
-docker-compose build --parallel
+sudo docker-compose build --parallel
 if [ $? -ne 0 ]; then
     echo "Failed to execute docker-compose build. Exiting..."
     exit 1
@@ -52,7 +52,7 @@ echo ""
 
 # 도커 컴포즈 시작
 echo "Starting Docker Compose..."
-docker-compose up -d
+sudo docker-compose up -d
 if [ $? -ne 0 ]; then
     echo "Failed to execute docker-compose up. Exiting..."
     exit 1

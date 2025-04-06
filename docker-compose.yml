@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   nginx:
     restart: always
@@ -7,7 +5,7 @@ services:
       context: ./nginx
       dockerfile: Dockerfile
     ports:
-      - "443:443"
+      - "8443:443"
     volumes:
       # React 빌드 결과물을 Nginx 컨테이너에 마운트 (선택적)
       - ./nginx/react-frontpage/build:/usr/share/nginx/html
@@ -22,7 +20,7 @@ services:
     build:
       context: ./fastapi
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./fastapi/src:/app/src
       - ./fastapi/src/logs:/app/src/logs
@@ -43,7 +41,7 @@ services:
       context: ./springboot
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
       - TZ=Asia/Seoul  # 한국 시간대 설정
     command: ["./gradlew build -x test --no-daemon"] # 테스트를 건너뛰고 빌드
@@ -74,10 +72,11 @@ services:
 
   mongodb:
     restart: unless-stopped
+    image: mongo:4.4
     build:
       context: ./mongo
     ports:
-      - "27017:27017"
+      - "27018:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD}
@@ -86,6 +85,7 @@ services:
       TZ: Asia/Seoul  # 한국 시간대 설정
     volumes:
       - ./mongo/data:/data/db
+      - ./mongo/log:/var/log/mongodb:rw 
       - ./mongo/log:/var/log/mongodb
       - ./mongo/.env:/docker-entrypoint-initdb.d/.env
       - ./chatbot-character-image-6b2ea50ecd70.json:/app/JSON_KEY.json  # 호스트에서 컨테이너로 파일 매핑
