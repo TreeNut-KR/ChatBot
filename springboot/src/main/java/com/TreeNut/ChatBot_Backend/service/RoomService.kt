@@ -7,6 +7,7 @@ import com.TreeNut.ChatBot_Backend.repository.ChatroomRepository
 import com.TreeNut.ChatBot_Backend.repository.OfficeroomRepository
 import com.TreeNut.ChatBot_Backend.repository.UserRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
@@ -22,8 +23,9 @@ import java.util.concurrent.TimeoutException
 class RoomService(
     private val chatroomRepository: ChatroomRepository,
     private val officeroomRepository: OfficeroomRepository,
-    private val userRepository: UserRepository,  // 추가
-    private val webClient: WebClient.Builder
+    private val userRepository: UserRepository,
+    private val webClient: WebClient.Builder,
+    @Value("\${python.server.url:http://192.168.3.145:8001}") private val pythonServerUrl: String
 ) {
     private val logger = LoggerFactory.getLogger(RoomService::class.java)
 /*
@@ -40,7 +42,7 @@ class RoomService(
         
         return webClient.build()
             .post()
-            .uri("http://192.168.3.145:8001/office/{route}", route) 
+            .uri("${pythonServerUrl}/office/{route}", route) 
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
@@ -305,7 +307,7 @@ class RoomService(
         val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
-            .uri("http://192.168.3.145:8001/character/{route}", route)
+            .uri("${pythonServerUrl}/character/{route}", route)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .bodyValue(mapOf(
