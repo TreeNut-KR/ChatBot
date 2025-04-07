@@ -178,29 +178,30 @@ class UserController(
             ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
         }
     }
-}
-    /* @PostMapping("/social/naver/login")
-    fun naverLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
-        val code = body["code"]
-        val state = body["state"]
-        if (code.isNullOrEmpty() || state.isNullOrEmpty()) {
-            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 또는 상태 없음"))
-        }
 
-        return try {
-            val response = userService.naverLogin(code, state)
-            ResponseEntity.ok(response)
-        } catch (e: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
-        }
+    @GetMapping("/membership")
+    fun getMembership(@RequestHeader("Authorization") userToken: String): ResponseEntity<Map<String, Any>> {
+        val userid = userService.getUserid(userToken)
+        val membership = userService.getMembership(userid)
+        return ResponseEntity.ok(mapOf("status" to 200, "membership" to membership))
     }
 
-    @GetMapping("/oauth/callback/naver")
-    fun naverCallback(
-        @RequestParam code: String,
-        @RequestParam state: String,
-        request: HttpServletRequest
+    @PostMapping("/membership/update")
+    fun updateMembership(
+        @RequestHeader("Authorization") userToken: String,
+        @RequestBody body: Map<String, String>
     ): ResponseEntity<Map<String, Any>> {
-        return naverLogin(mapOf("code" to code, "state" to state))
-    } */
+        val userid = userService.getUserid(userToken)
+        val newMembership = body["membership"]
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Membership is required"))
+
+        return try {
+            val updatedUser = userService.updateMembership(userid, newMembership)
+            ResponseEntity.ok(mapOf("status" to 200, "message" to "Membership updated successfully", "membership" to updatedUser.membership))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Invalid membership type"))
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
+        }
+    }
+}

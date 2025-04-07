@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Header from '../Component/Header/Header';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 // Character 인터페이스 정의
 interface Character {
@@ -34,6 +37,17 @@ const CharacterChatRoom: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 새로운 메시지가 추가될 때 스크롤 아래로 이동
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // 메시지가 변경될 때마다 스크롤 아래로 이동
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     const fetchCharacterDetails = async () => {
@@ -148,6 +162,54 @@ const CharacterChatRoom: React.FC = () => {
     }
   };
 
+  // 마크다운 컴포넌트 - 코드 블록 커스텀 렌더링
+  const MarkdownRenderer = ({ content }: { content: string }) => (
+    <ReactMarkdown
+      components={{
+        code({ node, inline, className, children, ...props }: {
+          node?: any;
+          inline?: boolean;
+          className?: string;
+          children?: React.ReactNode;
+        }) {
+          const match = /language-(\w+)/.exec(className || '');
+          return !inline && match ? (
+            <SyntaxHighlighter
+              style={atomDark}
+              language={match[1]}
+              PreTag="div"
+              {...props}
+            >
+              {String(children).replace(/\n$/, '')}
+            </SyntaxHighlighter>
+          ) : (
+            <code className={`${className} rounded px-1 py-0.5 bg-gray-800`} {...props}>
+              {children}
+            </code>
+          );
+        },
+        p: ({ children }) => <p className="mb-2">{children}</p>,
+        ul: ({ children }) => <ul className="list-disc ml-5 mb-2">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal ml-5 mb-2">{children}</ol>,
+        h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-lg font-bold mb-2">{children}</h2>,
+        h3: ({ children }) => <h3 className="font-bold mb-2">{children}</h3>,
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-4 border-gray-500 pl-2 text-gray-300 italic">
+            {children}
+          </blockquote>
+        ),
+        a: ({ href, children }) => (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+            {children}
+          </a>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+
   if (loading) {
     return (
       <div className="flex flex-col items-center w-full h-full bg-[#1a1918]">
@@ -168,7 +230,7 @@ const CharacterChatRoom: React.FC = () => {
         </div>
         {debugInfo && (
           <div className="flex flex-col items-start w-full max-w-[1280px] p-4 text-white bg-[#2a2928] rounded-lg">
-            <h3 className="text-lg font-bold mb-4">디버깅 정보</h3>
+            <h3 className="text-lg font-bold mb-4">디버깋 정보</h3>
             <pre className="text-sm whitespace-pre-wrap">
               {JSON.stringify(debugInfo, null, 2)}
             </pre>
@@ -217,7 +279,7 @@ const CharacterChatRoom: React.FC = () => {
                       : 'bg-[#3f3f3f] text-white'
                   }`}
                 >
-                  {message.content}
+                  <MarkdownRenderer content={message.content} />
                   <div
                     className={`text-xs mt-1 ${
                       message.sender === 'user' ? 'text-blue-200' : 'text-gray-400'
@@ -235,6 +297,7 @@ const CharacterChatRoom: React.FC = () => {
                 )}
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="p-4 bg-[#2a2928] rounded-lg">

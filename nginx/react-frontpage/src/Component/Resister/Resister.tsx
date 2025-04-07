@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
 
 const Resister: React.FC = () => {
+  const navigate = useNavigate();
   const [Id, setId] = useState<string>(''); 
   const [password, setPassword] = useState<string>('');
   const [username, setUsername] = useState<string>(''); 
@@ -10,16 +13,27 @@ const Resister: React.FC = () => {
   const [emailError, setEmailError] = useState<string>(''); 
 
   useEffect(() => {
-    setId('');
-    setPassword('');
-    setUsername('');
-    setEmail('');
+    // 쿠키에서 이전에 저장된 정보가 있다면 불러오기
+    const savedId = Cookies.get('register_id');
+    const savedEmail = Cookies.get('register_email');
+    const savedUsername = Cookies.get('register_username');
+    
+    if (savedId) setId(savedId);
+    if (savedEmail) setEmail(savedEmail);
+    if (savedUsername) setUsername(savedUsername);
   }, []);
+
+  // 입력값이 변경될 때마다 쿠키에 저장 (비밀번호 제외)
+  useEffect(() => {
+    if (Id && !idError) Cookies.set('register_id', Id, { expires: 1 }); // 1일간 유지
+    if (email && !emailError) Cookies.set('register_email', email, { expires: 1 });
+    if (username) Cookies.set('register_username', username, { expires: 1 });
+  }, [Id, email, username, idError, emailError]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!Id || !email || idError || emailError) {
+    if (!Id || !email || !password || !username || idError || emailError) {
       window.alert('입력된 값에 오류가 있습니다. 다시 확인해주세요.');
       return;
     }
@@ -35,6 +49,14 @@ const Resister: React.FC = () => {
       if (response.status === 200) {
         window.alert('회원가입 성공!');
         console.log('회원가입 성공:', response.data);
+        
+        // 회원가입 성공 후 쿠키 삭제
+        Cookies.remove('register_id');
+        Cookies.remove('register_email');
+        Cookies.remove('register_username');
+        
+        // 로그인 페이지로 리다이렉트
+        navigate('/login');
       }
     } catch (error) {
       window.alert('회원가입 실패. 다시 시도해 주세요.');
@@ -70,7 +92,7 @@ const Resister: React.FC = () => {
         onSubmit={handleSubmit}
         className="bg-white p-12 rounded-md text-left w-[400px]"
       >
-        <h2 className="text-black tracking-wide font-bold text-2xl text-center flex  justify-center h-[60px] mb-9">
+        <h2 className="text-black tracking-wide font-bold text-2xl text-center flex justify-center h-[60px] mb-9">
           회원가입
         </h2>
 

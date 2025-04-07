@@ -4,6 +4,7 @@ import logo_naver_kr from './logo/logo_naver_kr.png';
 import logo_kakao_kr from './logo/logo_kakao_kr.png';
 import logo_google_kr from './logo/logo_google_kr.png';
 import { useGoogleLogin } from '@react-oauth/google';
+import { setCookie, getCookie, removeCookie, setObjectCookie, getObjectCookie } from '../../Cookies';
 
 // 인앱 브라우저 감지 함수
 const isInAppBrowser = () => {
@@ -24,20 +25,20 @@ const isInAppBrowser = () => {
 
 // 로그인 성공 처리 함수
 const handleLoginSuccess = (userData: { token: string; userId: string }) => {
-  // JWT 토큰 저장
-  localStorage.setItem('jwt-token', userData.token);
+  // JWT 토큰 쿠키로 저장 (기존 localStorage 대신)
+  setCookie('jwt-token', userData.token);
   
-  // 사용자 ID 저장
-  localStorage.setItem('user_id', userData.userId);
+  // 사용자 ID 쿠키로 저장
+  setCookie('user_id', userData.userId);
   
   // 이전 사용자와 현재 사용자가 다르면 채팅방 초기화 준비
-  const previousUserId = localStorage.getItem('previous_user_id');
+  const previousUserId = getCookie('previous_user_id');
   if (previousUserId !== userData.userId) {
-    localStorage.removeItem('mongo_chatroomid');
+    removeCookie('mongo_chatroomid');
   }
   
   // 현재 사용자 ID를 이전 사용자 ID로 저장
-  localStorage.setItem('previous_user_id', userData.userId);
+  setCookie('previous_user_id', userData.userId);
 };
 
 const Login: React.FC = () => {
@@ -55,7 +56,7 @@ const Login: React.FC = () => {
       const { token } = event.data;
       if (token) {
         console.log('✅ 토큰 저장 성공:', token);
-        localStorage.setItem('jwt-token', token);
+        setCookie('jwt-token', token);
         window.location.href = '/';
       } else {
         console.error('❌ 받은 토큰이 없음');
@@ -71,7 +72,7 @@ const Login: React.FC = () => {
   const googleLogin = useGoogleLogin({
     onSuccess: (tokenResponse) => {
       console.log('구글 로그인 성공:', tokenResponse);
-      localStorage.setItem('jwt-token', tokenResponse.access_token);
+      setCookie('jwt-token', tokenResponse.access_token);
       window.location.href = '/';
     },
     onError: () => {
@@ -84,7 +85,7 @@ const Login: React.FC = () => {
     if (isInAppBrowser()) {
       // 현재 URL을 저장하고 외부 브라우저로 리다이렉션
       const currentUrl = window.location.href;
-      localStorage.setItem('redirectAfterLogin', currentUrl);
+      setCookie('redirectAfterLogin', currentUrl);
       
       // URL 스키마 또는 Intent를 사용하여 외부 브라우저 열기 (OS에 따라 다름)
       if (/android/i.test(navigator.userAgent)) {
@@ -123,7 +124,7 @@ const Login: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('https://treenut.ddns.net/server/user/login', {
+      const response = await axios.post('/server/user/login', {
         id: Id,
         pw: password,
       });
