@@ -93,10 +93,19 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String, @Value("
                 .retrieve()
                 .bodyToMono(Map::class.java)
                 .block()
-
-            return response?.get("sub")?.toString()
+                
+            // Google API 응답에서 사용자 ID 추출
+            val googleId = response?.get("sub")?.toString()
+            if (googleId.isNullOrEmpty()) {
+                logger.error("Google ID not found in response")
+                return null
+            }
+            
+            logger.info("Google 토큰 검증 성공: ID = $googleId")
+            return googleId
+    
         } catch (e: Exception) {
-            logger.error("구글 토큰 검증 실패: ${e.message}", e)
+            logger.error("Google 토큰 검증 실패: ${e.message}", e)
             return null
         }
     }
