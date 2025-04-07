@@ -240,3 +240,8 @@ chatbot-character-image-6b2ea50ecd70.json
 
 ### SSL KEY ###
 nginx/certificates/*
+
+### adminController ###
+admincontroller/client/build/*
+admincontroller/client/node_modules/*
+admincontroller/server/node_modules/*
