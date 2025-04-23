@@ -76,7 +76,7 @@ CREATE TABLE email_verification (
     userid VARCHAR(50) NOT NULL,
     verification_code CHAR(6) NOT NULL,
     expiry_time DATETIME NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
