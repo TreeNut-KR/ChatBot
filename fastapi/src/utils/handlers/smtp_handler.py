@@ -6,8 +6,7 @@ import string
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timedelta
-import traceback  # 추가: 자세한 예외 추적을 위한 모듈
+import traceback
 
 class SMTPHandler:
     """
@@ -26,55 +25,19 @@ class SMTPHandler:
         self.port = int(os.getenv("SMTP_PORT", 587))
         self.user = os.getenv("SMTP_USER", "")
         self.password = os.getenv("SMTP_PASSWORD", "")
-        # 인증 코드와 만료 시간을 저장할 딕셔너리
-        self.verification_codes = {}
         
         # 환경 변수가 제대로 설정되었는지 확인
         if not self.user or not self.password:
             print("경고: SMTP_USER 또는 SMTP_PASSWORD가 설정되지 않았습니다.")
         
-    def generate_verification_code(self, email: str) -> str:
+    def generate_verification_code(self) -> str:
         """
         6자리 인증 코드를 생성하고 저장합니다.
         """
-        code = ''.join(random.choices(string.digits, k=6))
-        # 인증 코드 15분 유효
-        expiry_time = datetime.now() + timedelta(minutes=15) 
-        self.verification_codes[email] = {
-            "code": code,
-            "expiry": expiry_time
-        }
-        return code
+        characters = string.ascii_uppercase + string.digits  # 예: A-Z, 0-9
+        return ''.join(random.choices(characters, k=6))
     
-    def verify_code(self, email: str, code: str) -> bool:
-        """
-        인증 코드가 유효한지 확인합니다.
-        """
-        print(f"인증 코드 확인: 이메일={email}, 입력된 코드={code}")
-        
-        if email not in self.verification_codes:
-            print(f"오류: {email}에 대한 인증 코드가 존재하지 않음")
-            return False
-        
-        stored_data = self.verification_codes[email]
-        current_time = datetime.now()
-        
-        # 코드가 만료되었는지 확인
-        if current_time > stored_data["expiry"]:
-            print(f"오류: 인증 코드 만료됨 (만료시간: {stored_data['expiry']}, 현재시간: {current_time})")
-            del self.verification_codes[email]  # 만료된 코드 삭제
-            return False
-        
-        # 코드가 일치하는지 확인
-        if stored_data["code"] == code:
-            print(f"인증 성공: 코드 일치 ({code})")
-            del self.verification_codes[email]  # 사용된 코드 삭제
-            return True
-        
-        print(f"오류: 코드 불일치 (저장된 코드: {stored_data['code']}, 입력된 코드: {code})")
-        return False
-    
-    async def send_verification_email(self, email: str) -> bool:
+    async def send_verification_email(self, code: str, email: str) -> bool:
         """
         이메일로 인증 코드를 보냅니다.
         """
@@ -84,7 +47,7 @@ class SMTPHandler:
                 print("오류: SMTP_USER 또는 SMTP_PASSWORD가 설정되지 않았습니다.")
                 return False
                 
-            verification_code = self.generate_verification_code(email)
+            verification_code = code
             
             message = MIMEMultipart("alternative")
             message["Subject"] = "TreeNut ChatBot 이메일 인증 코드"

@@ -269,6 +269,7 @@ class VerificationSchema(BaseModel):
     
     @field_validator('code')
     def validate_code(cls, v):
-        if not v.isdigit() or len(v) != 6:
-            raise ValueError('인증 코드는 6자리 숫자여야 합니다.')
+        # 대문자 알파벳 또는 숫자 6자리만 허용
+        if not re.fullmatch(r'[A-Z0-9]{6}', v):
+            raise ValueError('인증 코드는 6자리 대문자 알파벳 또는 숫자여야 합니다.')
         return v
