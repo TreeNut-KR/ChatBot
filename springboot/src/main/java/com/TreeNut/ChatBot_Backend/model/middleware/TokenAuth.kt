@@ -16,7 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.http.HttpHeaders
 
 @Component
-class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String, @Value("\${google.user-info-url}") private val googleUserInfoUrl: String) {
+class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String, @Value("\${spring.security.oauth2.client.provider.google.user-info-uri}") private val googleUserInfoUrl: String) {
 
     private val logger: Logger = LoggerFactory.getLogger(TokenAuth::class.java)
 
