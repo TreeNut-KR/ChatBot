@@ -131,8 +131,12 @@ class UserController(
                 
             val nickname = userInfoResponse["name"] as String
             val googleId = userInfoResponse["sub"].toString()
+            val email = userInfoResponse["email"] as String? // 이메일 정보 추가
 
-            val user = userService.registerGoogleUser(googleId, nickname, null)
+            // 디버깅을 위한 로그 추가
+            println("Google User Info: name=$nickname, id=$googleId, email=$email")
+
+            val user = userService.registerGoogleUser(googleId, nickname, email)
             val token = tokenAuth.generateToken(user.userid)
 
             ResponseEntity.ok(mapOf(
@@ -141,11 +145,8 @@ class UserController(
                 "message" to "구글 로그인 성공"
             ))
         } catch (e: Exception) {
-            if (e is WebClientResponseException) {
-                val statusCode = e.rawStatusCode
-                val statusText = e.statusText
-                val responseBody = e.responseBodyAsString
-            }
+            println("Google Login Error: ${e.message}") // 에러 로그 추가
+            e.printStackTrace() // 스택 트레이스 출력
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
         }

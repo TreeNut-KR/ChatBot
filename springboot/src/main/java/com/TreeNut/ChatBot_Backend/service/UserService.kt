@@ -65,14 +65,24 @@ class UserService(
 
     @Transactional
     fun registerGoogleUser(googleId: String, username: String, email: String?): User {
+        println("Registering Google User: id=GOOGLE_$googleId, username=$username, email=$email") // 디버그 로그
+        
         val existingUser = userRepository.findByUserid("GOOGLE_$googleId")
-        return existingUser ?: userRepository.save(User(
-            userid = "GOOGLE_$googleId",
-            username = username,
-            email = email ?: "",
-            loginType = LoginType.GOOGLE,
-            password = null
-        ))
+        return existingUser ?: try {
+            userRepository.save(User(
+                userid = "GOOGLE_$googleId",
+                username = username,
+                email = email ?: "",
+                loginType = LoginType.GOOGLE,
+                password = null
+            )).also {
+                println("Successfully saved user: ${it.userid}") // 성공 로그
+            }
+        } catch (e: Exception) {
+            println("Error saving user: ${e.message}") // 에러 로그
+            e.printStackTrace()
+            throw e
+        }
     }
 
     @Transactional
