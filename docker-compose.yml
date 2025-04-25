@@ -49,6 +49,18 @@ services:
     command: ["./gradlew build -x test --no-daemon"] # 테스트를 건너뛰고 빌드
     depends_on:
       - mysql  # MySQL 서비스에 의존
+  admincontroller:
+    restart: always
+    build:
+      context: ./admincontroller
+      dockerfile: Dockerfile
+    ports:
+      - "5785:5785"
+    environment:
+      - TZ=Asia/Seoul
+      - NODE_ENV=production
+    depends_on:
+      - springboot
 
   mysql:
     restart: unless-stopped
