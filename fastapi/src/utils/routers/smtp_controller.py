@@ -12,6 +12,10 @@ async def send_verification_email(request: ChatModel.EmailSchema):
     '''
     try:
         userid = await mysql_handler.get_userid(request.email)
+        membership = await mysql_handler.get_membership_by_userid(userid)
+        if membership == "VIP":
+            return {"status": "exception", "message": "이미 인증된 이메일입니다."}
+        
         code = smtp_handler.generate_verification_code()
         await mysql_handler.create_verification_code(code, userid)
         success = await smtp_handler.send_verification_email(code, request.email)

@@ -65,7 +65,18 @@ class MySQLDBHandler:
         """
         result = await self.fetch_all(query, {'email': email})
         return result[0]['userid'] if result else None
-
+    
+    async def get_membership_by_userid(self, userid: str) -> str:
+        '''
+        userid로 membership 등급(BASIC, VIP) 조회
+        '''
+        query = """
+            SELECT membership FROM users
+            WHERE userid = :userid
+        """
+        result = await self.fetch_all(query, {'userid': userid})
+        return result[0]['membership'] if result else None
+    
     async def create_verification_code(self, code: str, userid: str):
         '''
         인증 코드 생성 또는 갱신 (만료 시간: 15분)
@@ -132,6 +143,13 @@ class MySQLDBHandler:
                 WHERE userid = :userid
             """
             await self.execute(delete_query, {'userid': userid})
+            update_membership_query = """
+                UPDATE users
+                SET membership = 'VIP'
+                WHERE userid = :userid
+            """
+            await self.execute(update_membership_query, {'userid': userid})
+
             return "success"
         else:
             return "code is different"
