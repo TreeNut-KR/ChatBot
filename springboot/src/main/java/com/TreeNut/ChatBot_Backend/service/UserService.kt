@@ -19,6 +19,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import javax.crypto.SecretKey
 import org.springframework.dao.DataIntegrityViolationException
 import java.sql.SQLIntegrityConstraintViolationException
+import org.slf4j.LoggerFactory
 
 @Service
 class UserService(
@@ -41,6 +42,9 @@ class UserService(
     @Value("\${spring.security.oauth2.client.registration.naver.authorization-grant-type}") private val naverGrantType: String,
     @Value("\${spring.security.oauth2.client.registration.naver.scope}") private val naverScope: String */
 ) {
+    // logger 추가
+    private val logger = LoggerFactory.getLogger(UserService::class.java)
+    
     private val passwordEncoder = BCryptPasswordEncoder()
 
     @Transactional
@@ -65,22 +69,26 @@ class UserService(
 
     @Transactional
     fun registerGoogleUser(googleId: String, username: String, email: String?): User {
-        println("Registering Google User: id=GOOGLE_$googleId, username=$username, email=$email") // 디버그 로그
+        logger.info("Google 회원가입 시작: id=GOOGLE_$googleId")
         
-        val existingUser = userRepository.findByUserid("GOOGLE_$googleId")
-        return existingUser ?: try {
-            userRepository.save(User(
-                userid = "GOOGLE_$googleId",
+        return try {
+            val userId = "GOOGLE_$googleId"
+            userRepository.findByUserid(userId)?.also { 
+                logger.info("기존 회원 발견: $userId")
+            } ?: userRepository.save(User(
+                userid = userId,
                 username = username,
                 email = email ?: "",
-                loginType = LoginType.GOOGLE,
-                password = null
+                loginType = LoginType.GOOGLE
             )).also {
-                println("Successfully saved user: ${it.userid}") // 성공 로그
+                logger.info("신규 회원 저장 성공: $userId")
+                // 트랜잭션 커밋 확인을 위한 추가 조회
+                userRepository.flush()
+                userRepository.findByUserid(userId) 
+                    ?: throw RuntimeException("사용자 저장 실패")
             }
         } catch (e: Exception) {
-            println("Error saving user: ${e.message}") // 에러 로그
-            e.printStackTrace()
+            logger.error("Google 회원가입 실패", e)
             throw e
         }
     }
