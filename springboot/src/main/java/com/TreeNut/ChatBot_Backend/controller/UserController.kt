@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.slf4j.LoggerFactory
 
 @RestController
 @RequestMapping("/server/user")
@@ -31,6 +32,9 @@ class UserController(
     @Value("\${spring.security.oauth2.client.registration.google.authorization-grant-type}") private val googleGrantType: String,
     @Value("\${spring.security.oauth2.client.registration.google.scope}") private val googleScope: String
 ) {
+    // logger 추가
+    private val logger = LoggerFactory.getLogger(UserController::class.java)
+
     @PostMapping("/register")
     fun register(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val username = body["name"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Name is required"))
@@ -131,10 +135,13 @@ class UserController(
                 
             val nickname = userInfoResponse["name"] as String
             val googleId = userInfoResponse["sub"].toString()
-            val email = userInfoResponse["email"] as String? // 이메일 정보 추가
+            val email = userInfoResponse["email"] as String?
 
-            // 디버깅을 위한 로그 추가
-            println("Google User Info: name=$nickname, id=$googleId, email=$email")
+            // 로거 추가
+            logger.info("Google 유저 정보 수신:")
+            logger.info("이름: $nickname")
+            logger.info("Google ID: $googleId")
+            logger.info("이메일: $email")
 
             val user = userService.registerGoogleUser(googleId, nickname, email)
             val token = tokenAuth.generateToken(user.userid)
