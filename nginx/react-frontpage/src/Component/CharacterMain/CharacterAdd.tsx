@@ -16,7 +16,8 @@ const CharacterAdd: React.FC = () => {
     greeting: '',
     image: '',
     character_setting: '',
-    accessLevel: false
+    accessLevel: false,
+    tags: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -34,6 +35,18 @@ const CharacterAdd: React.FC = () => {
         [name]: value
       });
     }
+  };
+
+  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formattedValue = value
+      .split(",")
+      .map(tag => tag.trim().startsWith("#") ? tag.trim() : `#${tag.trim()}`)
+      .join(", ");
+    setCharacterData({
+      ...characterData,
+      tags: formattedValue
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,7 +80,8 @@ const CharacterAdd: React.FC = () => {
           greeting: '',
           image: '',
           character_setting: '',
-          accessLevel: false
+          accessLevel: false,
+          tags: ''
         });
         
         // 성공 메시지 표시 후 캐릭터 목록 페이지로 리디렉션
@@ -190,6 +204,21 @@ const CharacterAdd: React.FC = () => {
                 required
                 className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#3b7cc9] min-h-[150px]"
                 placeholder="캐릭터의 성격, 배경, 지식 등 상세한 설정을 입력하세요"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="tags" className="block text-white font-medium mb-2">
+                태그 (콤마로 구분, 자동으로 # 추가)
+              </label>
+              <input
+                type="text"
+                id="tags"
+                name="tags"
+                value={characterData.tags}
+                onChange={handleTagChange}
+                className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#3b7cc9]"
+                placeholder="예: 모험, 판타지, 전사"
               />
             </div>
             

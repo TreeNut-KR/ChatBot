@@ -78,6 +78,14 @@ class CharacterController(
             }
         }
 
+        val tags = (body["tags"] as? List<*>)?.joinToString(",") { tag ->
+            if (tag is String && !tag.startsWith("#")) "#$tag" else tag.toString()
+        } ?: ""
+
+        println("Request body: $body") // 요청 데이터 출력
+        println("Extracted characterName: $characterName") // 추출된 값 출력
+        println("Extracted tags: $tags") // 태그 값 출력
+
         return try {
             // 캐릭터 객체 생성
             val newCharacter = Character(
@@ -90,7 +98,8 @@ class CharacterController(
                 characterSetting = characterSetting,
                 accessLevel = accessLevel,
                 createdAt = LocalDateTime.now(),
-                updatedAt = LocalDateTime.now()
+                updatedAt = LocalDateTime.now(),
+                tags = tags
             )
 
             val registeredCharacter = characterService.addCharacter(newCharacter)
@@ -147,6 +156,10 @@ class CharacterController(
             val tokenUserId = tokenAuth.authGuard(userToken)
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
+            val tags = (body["tags"] as? List<*>)?.joinToString(",") { tag ->
+                if (tag is String && !tag.startsWith("#")) "#$tag" else tag.toString()
+            } ?: character.tags
+
             // 캐릭터를 업데이트하기 위한 객체 생성
             val editedCharacterEntity = character.copy(
                 characterName = body["character_name"] as? String ?: character.characterName,
@@ -155,7 +168,8 @@ class CharacterController(
                 image = body["image"] as? String ?: character.image,
                 characterSetting = body["character_setting"] as? String ?: character.characterSetting,
                 accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
-                userid = tokenUserId // 직접 가져온 userid로 설정
+                userid = tokenUserId, // 직접 가져온 userid로 설정
+                tags = tags
             )
 
             // 업데이트 수행
@@ -451,5 +465,11 @@ class CharacterController(
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("status" to 500, "message" to "Error retrieving public characters: ${e.message}"))
         }
+    }
+
+    @GetMapping("/search_by_tag")
+    fun searchByTag(@RequestParam tag: String): ResponseEntity<List<Map<String, Any>>> {
+        val characters = characterService.searchCharacterByTag(tag)
+        return ResponseEntity.ok(characters)
     }
 }

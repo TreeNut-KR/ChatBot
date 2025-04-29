@@ -48,11 +48,14 @@ class CharacterService(
                 greeting = character.greeting,
                 image = character.image,
                 characterSetting = character.characterSetting,
-                accessLevel = character.accessLevel
+                accessLevel = character.accessLevel,
+                tags = character.tags 
             )
             characterRepository.save(newCharacter)
         } catch (e: Exception) {
-            throw RuntimeException("Error during character addition", e)
+            e.printStackTrace() // 예외 로그 출력
+            println("Error during character addition: ${e.message}") // 예외 메시지 출력
+            throw RuntimeException("Error during character addition", e) // 예외 재발생
         }
     }
 
@@ -90,22 +93,21 @@ class CharacterService(
             image = updatedCharacter.image ?: character.image,
             characterSetting = updatedCharacter.characterSetting ?: character.characterSetting,
             accessLevel = updatedCharacter.accessLevel ?: character.accessLevel,
+            tags = updatedCharacter.tags ?: character.tags, // tags 필드 추가
             updatedAt = LocalDateTime.now()
         )
 
         val savedCharacter = characterRepository.save(editedCharacterEntity)
 
-        val inputDataSet= mapOf(
+        val inputDataSet = mapOf(
             "character_name" to savedCharacter.characterName,
             "description" to savedCharacter.description,
             "greeting" to savedCharacter.greeting,
             "image" to savedCharacter.image,
             "character_setting" to savedCharacter.characterSetting,
-            "access_level" to savedCharacter.accessLevel
+            "access_level" to savedCharacter.accessLevel,
+            "tags" to savedCharacter.tags // tags 필드 반환
         )
-
-        val objectMapper = com.fasterxml.jackson.databind.ObjectMapper()
-        val inputDataSetJson = objectMapper.writeValueAsString(inputDataSet)
 
         return Mono.just(ResponseEntity.ok(inputDataSet as Map<String, Any>))
     }
@@ -235,6 +237,19 @@ class CharacterService(
                     "image" to (it.image ?: ""),
                     "like_count" to (it.like_count ?: 0),
                     "created_at" to (it.createdAt?.toString() ?: "")
+                )
+            }
+    }
+
+    fun searchCharacterByTag(tag: String): List<Map<String, Any>> {
+        val formattedTag = if (!tag.startsWith("#")) "#$tag" else tag
+        return characterRepository.findAll()
+            .filter { it.tags?.split(",")?.contains(formattedTag) == true }
+            .map {
+                mapOf(
+                    "character_name" to (it.characterName ?: ""),
+                    "description" to (it.description ?: ""),
+                    "tags" to (it.tags ?: "")
                 )
             }
     }

@@ -44,7 +44,9 @@ CREATE TABLE characters (
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
 
+ALTER TABLE characters ADD COLUMN tags TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE characters MODIFY character_setting LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE characters MODIFY tags TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 채팅방 (캐릭터 채팅)
 CREATE TABLE chatroom (

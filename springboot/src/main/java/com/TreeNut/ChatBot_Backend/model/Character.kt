@@ -41,6 +41,9 @@ data class Character(
     @Column(name = "liked_users", columnDefinition = "TEXT") // liked_users 추가
     var liked_users: String? = null, // 좋아요를 누른 유저의 ID를 저장할 변수
 
+    @Column(name = "tags", columnDefinition = "TEXT")
+    val tags: String? = null, // 태그를 콤마로 구분하여 저장
+
     @Column(name = "created_at", updatable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
@@ -58,6 +61,7 @@ data class Character(
         image = null,
         like_count = 0,
         liked_users = null,
+        tags = null,
         createdAt = LocalDateTime.now(),
         updatedAt = LocalDateTime.now()
     )
