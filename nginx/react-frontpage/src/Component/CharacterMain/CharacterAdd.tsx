@@ -16,17 +16,17 @@ const CharacterAdd: React.FC = () => {
     greeting: '',
     image: '',
     character_setting: '',
-    accessLevel: false
+    access_level: 1 // 기본값 1
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setCharacterData({
         ...characterData,
-        [name]: checked
+        [name]: checked ? 0 : 1 // 체크하면 0, 해제하면 1
       });
     } else {
       setCharacterData({
@@ -67,7 +67,7 @@ const CharacterAdd: React.FC = () => {
           greeting: '',
           image: '',
           character_setting: '',
-          accessLevel: false
+          access_level: 1
         });
         
         // 성공 메시지 표시 후 캐릭터 목록 페이지로 리디렉션
@@ -197,8 +197,8 @@ const CharacterAdd: React.FC = () => {
               <label className="flex items-center text-white font-medium cursor-pointer">
                 <input
                   type="checkbox"
-                  name="accessLevel"
-                  checked={characterData.accessLevel}
+                  name="access_level"
+                  checked={characterData.access_level === 0}
                   onChange={handleChange}
                   className="mr-2 h-5 w-5 rounded accent-[#3b7cc9]"
                 />
