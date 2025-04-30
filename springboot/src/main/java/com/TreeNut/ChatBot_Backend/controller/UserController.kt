@@ -99,6 +99,7 @@ class UserController(
     @PostMapping("/social/google/login")
     fun googleLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val code = body["code"]
+        val redirectUri = body["redirect_uri"] ?: googleRedirectUri // 프론트에서 전달받은 값 우선 사용
         if (code.isNullOrEmpty()) {
             return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 없음"))
         }
@@ -108,7 +109,7 @@ class UserController(
                 add("grant_type", googleGrantType)
                 add("client_id", googleClientId)
                 add("client_secret", googleClientSecret)
-                add("redirect_uri", googleRedirectUri)
+                add("redirect_uri", redirectUri) // 여기서 postmessage 가능
                 add("code", code)
                 add("scope", "https://www.googleapis.com/auth/userinfo.email profile openid")
             }
@@ -137,7 +138,6 @@ class UserController(
             val googleId = userInfoResponse["sub"].toString()
             val email = userInfoResponse["email"] as String?
 
-            // 로거 추가
             logger.info("Google 유저 정보 수신:")
             logger.info("이름: $nickname")
             logger.info("Google ID: $googleId")
@@ -152,8 +152,8 @@ class UserController(
                 "message" to "구글 로그인 성공"
             ))
         } catch (e: Exception) {
-            println("Google Login Error: ${e.message}") // 에러 로그 추가
-            e.printStackTrace() // 스택 트레이스 출력
+            println("Google Login Error: ${e.message}")
+            e.printStackTrace()
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
         }
