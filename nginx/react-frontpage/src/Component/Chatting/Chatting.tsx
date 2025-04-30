@@ -410,9 +410,24 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
 
   const postToServer = async (model: string, inputText: string) => {
     try {
-      const roomId = getCookie('mongo_chatroomid');
-      if (!roomId) throw new Error('채팅방 ID가 없습니다.');
-      
+      // 항상 string 타입으로 보장
+      let roomId = getCookie('mongo_chatroomid') || '';
+      const urlParams = new URLSearchParams(window.location.search);
+      let urlRoomId = urlParams.get('roomId') || '';
+
+      // roomId가 없거나, URL에 roomId 파라미터가 없으면 자동으로 채팅방 생성
+      if (!roomId || !urlRoomId) {
+        showToast('채팅방이 없어 자동으로 새 채팅방을 생성합니다.', 'info');
+        const responseData = await createNewChatRoom();
+        roomId = responseData.mysql_officeroom.mongo_chatroomid || '';
+        setCookie('mongo_chatroomid', roomId);
+
+        // URL에 채팅방 ID 추가 (roomId가 undefined/null일 수 있으니 빈 문자열 방지)
+        const pageUrl = new URL(window.location.href);
+        pageUrl.searchParams.set('roomId', roomId);
+        window.history.replaceState({}, document.title, pageUrl.toString());
+      }
+
       // 요청 body 콘솔에 출력
       console.log('서버로 전송하는 데이터:', {
         input_data_set: inputText,
@@ -420,10 +435,11 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         google_access_set: googleAccess
       });
 
+      // roomId가 string임을 보장
       const responseData = await getChatResponse(
-        roomId, 
-        inputText, 
-        model, 
+        roomId,
+        inputText,
+        model,
         googleAccess
       );
       
@@ -431,8 +447,6 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       appendMessage({ user: 'AI', text: aiMessage, className: 'bg-gray-600 text-white', type: '' } as Message);
     } catch (error) {
       console.error('에러 발생:', error);
-      
-      // 오류 메시지 표시
       appendMessage({ 
         user: '시스템', 
         text: '응답을 받는 중 오류가 발생했습니다. 다시 시도해주세요.', 
@@ -540,7 +554,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       )}
 
       {/* Toast 컨테이너 - 중앙 상단으로 위치 변경 */}
-      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 flex flex-col space-y-2 z-50">
+      <div className="fixed top-4 right-4 flex flex-col space-y-2 z-50">
         {toasts.map(toast => (
           <div key={toast.id} className="animate-fadeInOut">
             <Toast
