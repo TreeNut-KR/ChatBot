@@ -102,7 +102,7 @@ class RoomController(
         ApiResponse(responseCode = "401", description = "토큰 인증 실패")
     ])
     @PostMapping("/office/{id}/get_response")
-    fun getofficeResponse(
+    fun getOffice_Response(
         @RequestHeader("Authorization") authorization: String?,
         @PathVariable id: String,
         @RequestBody inputData: Map<String, Any>
@@ -158,7 +158,7 @@ class RoomController(
                 routeSet // VIP 멤버십은 요청한 route 그대로 사용
             }
 
-            roomService.getOfficeResponse(
+            roomService.getOffice_Response(
                 inputDataSet = inputDataSet,
                 googleAccessSet = googleAccessSet,
                 mongodbId = id,

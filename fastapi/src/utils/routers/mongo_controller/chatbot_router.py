@@ -84,8 +84,8 @@ async def update_chat_log(request: ChatModel.ChatBot_Update_Request):
         raise ChatError.InternalServerErrorException(detail=str(e))
     
 
-@chatbot_router.post("/load_log", response_model=ChatModel.ChatBotResponse, summary="유저 채팅 불러오기")
-async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.ChatBotResponse:
+@chatbot_router.post("/load_log", response_model=ChatModel.ChatBot_Response, summary="유저 채팅 불러오기")
+async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.ChatBot_Response:
     '''
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
     '''
@@ -95,7 +95,7 @@ async def load_chat_log(request: ChatModel.Identifier_Request) -> ChatModel.Chat
             document_id=request.id,
             router="chatbot"
         )
-        response_data = ChatModel.ChatBotResponse(
+        response_data = ChatModel.ChatBot_Response(
             id=request.id,
             character_idx=character_idx,
             value=chat_logs,

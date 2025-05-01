@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.slf4j.LoggerFactory
 
 @RestController
 @RequestMapping("/server/user")
@@ -31,6 +32,9 @@ class UserController(
     @Value("\${spring.security.oauth2.client.registration.google.authorization-grant-type}") private val googleGrantType: String,
     @Value("\${spring.security.oauth2.client.registration.google.scope}") private val googleScope: String
 ) {
+    // logger 추가
+    private val logger = LoggerFactory.getLogger(UserController::class.java)
+
     @PostMapping("/register")
     fun register(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val username = body["name"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Name is required"))
@@ -95,6 +99,7 @@ class UserController(
     @PostMapping("/social/google/login")
     fun googleLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val code = body["code"]
+        val redirectUri = body["redirect_uri"] ?: googleRedirectUri // 프론트에서 전달받은 값 우선 사용
         if (code.isNullOrEmpty()) {
             return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 없음"))
         }
@@ -104,7 +109,7 @@ class UserController(
                 add("grant_type", googleGrantType)
                 add("client_id", googleClientId)
                 add("client_secret", googleClientSecret)
-                add("redirect_uri", googleRedirectUri)
+                add("redirect_uri", redirectUri) // 여기서 postmessage 가능
                 add("code", code)
                 add("scope", "https://www.googleapis.com/auth/userinfo.email profile openid")
             }
@@ -131,8 +136,14 @@ class UserController(
                 
             val nickname = userInfoResponse["name"] as String
             val googleId = userInfoResponse["sub"].toString()
+            val email = userInfoResponse["email"] as String?
 
-            val user = userService.registerGoogleUser(googleId, nickname, null)
+            logger.info("Google 유저 정보 수신:")
+            logger.info("이름: $nickname")
+            logger.info("Google ID: $googleId")
+            logger.info("이메일: $email")
+
+            val user = userService.registerGoogleUser(googleId, nickname, email)
             val token = tokenAuth.generateToken(user.userid)
 
             ResponseEntity.ok(mapOf(
@@ -141,11 +152,8 @@ class UserController(
                 "message" to "구글 로그인 성공"
             ))
         } catch (e: Exception) {
-            if (e is WebClientResponseException) {
-                val statusCode = e.rawStatusCode
-                val statusText = e.statusText
-                val responseBody = e.responseBodyAsString
-            }
+            println("Google Login Error: ${e.message}")
+            e.printStackTrace()
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
         }

@@ -31,7 +31,7 @@ class RoomService(
 /*
 오피스 응답을 요청하는 메소드
 */
-    fun getOfficeResponse(
+    fun getOffice_Response(
         inputDataSet: String,
         googleAccessSet: Boolean,
         mongodbId: String,
@@ -232,7 +232,7 @@ class RoomService(
             }
 
             // Llama 모델에 input_data_set을 보내고 응답을 받음
-            getOfficeResponse(
+            getOffice_Response(
                 inputDataSet = input_data_set,
                 googleAccessSet = google_access_set,
                 mongodbId = mongo_chatroomid,

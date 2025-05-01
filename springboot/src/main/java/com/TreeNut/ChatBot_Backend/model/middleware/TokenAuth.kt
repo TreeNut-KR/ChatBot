@@ -12,9 +12,11 @@ import java.util.*
 import org.springframework.util.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.http.HttpHeaders
 
 @Component
-class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
+class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String, @Value("\${spring.security.oauth2.client.provider.google.user-info-uri}") private val googleUserInfoUrl: String) {
 
     private val logger: Logger = LoggerFactory.getLogger(TokenAuth::class.java)
 
@@ -30,28 +32,47 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
         } else {
             token
         }
-        return try {
-            val claims: Claims = Jwts.parser()
-                .setSigningKey(key)
-                .build()
-                .parseSignedClaims(tokenWithoutBearer) // 수정된 토큰 사용
-                .payload
-            claims.subject
-        } catch (e: ExpiredJwtException) {
-            logger.error("Token expired: ${e.message}", e) // 로그 추가
-            throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
-        } catch (e: MalformedJwtException) {
-            logger.error("Token malformed: ${e.message}", e) // 로그 추가
-            throw TokenMalformedException("잘못된 토큰입니다.")
-        } catch (e: SignatureException) {
-            logger.error("Token signature invalid: ${e.message}", e) // 로그 추가
-            throw TokenSignatureException("토큰 서명 검증에 실패했습니다.")
-        } catch (e: JwtException) {
-            logger.error("JWT exception: ${e.message}", e) // 로그 추가
-            throw TokenJwtException("토큰 처리 중 오류가 발생했습니다: ${e.message}")
-        } catch (e: Exception) {
-            logger.error("Unknown exception: ${e.message}", e) // 로그 추가
-            throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
+    
+        val dotCount = tokenWithoutBearer.count { it == '.' }
+    
+        return if (dotCount == 2) {
+            // JWT 토큰 처리
+            try {
+                val claims: Claims = Jwts.parser()
+                    .setSigningKey(key)
+                    .build()
+                    .parseSignedClaims(tokenWithoutBearer)
+                    .payload
+                claims.subject
+            } catch (e: ExpiredJwtException) {
+                logger.error("Token expired: ${e.message}", e)
+                throw TokenExpiredException("시간이 경과하여 로그아웃 되었습니다. 다시 로그인해주세요")
+            } catch (e: MalformedJwtException) {
+                logger.error("Token malformed: ${e.message}", e)
+                throw TokenMalformedException("잘못된 토큰입니다.")
+            } catch (e: SignatureException) {
+                logger.error("Token signature invalid: ${e.message}", e)
+                throw TokenSignatureException("토큰 서명 검증에 실패했습니다.")
+            } catch (e: JwtException) {
+                logger.error("JWT exception: ${e.message}", e)
+                throw TokenJwtException("토큰 처리 중 오류가 발생했습니다: ${e.message}")
+            } catch (e: Exception) {
+                logger.error("Unknown exception: ${e.message}", e)
+                throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
+            }
+        } else if (dotCount == 1) {
+            // Google Access Token 처리 (verifyGoogleToken 함수는 별도로 구현해야 함)
+            try {
+                val userInfo = verifyGoogleToken(tokenWithoutBearer)
+                userInfo // Google 사용자 ID 반환
+            } catch (e: Exception) {
+                logger.error("Google token malformed: ${e.message}", e)
+                throw TokenMalformedException("잘못된 토큰입니다.")
+            }
+        } else {
+            // 잘못된 토큰 형식
+            logger.error("Invalid token format: Dot count is ${dotCount}")
+            throw TokenMalformedException("잘못된 토큰 형식입니다.")
         }
     }
 
@@ -62,6 +83,31 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String) {
             .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
             .signWith(key, SignatureAlgorithm.HS512)
             .compact()
+    }
+    fun verifyGoogleToken(accessToken: String): String? {
+        val webClient = WebClient.create()
+        try {
+            val response = webClient.get()
+                .uri(googleUserInfoUrl)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+                .retrieve()
+                .bodyToMono(Map::class.java)
+                .block()
+                
+            // Google API 응답에서 사용자 ID 추출
+            val googleId = response?.get("sub")?.toString()
+            if (googleId.isNullOrEmpty()) {
+                logger.error("Google ID not found in response")
+                return null
+            }
+            
+            logger.info("Google 토큰 검증 성공: ID = $googleId")
+            return googleId
+    
+        } catch (e: Exception) {
+            logger.error("Google 토큰 검증 실패: ${e.message}", e)
+            return null
+        }
     }
 
     fun getJwtSecret(): String {
