@@ -12,8 +12,14 @@ COPY ./nginx.conf /etc/nginx/nginx.conf
 # 빌드된 리액트 앱 파일 복사
 COPY ./react-frontpage/build /usr/share/nginx/html
 
-# 80 포트 노출
-EXPOSE 80
+# SSL 인증서 복사 및 권한 설정
+COPY ./certificates/* /etc/nginx/certs/
+RUN chmod 644 /etc/nginx/certs/*.crt.pem && \
+    chmod 600 /etc/nginx/certs/*.key.pem && \
+    chmod 644 /etc/nginx/certs/chain-bundle.pem # 또는 root-chain-bundle.pem 또는 두개의 체인파일을 합친 파일
+
+# 443 포트 노출
+EXPOSE 443
 
 # Nginx 실행
 CMD ["nginx", "-g", "daemon off;"]

@@ -8,15 +8,7 @@ const Banner: React.FC = () => {
     {
       id: 1,
       image: '/images/CCBanner/b1.png',
-    },
-    {
-      id: 2,
-      image: '/images/CCBanner/b2.png',
-    },
-    {
-      id: 3,
-      image: '/images/CCBanner/b3.png',
-    },
+    }
   ];
 
   const [currentIndex, setCurrentIndex] = useState(1); 

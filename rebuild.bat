@@ -51,6 +51,14 @@ FOR /d /r .\fastapi\ %%i IN (__pycache__) DO (
 )
 echo.
 
+echo Building nginx service specifically...
+docker-compose build nginx
+if errorlevel 1 (
+    echo Failed to build nginx service. Exiting...
+    exit /b 1
+)
+echo.
+
 echo Docker Compose build...
 docker-compose build --parallel
 if errorlevel 1 (
