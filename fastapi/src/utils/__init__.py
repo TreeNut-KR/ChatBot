@@ -25,9 +25,9 @@ from .handlers.mysql_handler import mysql_handler
 from .schemas import chat_schema as ChatModel
 
 # Routers
-from .routers import mysql_controller as mysql_router
-from .routers import mongo_controller as mongo_router
-from .routers import smtp_controller as smtp_router
+from .routers import mysql_controller as MysqlController
+from .routers import mongo_controller as MongoController
+from .routers import smtp_controller as SmtpController
 
 __all__ = [
     # Handlers
@@ -38,7 +38,7 @@ __all__ = [
     'ChatModel',
 
     # Routers
-    'mysql_router',
-    'mongo_router',
-    'smtp_router',
+    'MysqlController',
+    'MongoController',
+    'SmtpController',
 ]

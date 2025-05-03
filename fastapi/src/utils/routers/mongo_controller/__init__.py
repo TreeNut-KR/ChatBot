@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
-from .office_router import office_router
-from .chatbot_router import chatbot_router
+import office_controller as OfficeController
+import chatbot_controller as ChatbotController
 
 from ...handlers import error_handler as ChatError
 from ...handlers.mongodb_handler import MongoDBHandler
@@ -30,5 +30,5 @@ async def list_collections(db_name: str = Query(..., description="데이터베�
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
     
-mongo_router.include_router(office_router, prefix="/office", tags=["MongoDB / Office"])
-mongo_router.include_router(chatbot_router, prefix="/chatbot", tags=["MongoDB / Chatbot"])
+mongo_router.include_router(OfficeController.office_router, prefix="/office", tags=["MongoDB / Office"])
+mongo_router.include_router(ChatbotController.chatbot_router, prefix="/chatbot", tags=["MongoDB / Chatbot"])

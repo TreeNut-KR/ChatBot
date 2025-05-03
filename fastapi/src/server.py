@@ -10,21 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 
-from utils  import ChatError, mysql_handler, mysql_router, mongo_router, smtp_router
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    '''
-    FastAPI 애플리케이션의 수명 주기를 관리하는 함수.
-    '''
-    await mysql_handler.connect()
-    try:
-        yield
-    finally:
-        await mysql_handler.disconnect()
-
-app = FastAPI(lifespan=lifespan)
-ChatError.add_exception_handlers(app)  # 예외 핸들러 추가
+from utils  import ChatError, mysql_handler, MysqlController, MongoController, SmtpController
 
 class ExceptionMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -47,18 +33,20 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         except Exception as ex:
             return f"Unexpected error occurred: {str(ex)}"
         
-app.add_middleware(ExceptionMiddleware)
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET", "your-secret-key")  # 기본 비밀 키 추가
-)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    '''
+    FastAPI 애플리케이션의 수명 주기를 관리하는 함수.
+    '''
+    await mysql_handler.connect()
+    try:
+        yield
+    finally:
+        await mysql_handler.disconnect()
+
+app = FastAPI(lifespan=lifespan)
+ChatError.add_exception_handlers(app)  # 예외 핸들러 추가
+
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -78,6 +66,19 @@ def custom_openapi():
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
+app.add_middleware(ExceptionMiddleware)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET", "your-secret-key")  # 기본 비밀 키 추가
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.openapi = custom_openapi
 
 @app.middleware("http")
@@ -105,7 +106,7 @@ async def shutdown():
     await mysql_handler.disconnect()
 
 app.include_router(
-    mysql_router.mysql_router,
+    MysqlController.mysql_router,
     prefix="/mysql",
     tags=["MySQL Router"],
     responses={500: {"description": "Internal Server Error"}}
@@ -113,7 +114,7 @@ app.include_router(
 
 # FastAPI 애플리케이션에 mongo_router를 추가
 app.include_router(
-    mongo_router.mongo_router,
+    MongoController.mongo_router,
     prefix="/mongo",
     tags=["MongoDB Router"],
     responses={500: {"description": "Internal Server Error"}}
@@ -121,7 +122,7 @@ app.include_router(
 
 # FastAPI 애플리케이션에 smtp_router를 추가
 app.include_router(
-    smtp_router.smtp_router,
+    SmtpController.smtp_router,
     prefix="/auth",
     tags=["Authentication"],
     responses={500: {"description": "Internal Server Error"}}
