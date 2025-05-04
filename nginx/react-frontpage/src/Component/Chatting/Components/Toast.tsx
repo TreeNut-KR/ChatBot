@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ToastProps } from '../Types';
 
 const Toast: React.FC<ToastProps> = ({ 
@@ -6,12 +6,19 @@ const Toast: React.FC<ToastProps> = ({
   type, 
   onClose 
 }) => {
+  const closedRef = useRef(false);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      onClose();
+      if (!closedRef.current) {
+        closedRef.current = true;
+        onClose();
+      }
     }, 3000);
-    
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [onClose]);
   
   const getBackgroundColor = () => {
@@ -26,7 +33,12 @@ const Toast: React.FC<ToastProps> = ({
     <div className={`${getBackgroundColor()} text-white px-4 py-3 rounded-md shadow-lg flex items-center justify-between transition-opacity duration-500 max-w-xs`}>
       <span>{message}</span>
       <button 
-        onClick={onClose}
+        onClick={() => {
+          if (!closedRef.current) {
+            closedRef.current = true;
+            onClose();
+          }
+        }}
         className="ml-2 focus:outline-none"
       >
         ✕

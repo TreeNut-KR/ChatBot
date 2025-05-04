@@ -302,14 +302,28 @@ const CharacterChatRoom: React.FC = () => {
 
           <div className="p-4 bg-[#2a2928] rounded-lg">
             <div className="flex">
+              {/* 모델 선택 드롭다운 */}
+              <select
+                aria-label="Select AI model"
+                className="p-3 rounded-l-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                // 필요하다면 value, onChange 핸들러 추가
+              >
+                <option value="Llama">Llama</option>
+                <option value="gpt4.1">GPT4.1</option>
+                <option value="gpt4.1_mini">GPT4.1-mini</option>
+              </select>
+
+              {/* 입력창 */}
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="메시지를 입력하세요..."
-                className="flex-1 p-3 rounded-l-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                className="flex-1 p-3 bg-[#3f3f3f] text-white border-none focus:outline-none"
               />
+
+              {/* 전송 버튼 */}
               <button
                 onClick={handleSendMessage}
                 className="px-6 py-3 bg-[#3b7cc9] text-white rounded-r-lg hover:bg-[#2d62a0]"

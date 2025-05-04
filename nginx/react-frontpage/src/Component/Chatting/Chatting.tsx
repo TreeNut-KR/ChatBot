@@ -41,6 +41,25 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  // 사용자 상호작용 시 모든 토스트 제거
+  useEffect(() => {
+    if (toasts.length === 0) return;
+
+    const handleUserInteraction = () => {
+      setToasts([]);
+    };
+
+    window.addEventListener('mousedown', handleUserInteraction);
+    window.addEventListener('keydown', handleUserInteraction);
+    window.addEventListener('touchstart', handleUserInteraction);
+
+    return () => {
+      window.removeEventListener('mousedown', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, [toasts.length]);
+
   // handleDeleteChatRoom 함수 수정 - 자동 방생성 제거
   const handleDeleteChatRoom = async (roomId: string, title?: string) => {
     if (!roomId) {

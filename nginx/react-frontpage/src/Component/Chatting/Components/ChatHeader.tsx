@@ -33,6 +33,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           value={model}
           onChange={(e) => setModel(e.target.value)}
           className="bg-gray-800 text-white px-2 py-1 rounded-md border border-gray-700 hover:border-indigo-500 cursor-pointer transition-all text-sm"
+          aria-label="모델 선택"
         >
           <option value="Llama">Llama</option>
           <option value="gpt4o_mini">gpt4o_mini</option>

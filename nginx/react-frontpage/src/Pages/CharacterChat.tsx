@@ -1,10 +1,25 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Banner from '../Component/Banner/Banner';
 import CharacterSwiper from '../Component/CharacterMain/CharacterSwiper';
 import Header from '../Component/Header/Header';
+import CharacterDetailModal from '../Component/CharacterMain/CharacterDetailModal';
 
 const CharacterChatPage: React.FC = () => {
+  const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
+  const navigate = useNavigate();
+
+  // 캐릭터 클릭 시 모달 오픈
+  const handleCharacterClick = (character: any) => {
+    setSelectedCharacter(character);
+  };
+
+  // 채팅 시작 버튼 클릭 시
+  const handleChat = (uuid: string) => {
+    setSelectedCharacter(null);
+    navigate(`/chat/${uuid}`);
+  };
+
   return (   
     <div className="flex flex-col items-center w-full h-full bg-[#1a1918]">
       <Header />
@@ -19,10 +34,17 @@ const CharacterChatPage: React.FC = () => {
               </Link>
             </div>
             <p className="text-gray-400 mb-8">대화하고 싶은 캐릭터를 선택하세요</p>
-            <CharacterSwiper />
+            <CharacterSwiper onCharacterClick={handleCharacterClick} />
           </div>
         </div>
       </div>
+      {selectedCharacter && (
+        <CharacterDetailModal
+          character={selectedCharacter}
+          onClose={() => setSelectedCharacter(null)}
+          onChat={handleChat}
+        />
+      )}
     </div>
   );
 };

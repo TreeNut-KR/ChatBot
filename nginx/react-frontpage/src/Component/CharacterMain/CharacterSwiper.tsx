@@ -20,11 +20,26 @@ interface ApiResponse {
   data: Character[];
 }
 
-const CharacterSwiper: React.FC = () => {
+interface CharacterSwiperProps {
+  onCharacterClick?: (character: Character) => void;
+}
+
+const CharacterSwiper: React.FC<CharacterSwiperProps> = ({ onCharacterClick }) => {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // 이미지 URL 변환 함수 추가
+  const getImageUrl = (image: string) => {
+    if (!image) return '/default-character.png';
+    // 이미지id만 남기고 변환
+    // const match = image.match(/([a-zA-Z0-9_-]{20,})$/);
+    // if (match) {
+    //   return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    // }
+    return image;
+  };
 
   useEffect(() => {
     const fetchCharacters = async () => {
@@ -49,8 +64,9 @@ const CharacterSwiper: React.FC = () => {
   }, []);
 
   const handleCharacterClick = (character: Character) => {
-    console.log('Navigating to character with UUID:', character.uuid);
-    navigate(`/chat/${character.uuid}`);
+    if (onCharacterClick) {
+      onCharacterClick(character);
+    }
   };
 
   const truncateText = (text: string, maxLength: number) => {
@@ -79,7 +95,7 @@ const CharacterSwiper: React.FC = () => {
         >
           <div className="character-image-container">
             <img
-              src={character.image || '/default-character.png'}
+              src={getImageUrl(character.image)}
               alt={character.characterName}
               className="character-image"
             />
