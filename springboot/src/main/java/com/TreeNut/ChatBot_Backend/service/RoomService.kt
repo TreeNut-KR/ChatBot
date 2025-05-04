@@ -25,7 +25,7 @@ class RoomService(
     private val officeroomRepository: OfficeroomRepository,
     private val userRepository: UserRepository,
     private val webClient: WebClient.Builder,
-    @Value("\${python.server.url:http://192.168.3.145:8001}") private val pythonServerUrl: String
+    @Value("\${ai.server.url}")  private val pythonServerUrl: String
 ) {
     private val logger = LoggerFactory.getLogger(RoomService::class.java)
 /*
@@ -38,41 +38,28 @@ class RoomService(
         userId: String,
         route: String = "Llama",
     ): Mono<String> {
-        val responseBuilder = StringBuilder()
-        
         return webClient.build()
             .post()
-            .uri("${pythonServerUrl}/office/{route}", route) 
+            .uri("${pythonServerUrl}/office/{route}", route)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(mapOf(
-                "input_data" to inputDataSet,
-                "google_access" to googleAccessSet,
-                "db_id" to mongodbId,
-                "user_id" to userId,
-            ))
+            .bodyValue(
+                mapOf(
+                    "input_data" to inputDataSet,
+                    "google_access" to googleAccessSet,
+                    "db_id" to mongodbId,
+                    "user_id" to userId,
+                )
+            )
             .retrieve()
-            .bodyToFlux(String::class.java)
-            .doOnNext { chunk ->
-                responseBuilder.append(chunk)
+            .bodyToMono(Map::class.java)
+            .map { response ->
+                @Suppress("UNCHECKED_CAST")
+                val result = response["result"] as? String ?: throw RuntimeException("응답에 'result' 필드가 없습니다.")
+                result
             }
-            .timeout(Duration.ofMinutes(10))
             .doOnError { error ->
-                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
-            }
-            .collectList()
-            .map { 
-                val output = responseBuilder.toString()
-                
-                // output이 따옴표로 시작하고 끝나면 따옴표 제거
-                val cleanOutput = if (output.startsWith("\"") && output.endsWith("\"")) {
-                    output.substring(1, output.length - 1)
-                } else {
-                    output
-                }
-                
-                // 이스케이프된 따옴표를 실제 따옴표로 변환
-                cleanOutput.replace("\\\"", "\"")
+                logger.error("[ERROR] Office 응답 처리 중 오류 발생: ${error.message}", error)
             }
             .onErrorResume { throwable ->
                 when (throwable) {
@@ -100,7 +87,7 @@ class RoomService(
             }
     }
 
-   fun addOfficeRoom(
+    fun addOfficeRoom(
         userid: String,
         mongo_chatroomid: String,
         input_data_set: String,
@@ -304,42 +291,30 @@ class RoomService(
         userId: String,
         route: String = "Llama",
     ): Mono<String> {
-        val responseBuilder = StringBuilder()
         return webClient.build()
             .post()
             .uri("${pythonServerUrl}/character/{route}", route)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(mapOf(
-                "input_data" to inputDataSet,
-                "character_name" to characterName,
-                "greeting" to greeting,
-                "context" to context,
-                "db_id" to mongodbId,
-                "user_id" to userId,
-            ))
+            .bodyValue(
+                mapOf(
+                    "input_data" to inputDataSet,
+                    "character_name" to characterName,
+                    "greeting" to greeting,
+                    "context" to context,
+                    "db_id" to mongodbId,
+                    "user_id" to userId,
+                )
+            )
             .retrieve()
-            .bodyToFlux(String::class.java)
-            .timeout(Duration.ofMinutes(10))
-            .doOnNext { chunk ->
-                responseBuilder.append(chunk)
+            .bodyToMono(Map::class.java)
+            .map { response ->
+                @Suppress("UNCHECKED_CAST")
+                val result = response["result"] as? String ?: throw RuntimeException("응답에 'result' 필드가 없습니다.")
+                result
             }
             .doOnError { error ->
-                logger.error("[ERROR] 스트리밍 응답 처리 중 오류 발생: ${error.message}", error)
-            }
-            .collectList()
-            .map { 
-                val output = responseBuilder.toString()
-                
-                // output이 따옴표로 시작하고 끝나면 따옴표 제거
-                val cleanOutput = if (output.startsWith("\"") && output.endsWith("\"")) {
-                    output.substring(1, output.length - 1)
-                } else {
-                    output
-                }
-                
-                // 이스케이프된 따옴표를 실제 따옴표로 변환
-                cleanOutput.replace("\\\"", "\"")
+                logger.error("[ERROR] Character 응답 처리 중 오류 발생: ${error.message}", error)
             }
             .onErrorResume { throwable ->
                 when (throwable) {

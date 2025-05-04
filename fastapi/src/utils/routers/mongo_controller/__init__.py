@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
-import office_controller as OfficeController
-import chatbot_controller as ChatbotController
+from . import office_controller as OfficeController
+from . import chatbot_controller as ChatbotController
 
 from ...handlers import error_handler as ChatError
 from ...handlers.mongodb_handler import MongoDBHandler
