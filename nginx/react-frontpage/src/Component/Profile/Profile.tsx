@@ -16,8 +16,8 @@ const getCookieValue = (name: string): string => {
 type MembershipType = 'BASIC' | 'VIP';
 
 const Profile: React.FC = () => {
-  const [userInfo, setUserInfo] = useState({ name: '', email: '' });
-  const [editedInfo, setEditedInfo] = useState({ name: '', email: '', pw: '' });
+  const [userInfo, setUserInfo] = useState({ name: '', email: '', userid: '' });
+  const [editedInfo, setEditedInfo] = useState({ name: '', email: '', userid: '', pw: '' });
   const [membership, setMembership] = useState<MembershipType>('BASIC');
   const [isUpdatingMembership, setIsUpdatingMembership] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,7 +62,7 @@ const Profile: React.FC = () => {
       const data = await response.json();
       console.log('User Info Fetched:', data);
       setUserInfo(data);
-      setEditedInfo({ ...data, pw: '' });
+      setEditedInfo({ ...data, pw: '' }); // data에 userid 포함
       
       // DB의 users 테이블에 membership 필드가 있으므로 이 정보를 사용
       if (data.membership) {
@@ -225,53 +225,39 @@ const Profile: React.FC = () => {
             />
           </div>
 
-          {/* 계정 */}
+          {/* ID */}
           <div className="mb-4">
-            <label htmlFor="email" className="block text-white font-medium mb-2">
-              계정
+            <label htmlFor="userid" className="block text-white font-medium mb-2">
+              ID
             </label>
             <input
               type="text"
-              id="email"
-              value={editedInfo.email}
+              id="userid"
+              value={editedInfo.userid}
               readOnly
               className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
             />
-            <p className="text-gray-400 text-sm mt-1">계정 이메일은 변경할 수 없습니다</p>
+            <p className="text-gray-400 text-sm mt-1">계정 ID는 변경할 수 없습니다</p>
           </div>
 
-          {/* 멤버십 변경 */}
+          {/* 이메일 인증 */}
           <div className="mb-6">
-            <label className="block text-white font-medium mb-2">
-              멤버십 변경
-            </label>
+            <label className="block text-white font-medium mb-2">이메일 인증</label>
             <div className="flex w-full space-x-4">
+              {/* 이메일 입력창 */}
+              <input
+                type="email"
+                placeholder="이메일을 입력하세요"
+                className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+              />
+
+              {/* 인증 버튼 */}
               <button
-                onClick={() => handleMembershipUpdate('BASIC')}
-                disabled={membership === 'BASIC' || isUpdatingMembership}
-                className={`flex-1 p-3 rounded-lg text-white font-medium transition-colors
-                  ${membership === 'BASIC' 
-                    ? 'bg-[#3f3f3f] cursor-not-allowed' 
-                    : 'bg-gray-600 hover:bg-gray-700'}`}
+                className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
               >
-                BASIC
-              </button>
-              <button
-                onClick={() => handleMembershipUpdate('VIP')}
-                disabled={membership === 'VIP' || isUpdatingMembership}
-                className={`flex-1 p-3 rounded-lg text-white font-medium transition-colors
-                  ${membership === 'VIP' 
-                    ? 'bg-[#ffc107] text-gray-900 cursor-not-allowed' 
-                    : 'bg-[#ffc107] text-gray-900 hover:bg-[#e6af06]'}`}
-              >
-                VIP
+                인증 요청
               </button>
             </div>
-            {isUpdatingMembership && (
-              <div className="w-full flex justify-center mt-4">
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#3b7cc9]"></div>
-              </div>
-            )}
           </div>
 
           {/* 버튼 영역 */}

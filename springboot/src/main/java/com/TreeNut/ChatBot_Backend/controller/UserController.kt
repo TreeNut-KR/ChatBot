@@ -173,7 +173,7 @@ class UserController(
         val userid = userService.getUserid(userToken)
         val name = userService.getUsername(userid)
         val email = userService.getUseremail(userid)
-        return ResponseEntity.ok(mapOf("name" to name, "email" to email))
+        return ResponseEntity.ok(mapOf("name" to name, "userid" to userid,"email" to email))
     }
 
     @PostMapping("/changeUsername")

@@ -4,10 +4,10 @@
 |--------|--------|------------|  
 | [김준건 (jgkim14)](https://github.com/jgkim14) | 백엔드 | Spring Boot |  
 | [서정훈 (CutTheWire)](https://github.com/CutTheWire) | 백엔드, AI | Spring Boot, FastAPI, PyTorch |  
-| [이준호 (qwer9679)](https://github.com/qwer9679) | 백엔드, AI | Spring Boot, FastAPI, PyTorch |  
+| [이준호 (qwer9679)](https://github.com/qwer9679) | 백엔드 | Spring Boot, FastAPI |  
 | [모현준 (Flattt12)](https://github.com/Flattt12) | 백엔드 | Spring Boot |  
 | [권재현 (donismoney)](https://github.com/donismoney) | 백엔드 | Spring Boot |  
-| [오동현 (zbezdac1f)](https://github.com/zbezdac1f) | 백엔드 | Spring Boot |  
+| [오동현 (zbezdac1f)](https://github.com/zbezdac1f) , [(odh1231)](https://github.com/odh1231) | 백엔드 | Spring Boot |  
 | [백성현 (Seonghyeon8983)](https://github.com/Seonghyeon8983) | 프론트엔드 | React, TypeScript |  
 | [손유노 (GingGang)](https://github.com/GingGang) | 프론트엔드 | React, TypeScript |  
 
