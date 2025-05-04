@@ -6,8 +6,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-    
-
+  --base-font-size: 0.875rem; /* 기본 폰트 크기를 줄임 (14px) */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,4 +20,22 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  font-size: var(--base-font-size); /* 기본 폰트 크기 적용 */
+}
+
+@media (min-width: 2560px) {
+  :root {
+    --base-font-size: 1.5rem; /* QHD 환경에서 폰트 크기 */
+  }
+}
+
+@media (min-width: 3840px) {
+  :root {
+    --base-font-size: 2rem; /* UHD 환경에서 폰트 크기 */
+  }
+}
+
+/* ChatContainer 내부 폰트 크기는 유지 */
+.chat-container {
+  font-size: 1rem !important; /* ChatContainer의 폰트 크기를 고정 */
 }
