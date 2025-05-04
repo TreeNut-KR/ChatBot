@@ -165,6 +165,11 @@ const Login: React.FC = () => {
         setCookie('jwt-token', token);
         setCookie('user_id', Id);
         setCookie('user_name', name);
+
+        // chatlog_agree와 user_setting_agree를 true로 저장
+        setCookie('chatlog_agree', 'true');
+        setCookie('user_setting_agree', 'true');
+
         window.location.href = '/';
       } else {
         setError('로그인 실패. 다시 시도해 주세요.');

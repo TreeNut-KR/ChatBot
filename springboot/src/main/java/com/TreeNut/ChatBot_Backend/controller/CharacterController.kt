@@ -20,6 +20,8 @@ import reactor.core.publisher.Mono
 
 import java.io.File
 import javax.imageio.ImageIO
+import org.springframework.beans.factory.annotation.Autowired
+import java.nio.file.Files
 
 @RestController
 @RequestMapping("/server/character")
@@ -32,7 +34,6 @@ class CharacterController(
 ) {
     @PostMapping("/add")
     fun addCharacter(
-        @RequestParam("file", required = false) file: MultipartFile?,
         @RequestBody body: Map<String, Any>,
         @RequestHeader("Authorization") authorization: String?
     ): Mono<ResponseEntity<Map<String, Any>>> {
@@ -57,26 +58,7 @@ class CharacterController(
             ?: return Mono.just(ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Access level is required" as Any)))
 
         // 이미지 URL 설정
-        var imageUrl = body["image"] as? String
-
-        // 파일이 존재하면 업로드 처리
-        if (file != null) {
-            // 임시 파일 생성
-            val tempFile = File.createTempFile("upload", ".png")
-            try {
-                // 이미지를 PNG로 변환하여 임시 파일에 저장
-                val image = ImageIO.read(file.inputStream)
-                ImageIO.write(image, "png", tempFile)
-
-                // Google Drive에 이미지 업로드
-                imageUrl = googleDriveService.uploadImageAndGetLink(tempFile.absolutePath)
-                // 임시 파일 삭제
-                tempFile.delete()
-            } catch (e: Exception) {
-                e.printStackTrace() // 예외 로그 출력
-                return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("status" to 500, "message" to "Error during image upload: ${e.message}" as Any)))
-            }
-        }
+        val imageUrl = body["image"] as? String
 
         return try {
             // 캐릭터 객체 생성
@@ -382,38 +364,19 @@ class CharacterController(
     }
 
     @PostMapping("/upload_png_image")
-    fun uploadPngImage(
-        @RequestParam("file") file: MultipartFile,
-        @RequestHeader("Authorization") authorization: String?
+    fun uploadCharacterImage(
+        @RequestParam("file") file: MultipartFile
     ): ResponseEntity<Map<String, Any>> {
-        val token = authorization?.substringAfter("Bearer ")
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
-
-        // JWT에서 사용자 ID 추출
-        val userid = tokenAuth.authGuard(token)
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
-
-        // 파일 확장자 확인
-        if (file.contentType != "image/png") {
-            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Only PNG files are allowed"))
-        }
-
-        // 임시 파일 생성
-        val tempFile = File.createTempFile("upload", ".png")
-        file.inputStream.use { inputStream ->
-            tempFile.outputStream().use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
-
         return try {
-            // Google Drive에 이미지 업로드
+            // 임시 파일로 저장
+            val tempFile = Files.createTempFile("upload_", ".png").toFile()
+            file.transferTo(tempFile)
+            // 구글 드라이브 업로드
             val imageUrl = googleDriveService.uploadImageAndGetLink(tempFile.absolutePath)
-            // 임시 파일 삭제
-            tempFile.delete()
+            tempFile.delete() // 임시 파일 삭제
             ResponseEntity.ok(mapOf("status" to "success", "url" to imageUrl))
         } catch (e: Exception) {
-            ResponseEntity.status(500).body(mapOf("status" to "error", "message" to (e.message ?: "An error occurred")))
+            ResponseEntity.status(500).body(mapOf("status" to "fail", "message" to (e.message ?: "이미지 업로드 실패")))
         }
     }
 

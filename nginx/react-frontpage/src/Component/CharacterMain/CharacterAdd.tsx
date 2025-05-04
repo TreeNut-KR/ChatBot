@@ -9,19 +9,27 @@ const CharacterAdd: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(() => {
+    return localStorage.getItem('uploadedCharacterImage') || null;
+  });
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const [characterData, setCharacterData] = useState({
     character_name: '',
     description: '',
     greeting: '',
     image: '',
     character_setting: '',
-    accessLevel: false
+    access_level: true
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setCharacterData({
@@ -33,6 +41,66 @@ const CharacterAdd: React.FC = () => {
         ...characterData,
         [name]: value
       });
+      if (name === 'image') {
+        setPreviewImage(null);
+      }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setSelectedFile(file);
+
+    // 미리보기
+    const reader = new FileReader();
+    reader.onloadend = () => setPreviewImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = async () => {
+    if (!selectedFile) return;
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const token = getCookie('jwt-token');
+      if (!token) {
+        setUploadError('로그인이 필요합니다.');
+        setUploading(false);
+        return;
+      }
+
+      const response = await axios.post(
+        'https://treenut.ddns.net/server/character/upload_png_image',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.data && response.data.url) {
+        setCharacterData({
+          ...characterData,
+          image: response.data.url
+        });
+        setPreviewImage(null);
+        setUploadedImageUrl(response.data.url);
+        localStorage.setItem('uploadedCharacterImage', response.data.url);
+      } else {
+        setUploadError('이미지 업로드에 실패했습니다.');
+      }
+    } catch (err: any) {
+      setUploadError(err.response?.data?.message || '이미지 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -42,7 +110,6 @@ const CharacterAdd: React.FC = () => {
     setError(null);
     
     try {
-      // JWT 토큰을 localStorage 대신 쿠키에서 가져옵니다.
       const token = getCookie('jwt-token');
       
       if (!token) {
@@ -57,20 +124,17 @@ const CharacterAdd: React.FC = () => {
           'Authorization': token
         }
       });
-      
-      if (response.data.status >= 200 && response.data.status < 300) {
+
+      if (response.status >= 200 && response.status < 300) {
         setSuccess('캐릭터가 성공적으로 추가되었습니다.');
-        // 폼 초기화
         setCharacterData({
           character_name: '',
           description: '',
           greeting: '',
           image: '',
           character_setting: '',
-          accessLevel: false
+          access_level: false
         });
-        
-        // 성공 메시지 표시 후 캐릭터 목록 페이지로 리디렉션
         setTimeout(() => {
           navigate('/character');
         }, 2000);
@@ -83,6 +147,10 @@ const CharacterAdd: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handleFormClick = () => {};
+
+  const storedPreview = localStorage.getItem('characterPreviewImage');
 
   return (
     <div className="flex flex-col items-center w-full h-full bg-[#1a1918]">
@@ -103,7 +171,11 @@ const CharacterAdd: React.FC = () => {
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="bg-[#2a2928] rounded-lg p-6">
+          <form
+            onSubmit={handleSubmit}
+            onClick={handleFormClick}
+            className="bg-[#2a2928] rounded-lg p-6"
+          >
             <div className="mb-4">
               <label htmlFor="character_name" className="block text-white font-medium mb-2">
                 캐릭터 이름
@@ -164,18 +236,74 @@ const CharacterAdd: React.FC = () => {
                 className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#3b7cc9]"
                 placeholder="이미지 URL을 입력하세요"
               />
-              {characterData.image && (
+              {(previewImage || storedPreview || uploadedImageUrl || characterData.image) && (
                 <div className="mt-2">
                   <img 
-                    src={characterData.image} 
+                    key={previewImage ? 'preview' : storedPreview || uploadedImageUrl || characterData.image}
+                    src={
+                      previewImage ||
+                      storedPreview ||
+                      (uploadedImageUrl
+                        ? `${uploadedImageUrl}${uploadedImageUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
+                        : characterData.image
+                          ? `${characterData.image}${characterData.image.includes('?') ? '&' : '?'}t=${Date.now()}`
+                          : '')
+                    } 
                     alt="캐릭터 미리보기" 
                     className="w-24 h-24 rounded-full object-cover border-2 border-[#3b7cc9]"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/default-character.png';
                     }}
                   />
+                  {previewImage && (
+                    <div className="text-xs text-gray-400 mt-1">업로드 전 미리보기</div>
+                  )}
+                  {!previewImage && (storedPreview || uploadedImageUrl || characterData.image) && (
+                    <div className="text-xs text-gray-400 mt-1">업로드된 이미지</div>
+                  )}
                 </div>
               )}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-white font-medium mb-2">
+                캐릭터 이미지 업로드
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/png"
+                  onChange={handleFileChange}
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 rounded-lg bg-[#444] text-white hover:bg-[#3b7cc9] transition-colors duration-150"
+                >
+                  이미지 선택
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleImageUpload();
+                    if (previewImage) {
+                      localStorage.setItem('characterPreviewImage', previewImage);
+                      setPreviewImage(null);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded-lg transition-colors duration-150 ml-2
+                    ${uploading ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-[#3b7cc9] text-white hover:bg-[#2d62a0]'}`}
+                  disabled={uploading}
+                >
+                  업로드
+                </button>
+                {uploadError && (
+                  <span className="text-red-400 text-sm ml-2">{uploadError}</span>
+                )}
+              </div>
+              <p className="text-gray-400 text-xs mt-1">PNG 파일만 업로드 가능합니다.</p>
             </div>
             
             <div className="mb-4">
@@ -197,8 +325,8 @@ const CharacterAdd: React.FC = () => {
               <label className="flex items-center text-white font-medium cursor-pointer">
                 <input
                   type="checkbox"
-                  name="accessLevel"
-                  checked={characterData.accessLevel}
+                  name="access_level"
+                  checked={characterData.access_level}
                   onChange={handleChange}
                   className="mr-2 h-5 w-5 rounded accent-[#3b7cc9]"
                 />

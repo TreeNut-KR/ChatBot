@@ -44,6 +44,8 @@ const Resister: React.FC = () => {
         pw: password,
         name: username,
         email: email,
+        chatlog_agree: true,         // chatlog_agree를 true로 추가
+        user_setting_agree: true,    // user_setting_agree를 true로 추가
       });
 
       if (response.status === 200) {

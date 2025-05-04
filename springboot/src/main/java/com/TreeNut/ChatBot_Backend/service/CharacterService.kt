@@ -21,12 +21,14 @@ import com.google.auth.oauth2.GoogleCredentials
 import com.google.api.client.http.FileContent
 import java.io.ByteArrayInputStream
 import java.nio.file.Files
+import java.io.File 
 import java.nio.file.Paths
 import java.nio.charset.StandardCharsets
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
 import io.jsonwebtoken.Jwts
 import jakarta.servlet.http.HttpServletRequest
 import reactor.core.publisher.Mono
+import org.springframework.beans.factory.annotation.Value
 
 @Service
 class CharacterService(
@@ -242,23 +244,18 @@ class CharacterService(
 
 //이미지 업로드 서비스를 위한 클래스
 @Service
-class GoogleDriveService {
+class GoogleDriveService(
+    @Value("\${GOOGLE_APPLICATION_CREDENTIALS_JSON_CONTENT}") private val jsonKeyContent: String
+) {
     private val APPLICATION_NAME = "Chatbot Character Image"
-    //Drive 객체 초기화
+
     private val driveService: Drive by lazy {
-        val jsonKeyFilePath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
-            ?: throw RuntimeException("Environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON is not set")
-        val jsonKey = Files.readString(Paths.get(jsonKeyFilePath))
-
         val credentials: GoogleCredentials = try {
-            // JSON 문자열을 InputStream으로 변환
-            val stream = ByteArrayInputStream(jsonKey.toByteArray(StandardCharsets.UTF_8))
-
-            // GoogleCredentials 객체 생성
+            val stream = ByteArrayInputStream(jsonKeyContent.toByteArray(StandardCharsets.UTF_8))
             GoogleCredentials.fromStream(stream).createScoped(listOf("https://www.googleapis.com/auth/drive.file"))
         } catch (e: Exception) {
             e.printStackTrace()
-            throw RuntimeException("Failed to create GoogleCredentials", e)
+            throw RuntimeException("Failed to create GoogleCredentials from env content", e)
         }
 
         Drive.Builder(
@@ -268,22 +265,28 @@ class GoogleDriveService {
         ).setApplicationName(APPLICATION_NAME).build()
     }
 
-    fun uploadImageAndGetLink(imagePath: String): String {
+       fun uploadImageAndGetLink(imagePath: String): String {
         val fileMetadata = DriveFile().apply {
-            name = "uploaded_image.jpg" // 원하는 파일 이름
+            name = "uploaded_image.jpg"
             mimeType = "image/jpeg"
         }
-
+    
         val filePath = java.io.File(imagePath)
         val mediaContent = FileContent("image/jpeg", filePath)
-
+    
         val file: DriveFile = driveService.files().create(fileMetadata, mediaContent)
             .setFields("id")
             .execute()
+    
+        val permission = Permission()
+            .setType("anyone") // ← 모든 사용자에게 공개
+            .setRole("reader")
 
-        // 파일 공유 설정 (모두에게 읽기 권한 부여)
-        driveService.permissions().create(file.id, Permission().setType("anyone").setRole("reader")).execute()
-
+        driveService.permissions()
+            .create(file.id, permission)
+            .setSendNotificationEmail(false)
+            .execute()
+    
         return "https://drive.google.com/uc?id=${file.id}"
     }
 }

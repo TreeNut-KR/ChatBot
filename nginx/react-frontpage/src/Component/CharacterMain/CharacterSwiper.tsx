@@ -26,6 +26,17 @@ const CharacterSwiper: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // 이미지 URL 변환 함수 추가
+  const getImageUrl = (image: string) => {
+    if (!image) return '/default-character.png';
+    // 이미지id만 남기고 변환
+    const match = image.match(/([a-zA-Z0-9_-]{20,})$/);
+    if (match) {
+      return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+    return image;
+  };
+
   useEffect(() => {
     const fetchCharacters = async () => {
       try {
@@ -79,7 +90,7 @@ const CharacterSwiper: React.FC = () => {
         >
           <div className="character-image-container">
             <img
-              src={character.image || '/default-character.png'}
+              src={getImageUrl(character.image)}
               alt={character.characterName}
               className="character-image"
             />
