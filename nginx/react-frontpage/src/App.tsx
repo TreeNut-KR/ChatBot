@@ -8,6 +8,7 @@ import CharacterChat from './Pages/CharacterChat';
 import Profile from './Component/Profile/Profile';
 import CharacterChatRoom from './Pages/CharacterChatRoom';
 import CharacterAdd from './Component/CharacterMain/CharacterAdd';
+import PrivacyConsent from './Component/Resister/PrivacyConsentProps';
 
 const App: React.FC = () => {
   return (
@@ -25,6 +26,7 @@ const App: React.FC = () => {
             <Route path="/resister" element={<Resister />} />
             <Route path="/profile" element={<Profile />} />
             <Route path='/characterAdd' element={<CharacterAdd />} />
+            <Route path="/privacy" element={<PrivacyConsent />} />
           </Routes>
         </div>
       </div>
