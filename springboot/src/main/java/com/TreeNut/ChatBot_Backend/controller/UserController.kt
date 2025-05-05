@@ -41,10 +41,11 @@ class UserController(
         val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
-        val chatlogAgree = body["chatlog_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Chatlog agreement is required"))
-        val userSettingAgree = body["user_setting_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User setting agreement is required"))
+        // val chatlogAgree = body["chatlog_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Chatlog agreement is required"))
+        // val userSettingAgree = body["user_setting_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User setting agreement is required"))
 
-        val user = User(userid = userid, username = username, email = email, password = password, chatlog_agree = chatlogAgree.toBoolean(), user_setting_agree = userSettingAgree.toBoolean())
+        //val user = User(userid = userid, username = username, email = email, password = password, chatlog_agree = chatlogAgree.toBoolean(), user_setting_agree = userSettingAgree.toBoolean())
+        val user = User(userid = userid, username = username, email = email, password = password)
         val registeredUser = userService.register(user)
 
         val token = tokenAuth.generateToken(registeredUser.userid)
@@ -215,17 +216,17 @@ class UserController(
         }
     }
 
-    @PostMapping("/updateAgree")
-    fun updateAgree(@RequestBody body: Map<String, Boolean>, @RequestHeader("Authorization") userToken: String): ResponseEntity<Map<String, Any>> {
-        val userid = userService.getUserid(userToken)
-        val chatlogAgree = body["chatlog_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Chatlog agreement is required"))
-        val userSettingAgree = body["user_setting_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User setting agreement is required"))
+    // @PostMapping("/updateAgree")
+    // fun updateAgree(@RequestBody body: Map<String, Boolean>, @RequestHeader("Authorization") userToken: String): ResponseEntity<Map<String, Any>> {
+    //     val userid = userService.getUserid(userToken)
+    //     val chatlogAgree = body["chatlog_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Chatlog agreement is required"))
+    //     val userSettingAgree = body["user_setting_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User setting agreement is required"))
 
-        return try {
-            val updatedUser = userService.updateUserAgreement(userid, chatlogAgree, userSettingAgree)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to "Agreements updated successfully"))
-        } catch (e: Exception) {
-            ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
-        }
-    }
+    //     return try {
+    //         val updatedUser = userService.updateUserAgreement(userid, chatlogAgree, userSettingAgree)
+    //         ResponseEntity.ok(mapOf("status" to 200, "message" to "Agreements updated successfully"))
+    //     } catch (e: Exception) {
+    //         ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
+    //     }
+    // }
 }
