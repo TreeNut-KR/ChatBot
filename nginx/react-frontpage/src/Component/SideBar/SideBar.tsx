@@ -138,7 +138,7 @@ const Sidebar: React.FC = () => {
                   <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">로그인</span>
                 </button>
                 <button
-                  onClick={() => handleNavigation('/resister')}
+                  onClick={() => handleNavigation('/privacy')}
                   className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
                 >
                   <span className="flex justify-center items-center w-full h-full">
