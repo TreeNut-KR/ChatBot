@@ -17,8 +17,8 @@ CREATE TABLE users (
     login_type ENUM('LOCAL', 'KAKAO', 'GOOGLE') DEFAULT 'LOCAL',
     manager_boolean BOOLEAN,
     membership ENUM('BASIC', 'VIP') DEFAULT 'BASIC',
-    chatlog_agree BOOLEAN DEFAULT FALSE,
-    user_setting_agree BOOLEAN DEFAULT FALSE,
+    -- chatlog_agree BOOLEAN DEFAULT FALSE,
+    -- user_setting_agree BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (idx)
