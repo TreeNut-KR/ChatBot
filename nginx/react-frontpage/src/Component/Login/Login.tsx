@@ -69,7 +69,7 @@ const handleGoogleSocialLogin = async (code: string, setError: (msg: string) => 
       (
         error.response.data.error === 'invalid_grant' ||
         (typeof error.response.data.error_description === 'string' &&
-         error.response.data.error_description.includes('already redeemed'))
+          error.response.data.error_description.includes('already redeemed'))
       )
     ) {
       setError('구글 인가코드가 이미 사용되었습니다. 다시 로그인 해주세요.');

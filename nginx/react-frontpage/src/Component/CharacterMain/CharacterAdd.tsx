@@ -57,6 +57,14 @@ const CharacterAdd: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
+
+    // 파일 크기 제한 (예: 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setUploadError('파일 크기가 5MB를 초과할 수 없습니다.');
+      return;
+    }
+
     setSelectedFile(file);
 
     // 미리보기
@@ -82,7 +90,7 @@ const CharacterAdd: React.FC = () => {
       }
 
       const response = await axios.post(
-        'https://treenut.ddns.net/server/character/upload_png_image',
+        '/server/character/upload_png_image',
         formData,
         {
           headers: {
@@ -132,7 +140,7 @@ const CharacterAdd: React.FC = () => {
         formData.append('file', selectedFile);
 
         const uploadResponse = await axios.post(
-          'https://treenut.ddns.net/server/character/upload_png_image',
+          '/server/character/upload_png_image',
           formData,
           {
             headers: {

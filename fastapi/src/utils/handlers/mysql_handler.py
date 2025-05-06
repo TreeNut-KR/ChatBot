@@ -55,17 +55,6 @@ class MySQLDBHandler:
         tables = await self.fetch_all(query)
         return [table[f'Tables_in_{os.getenv("MYSQL_DATABASE")}'] for table in tables]
 
-    async def get_userid(self, email: str) -> str:
-        '''
-        이메일로 사용자 ID 조회
-        '''
-        query = """
-            SELECT userid FROM users
-            WHERE email = :email
-        """
-        result = await self.fetch_all(query, {'email': email})
-        return result[0]['userid'] if result else None
-    
     async def get_membership_by_userid(self, userid: str) -> str:
         '''
         userid로 membership 등급(BASIC, VIP) 조회
@@ -112,7 +101,7 @@ class MySQLDBHandler:
                 'expiration_time': expiration_time
             })
 
-    async def code_verification(self, code: str, userid: str) -> str:
+    async def code_verification(self, code: str, userid: str, email: str) -> str:
         '''
         인증 코드 검증 및 만료 여부 확인
         '''
@@ -145,10 +134,11 @@ class MySQLDBHandler:
             await self.execute(delete_query, {'userid': userid})
             update_membership_query = """
                 UPDATE users
-                SET membership = 'VIP'
+                SET membership = 'VIP',
+                    email = :email
                 WHERE userid = :userid
             """
-            await self.execute(update_membership_query, {'userid': userid})
+            await self.execute(update_membership_query, {'userid': userid, 'email': email})
 
             return "success"
         else:

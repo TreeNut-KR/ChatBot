@@ -6,6 +6,18 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+// 쿠키에서 값을 읽어오는 함수
+const getCookieValue = (name: string): string => {
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=');
+    if (cookieName === name) {
+      return decodeURIComponent(cookieValue);
+    }
+  }
+  return '';
+};
+
 // Character 인터페이스 정의
 interface Character {
   idx: number;
@@ -15,7 +27,6 @@ interface Character {
   image: string;
   greeting?: string;
   creator?: string;
-  // 필요한 다른 속성들도 추가할 수 있습니다.
 }
 
 // Message 인터페이스 정의
@@ -37,6 +48,7 @@ const CharacterChatRoom: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [selectedModel, setSelectedModel] = useState('gpt4.1'); // 기본 모델 설정
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 새로운 메시지가 추가될 때 스크롤 아래로 이동
@@ -52,45 +64,34 @@ const CharacterChatRoom: React.FC = () => {
   useEffect(() => {
     const fetchCharacterDetails = async () => {
       try {
-        const publicResponse = await axios.get('/server/character/public');
-        const publicData = publicResponse.data;
+        const jwtToken = getCookieValue('jwt-token'); // 쿠키에서 JWT 토큰 가져오기
 
-        console.log('API Public Characters:', publicData.data);
-        console.log('UUID Comparison:', {
-          urlUuid: decodedUuid,
-          foundCharacter: publicData.data.find((char: { uuid: string }) => 
-            char.uuid.toLowerCase() === decodedUuid.toLowerCase()
-          )
+        // UUID를 기반으로 character_idx 및 채팅 로그 가져오기
+        const logsResponse = await axios.get(`/server/chatroom/character/${decodedUuid}/load_logs`, {
+          headers: {
+            Authorization: jwtToken,
+          },
         });
+        const logsData = logsResponse.data;
 
-        if (!publicData || !publicData.data) {
-          throw new Error('캐릭터 목록을 가져오는데 실패했습니다.');
-        }
-
-        // 타입 명시적으로 지정
-        const characterInfo = publicData.data.find(
-          (char: { uuid: string; idx?: number }) => 
-            char.uuid.toLowerCase() === decodedUuid.toLowerCase()
-        );
-        console.log('Found character by UUID:', characterInfo);
-
-        if (!characterInfo || !characterInfo.idx) {
+        if (!logsData || logsData.status !== 200 || !logsData.logs || !logsData.logs.character_idx) {
           setDebugInfo({
             uuidFromUrl: decodedUuid,
-            publicData: publicData.data,
-            foundCharacter: characterInfo,
+            logsResponse: logsData,
           });
-          throw new Error('요청한 캐릭터를 찾을 수 없습니다.');
+          throw new Error('캐릭터 로그 정보를 가져오는데 실패했습니다.');
         }
 
-        const detailsResponse = await axios.get(`/server/character/details/idx/${characterInfo.idx}`);
+        const characterIdx = logsData.logs.character_idx;
+
+        // character_idx를 사용하여 캐릭터 상세 정보 가져오기
+        const detailsResponse = await axios.get(`/server/character/details/idx/${characterIdx}`);
         const detailsData = detailsResponse.data;
 
         if (!detailsData) {
           setDebugInfo({
             uuidFromUrl: decodedUuid,
-            publicData: publicData.data,
-            foundCharacter: characterInfo,
+            logsResponse: logsData,
             detailsResponse: detailsResponse,
           });
           throw new Error('캐릭터 상세 정보를 가져오는데 실패했습니다.');
@@ -98,17 +99,35 @@ const CharacterChatRoom: React.FC = () => {
 
         setCharacter(detailsData);
 
+        // 채팅 로그를 메시지 배열로 변환
+        const chatLogs = Array.isArray(logsData.logs.value)
+          ? logsData.logs.value.map((log: any, idx: number) => [
+              {
+                id: log.index * 2 - 1,
+                sender: 'user',
+                content: log.input_data,
+                timestamp: log.timestamp,
+              },
+              {
+                id: log.index * 2,
+                sender: 'character',
+                content: log.output_data,
+                timestamp: log.timestamp,
+              },
+            ]).flat()
+          : [];
+
+        // greeting이 있으면 제일 앞에 추가
         if (detailsData.greeting) {
-          setMessages([
-            {
-              id: 1,
-              sender: 'character',
-              content: detailsData.greeting,
-              timestamp: new Date().toISOString(),
-            },
-          ]);
+          chatLogs.unshift({
+            id: 0,
+            sender: 'character',
+            content: detailsData.greeting,
+            timestamp: new Date().toISOString(),
+          });
         }
 
+        setMessages(chatLogs);
         setLoading(false);
       } catch (err: any) {
         setDebugInfo({
@@ -125,30 +144,53 @@ const CharacterChatRoom: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-
+  
     const userMessage: Message = {
       id: Date.now(),
       sender: 'user',
       content: newMessage,
       timestamp: new Date().toISOString(),
     };
-
+  
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setNewMessage('');
-
+  
     try {
-      const response = await axios.post('/server/chat/message', {
-        characterId: character?.idx,
-        message: newMessage,
-      });
-
+      const jwtToken = getCookieValue('jwt-token');
+      if (!jwtToken) {
+        throw new Error('로그인이 필요합니다.');
+      }
+  
+      const response = await axios.post(
+        `/server/chatroom/character/${decodedUuid}/get_response`,
+        {
+          input_data_set: newMessage,
+          route_set: selectedModel,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
+      // 응답에서 여러 필드 중 실제 답변이 있는 곳을 우선적으로 사용
+      const data = response.data;
+      const answer =
+        data.response ||
+        data.output_data ||
+        data.result ||
+        data.message ||
+        '응답을 받지 못했습니다.';
+  
       const characterResponse: Message = {
         id: Date.now() + 1,
         sender: 'character',
-        content: response.data.response || '응답을 받지 못했습니다.',
+        content: answer,
         timestamp: new Date().toISOString(),
       };
-
+  
       setMessages((prevMessages) => [...prevMessages, characterResponse]);
     } catch (err) {
       console.error('메시지 전송 중 오류가 발생했습니다:', err);
@@ -166,12 +208,7 @@ const CharacterChatRoom: React.FC = () => {
   const MarkdownRenderer = ({ content }: { content: string }) => (
     <ReactMarkdown
       components={{
-        code({ node, inline, className, children, ...props }: {
-          node?: any;
-          inline?: boolean;
-          className?: string;
-          children?: React.ReactNode;
-        }) {
+        code({ node, inline, className, children, ...props }: any) {
           const match = /language-(\w+)/.exec(className || '');
           return !inline && match ? (
             <SyntaxHighlighter
@@ -288,13 +325,7 @@ const CharacterChatRoom: React.FC = () => {
                     {new Date(message.timestamp).toLocaleTimeString()}
                   </div>
                 </div>
-                {message.sender === 'user' && (
-                  <img
-                    src="/user-avatar.png"
-                    alt="You"
-                    className="w-8 h-8 rounded-full object-cover ml-2"
-                  />
-                )}
+                {message.sender === 'user'}
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -306,7 +337,8 @@ const CharacterChatRoom: React.FC = () => {
               <select
                 aria-label="Select AI model"
                 className="p-3 rounded-l-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
-                // 필요하다면 value, onChange 핸들러 추가
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)} // 선택된 모델 값 업데이트
               >
                 <option value="Llama">Llama</option>
                 <option value="gpt4.1">GPT4.1</option>

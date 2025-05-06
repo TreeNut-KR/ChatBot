@@ -196,23 +196,27 @@ class UserController(
         return ResponseEntity.ok(mapOf("status" to 200, "membership" to membership))
     }
 
-    @PostMapping("/membership/update")
-    fun updateMembership(
-        @RequestHeader("Authorization") userToken: String,
-        @RequestBody body: Map<String, String>
+    @PostMapping("/email/Verification")
+    fun emailVerification(
+        @RequestBody body: Map<String, String>,
+        @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Map<String, Any>> {
         val userid = userService.getUserid(userToken)
-        val newMembership = body["membership"]
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Membership is required"))
+        val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
+        val result = userService.requestEmailVerification(email, userid)
+        return ResponseEntity.ok(result)
+    }
 
-        return try {
-            val updatedUser = userService.updateMembership(userid, newMembership)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to "Membership updated successfully", "membership" to updatedUser.membership))
-        } catch (e: IllegalArgumentException) {
-            ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Invalid membership type"))
-        } catch (e: Exception) {
-            ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
-        }
+    @PostMapping("/email/verify-code")
+    fun verifyEmailCode(
+        @RequestBody body: Map<String, String>,
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Map<String, Any>> {
+        val userid = userService.getUserid(userToken)
+        val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
+        val code = body["code"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Code is required"))
+        val result = userService.verifyEmailCode(userid, email, code)
+        return ResponseEntity.ok(result)
     }
 
     @PostMapping("/updateAgree")

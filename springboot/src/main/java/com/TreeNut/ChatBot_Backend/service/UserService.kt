@@ -79,7 +79,8 @@ class UserService(
                 userid = userId,
                 username = username,
                 email = email ?: "",
-                loginType = LoginType.GOOGLE
+                loginType = LoginType.GOOGLE,
+                membership = MembershipType.VIP // 구글 회원가입 시 VIP로 설정
             )).also {
                 logger.info("신규 회원 저장 성공: $userId")
                 // 트랜잭션 커밋 확인을 위한 추가 조회
@@ -279,5 +280,59 @@ class UserService(
             ?: throw RuntimeException("User not found")
         val updatedUser = user.copy(membership = MembershipType.valueOf(membership.uppercase()))
         return userRepository.save(updatedUser)
+    }
+
+    fun requestEmailVerification(email: String, userid: String): Map<String, Any> {
+        return try {
+            val response = webClientBuilder.build()
+                .post()
+                .uri("/auth/send-verification")
+                .header("Content-Type", "application/json")
+                .bodyValue(mapOf("email" to email, "user_id" to userid))
+                .retrieve()
+                .bodyToMono(Map::class.java)
+                .block() as? Map<String, Any>
+                ?: mapOf("status" to "exception", "message" to "No response from FastAPI")
+
+            return when (response["status"]) {
+                "success" -> mapOf(
+                    "status" to "success",
+                    "message" to (response["message"] ?: "인증 코드가 전송되었습니다.")
+                )
+                else -> mapOf(
+                    "status" to "exception",
+                    "message" to (response["message"] ?: response["detail"] ?: "이메일 인증 요청 실패")
+                )
+            }
+        } catch (e: Exception) {
+            mapOf("status" to "exception", "message" to "FastAPI 연동 오류: ${e.message}")
+        }
+    }
+
+    fun verifyEmailCode(userid: String, email: String, code: String): Map<String, Any> {
+        return try {
+            val response = webClientBuilder.build()
+                .post()
+                .uri("/auth/verify-code")
+                .header("Content-Type", "application/json")
+                .bodyValue(mapOf("user_id" to userid, "email" to email, "code" to code))
+                .retrieve()
+                .bodyToMono(Map::class.java)
+                .block() as? Map<String, Any>
+                ?: mapOf("status" to "exception", "message" to "No response from FastAPI")
+
+            return when (response["status"]) {
+                "success" -> mapOf(
+                    "status" to "success",
+                    "message" to (response["message"] ?: "이메일 인증이 완료되었습니다.")
+                )
+                else -> mapOf(
+                    "status" to "exception",
+                    "message" to (response["message"] ?: response["detail"] ?: "이메일 인증 실패")
+                )
+            }
+        } catch (e: Exception) {
+            mapOf("status" to "exception", "message" to "FastAPI 연동 오류: ${e.message}")
+        }
     }
 }
