@@ -1,10 +1,29 @@
 .character-grid-container {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 한 행에 4개 */
-  gap: 20px; /* 카드 간 간격 */
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 최대 4열 고정 */
+  gap: 20px;
   padding: 20px;
   max-width: 1000px;
-  margin: 0 auto; /* 좌우 여백 */
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .character-grid-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .character-grid-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .character-grid-container {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }
 
 .character-card {

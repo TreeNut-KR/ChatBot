@@ -6,6 +6,7 @@ import com.TreeNut.ChatBot_Backend.model.Officeroom
 import com.TreeNut.ChatBot_Backend.repository.ChatroomRepository
 import com.TreeNut.ChatBot_Backend.repository.OfficeroomRepository
 import com.TreeNut.ChatBot_Backend.repository.UserRepository
+import com.TreeNut.ChatBot_Backend.repository.CharacterRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
@@ -24,6 +25,7 @@ class RoomService(
     private val chatroomRepository: ChatroomRepository,
     private val officeroomRepository: OfficeroomRepository,
     private val userRepository: UserRepository,
+    private val characterRepository: CharacterRepository,
     private val webClient: WebClient.Builder,
     @Value("\${ai.server.url}")  private val pythonServerUrl: String
 ) {
@@ -397,33 +399,57 @@ class RoomService(
     }
 
     fun findCharacterRoomUUIDByUserId(userid: String): Flux<Map<String, Any>> {
-        // userid를 통해 mongo_chatroomid를 조회
         return Flux.fromIterable(
             chatroomRepository.findAll()
                 .filter { it.userid == userid }
                 .mapNotNull { it.mongo_chatroomid }
                 .map { roomid ->
-                    // roomid에 대한 첫 번째 채팅 메시지 조회
                     loadCharacterRoomLogs(userid, roomid)
-                        .map { chatLog ->
-                            val messages = chatLog["value"] as? List<Map<String, Any>> // 'value' 키로 접근
+                        .flatMap { chatLog ->
+                            val messages = chatLog["value"] as? List<Map<String, Any>>
                             val Title = messages?.firstOrNull { it["index"] == 1 }?.get("input_data") as? String ?: ""
-
-                            // inputData의 글자 수가 10글자 이상일 경우 처리
                             val formattedTitle = if (Title.length > 10) {
                                 Title.substring(0, 10) + "..."
                             } else {
                                 Title
                             }
+                            val characterIdx = (chatLog["character_idx"] as? Number)?.toLong()
+                            val character = try {
+                                characterIdx?.let { characterRepository.findById(it).orElse(null) }
+                            } catch (e: Exception) {
+                                null
+                            }
+                            val characterName = character?.characterName ?: ""
+                            val characterImg = character?.image ?: ""
+                            Mono.just(
+                                mapOf(
+                                    "roomid" to roomid,
+                                    "Title" to formattedTitle,
+                                    "character_name" to characterName,
+                                    "character_img" to characterImg
+                                )
+                            )
+                        }
+                        .onErrorReturn(
                             mapOf(
                                 "roomid" to roomid,
-                                "Title" to formattedTitle
+                                "Title" to "",
+                                "character_name" to "",
+                                "character_img" to ""
                             )
-                        }.defaultIfEmpty(mapOf("roomid" to roomid, "Title" to ""))
+                        )
+                        .defaultIfEmpty(
+                            mapOf(
+                                "roomid" to roomid,
+                                "Title" to "",
+                                "character_name" to "",
+                                "character_img" to ""
+                            )
+                        )
                 }
         ).flatMap { it }
     }
-    
+
     fun loadCharacterRoomLogs(
         userid: String,
         mongo_chatroomid: String

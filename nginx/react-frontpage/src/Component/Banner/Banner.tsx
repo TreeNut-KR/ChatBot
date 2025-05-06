@@ -30,13 +30,6 @@ const Banner: React.FC = () => {
           </SwiperSlide>
         ))}
       </Swiper>
-
-      <div
-        className="absolute bottom-2 right-4 text-white bg-black bg-opacity-50 rounded px-3 py-1 text-sm z-10"
-        style={{ zIndex: 10 }} 
-      >
-        {currentIndex} / {slides.length}
-      </div>
     </div>
   );
 };
