@@ -4,14 +4,24 @@
     "description": "Admin Controller Server",
     "main": "server.js",
     "scripts": {
-      "start": "node server.js",
-      "build": "cd client && npm install && npm run build"
+        "start": "node server.js",
+        "build": "cd client && npm install && npm run build",
+        "dev": "nodemon server.js"
     },
     "dependencies": {
-      "express": "^4.17.1"
+        "cors": "^2.8.5",
+        "dotenv": "^16.5.0",
+        "express": "^4.17.1",
+        "express-fileupload": "^1.5.1",
+        "googleapis": "^148.0.0",
+        "multer": "^1.4.5-lts.2",
+        "mysql2": "^3.14.1",
+        "streamifier": "^0.1.1"
     },
-    "devDependencies": {},
+    "devDependencies": {
+        "nodemon": "^2.0.22"
+    },
     "engines": {
-      "node": ">=14"
+        "node": ">=14"
     }
-  }
+}

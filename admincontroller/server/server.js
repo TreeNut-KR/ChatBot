@@ -1,22 +1,132 @@
 const express = require('express');
 const path = require('path');
+require('dotenv').config({ 
+    path: path.join(__dirname, '.env')  // 현재 디렉토리의 .env 파일을 명시적으로 지정
+});
+const mysql = require('mysql2/promise');
+const driveService = require('./driveService');
+const multer = require('multer');
+const upload = multer();
+const fileUpload = require('express-fileupload');
 
 const app = express();
-const port = process.env.PORT || 5785;
+const port = process.env.PORT;
 
-// React 빌드 파일 제공
-app.use(express.static(path.join(__dirname, '../client/build')));
-
-// API 엔드포인트 예시
-app.get('/api/data', (req, res) => {
-  res.json({ message: 'Hello from API!' });
+// MySQL 연결 설정
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  port: process.env.MYSQL_PORT,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-// 모든 요청에 대해 React 앱 제공
+// MySQL 연결 테스트 및 재시도
+async function connectWithRetry(retryCount = 0, maxRetries = 30) {  // 최대 30회 시도
+  try {
+    const connection = await pool.getConnection();
+    console.log('MySQL 연결 성공!');
+    connection.release();
+    return true;
+  } catch (err) {
+    console.error(`MySQL 연결 실패 (시도 ${retryCount + 1}/${maxRetries}):`, err.message);
+    
+    if (retryCount < maxRetries) {
+      console.log('5초 후 재시도...');
+      await new Promise(resolve => setTimeout(resolve, 5000));  // 5초 대기
+      return connectWithRetry(retryCount + 1, maxRetries);
+    } else {
+      console.error('최대 재시도 횟수 초과. 서버를 종료합니다.');
+      process.exit(1);
+    }
+  }
+}
+
+// 서버 시작 전 DB 연결 확인
+async function startServer() {
+  await connectWithRetry();
+  
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+startServer();
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../client/build')));
+app.use(fileUpload());
+
+// MySQL 테스트 API 엔드포인트
+app.get('/api/users', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM users');
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// 파일 목록 조회
+app.get('/api/drive/files', async (req, res) => {
+  try {
+    console.log('파일 목록 조회 요청 받음');
+    const files = await driveService.listFiles();
+    res.json(files);
+  } catch (error) {
+    console.error('파일 목록 조회 처리 중 에러:', error);
+    res.status(500).json({ 
+      error: '파일 목록 조회 실패', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    });
+  }
+});
+
+// 파일 업로드
+app.post('/api/drive/upload', async (req, res) => {
+  try {
+    if (!req.files || !req.files.file) {
+      return res.status(400).json({ error: '파일이 없습니다' });
+    }
+
+    const file = req.files.file;
+    const result = await driveService.uploadFile(
+      file.data,
+      file.name,
+      file.mimetype
+    );
+    res.json(result);
+  } catch (error) {
+    console.error('파일 업로드 처리 중 에러:', error);
+    res.status(500).json({ error: '파일 업로드 실패', details: error.message, stack: error.stack });
+  }
+});
+
+// 파일 삭제
+app.delete('/api/drive/files/:fileId', async (req, res) => {
+  try {
+    await driveService.deleteFile(req.params.fileId);
+    res.json({ message: '파일이 삭제되었습니다' });
+  } catch (error) {
+    res.status(500).json({ error: '파일 삭제 실패' });
+  }
+});
+
+// 파일 정보 조회
+app.get('/api/drive/files/:fileId', async (req, res) => {
+  try {
+    const fileInfo = await driveService.getFileInfo(req.params.fileId);
+    res.json(fileInfo);
+  } catch (error) {
+    res.status(500).json({ error: '파일 정보 조회 실패' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/build/index.html'));
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
 });
