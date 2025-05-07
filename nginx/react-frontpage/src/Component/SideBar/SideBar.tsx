@@ -32,8 +32,8 @@ const Sidebar: React.FC = () => {
     // 인증 상태 업데이트
     setIsAuthenticated(false);
     
-    // 로그인 페이지로 리다이렉트
-    navigate('/login');
+    // 디폴트 페이지로 리다이렉트
+    navigate('/');
   };
 
   const handleMouseEnter = () => {
@@ -99,55 +99,30 @@ const Sidebar: React.FC = () => {
           </span>
           <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">프로필</span>
         </button>
-        {showAuthOptions && (
+        {showAuthOptions && isAuthenticated && (
           <div
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-[#161514] p-3 rounded-md shadow-lg z-50 border border-[#2A2927] flex gap-2"
           >
-            {isAuthenticated ? (
-              <>
-                <button
-                  onClick={() => handleNavigation('/profile')}
-                  className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
-                >
-                  <span className="flex justify-center items-center w-full h-full">
-                    <i className="fas fa-user fa-lg text-[#FFA500]"></i>
-                  </span>
-                  <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">개인정보</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
-                >
-                  <span className="flex justify-center items-center w-full h-full">
-                    <i className="fas fa-sign-out-alt fa-lg text-[#FFA500]"></i>
-                  </span>
-                  <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">로그아웃</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => handleNavigation('/login')}
-                  className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
-                >
-                  <span className="flex justify-center items-center w-full h-full">
-                    <i className="fas fa-sign-in-alt fa-lg text-[#FFA500]"></i>
-                  </span>
-                  <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">로그인</span>
-                </button>
-                <button
-                  onClick={() => handleNavigation('/privacy')}
-                  className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
-                >
-                  <span className="flex justify-center items-center w-full h-full">
-                    <i className="fas fa-user-plus fa-lg text-[#FFA500]"></i>
-                  </span>
-                  <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">회원가입</span>
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => handleNavigation('/profile')}
+              className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
+            >
+              <span className="flex justify-center items-center w-full h-full">
+                <i className="fas fa-user fa-lg text-[#FFA500]"></i>
+              </span>
+              <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">개인정보</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
+            >
+              <span className="flex justify-center items-center w-full h-full">
+                <i className="fas fa-sign-out-alt fa-lg text-[#FFA500]"></i>
+              </span>
+              <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">로그아웃</span>
+            </button>
           </div>
         )}
       </div>

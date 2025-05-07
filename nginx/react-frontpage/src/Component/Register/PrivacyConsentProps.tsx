@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { useNavigate } from 'react-router-dom';
+import Sidebar from '../SideBar/SideBar';
 
 interface PrivacyConsentProps {
   onAgree?: () => void;
@@ -123,6 +124,11 @@ const privacyMarkdown = `
 ---
 `;
 
+const setCookie = (name: string, value: string, days = 7) => {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/';
+};
+
 const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onAgree }) => {
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeAge, setAgreeAge] = useState(false);
@@ -131,53 +137,46 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onAgree }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (agreePrivacy && agreeAge) {
+      setCookie('agree_privacy', agreePrivacy ? '1' : '0');
+      setCookie('agree_age', agreeAge ? '1' : '0');
       navigate('/register');
       if (onAgree) onAgree();
     }
   };
 
+  const params = new URLSearchParams(window.location.search);
+  const isModal = params.get('modal') === '1';
+
   return (
-    <div className="flex flex-col items-center w-full h-full bg-[#1a1918] py-10">
-      <div className="w-full max-w-xl bg-[#2a2928] rounded-lg p-8 shadow-lg">
-        <h2 className="text-2xl font-bold text-white mb-6">약관 동의</h2>
-        <div className="mb-6 max-h-60 overflow-y-auto bg-[#232221] rounded p-4 text-gray-200 text-sm border border-[#3f3f3f] whitespace-pre-wrap font-sans">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkBreaks]}
-            rehypePlugins={[rehypeRaw]}
+    <div
+      className="fixed inset-0 flex flex-col bg-[#1a1918] text-white z-[9999]"
+      style={{
+        minHeight: '100vh',
+        minWidth: '100vw',
+        overflow: 'hidden',
+      }}
+    >
+      {/* 사이드바는 모달이 아닐 때만 렌더링 */}
+      {!isModal && <Sidebar />}
+      <main className="flex flex-1 w-full h-full items-center justify-center">
+        <div className="w-full max-w-2xl bg-[#2a2928] rounded-lg p-8 shadow-lg">
+          <h2 className="text-2xl font-bold text-white mb-6">약관 동의</h2>
+          <div
+            className="mb-10 bg-[#232221] rounded p-4 text-gray-200 text-sm border border-[#3f3f3f] whitespace-pre-wrap font-sans"
+            style={{
+              maxHeight: '28rem',
+              overflowY: 'auto',
+            }}
           >
-            {privacyMarkdown}
-          </ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkBreaks]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {privacyMarkdown}
+            </ReactMarkdown>
+          </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex items-center gap-2 text-white">
-            <input
-              type="checkbox"
-              checked={agreePrivacy}
-              onChange={e => setAgreePrivacy(e.target.checked)}
-              className="accent-[#3b7cc9] w-5 h-5"
-              required
-            />
-            개인정보처리방침에 동의합니다.
-          </label>
-          <label className="flex items-center gap-2 text-white">
-            <input
-              type="checkbox"
-              checked={agreeAge}
-              onChange={e => setAgreeAge(e.target.checked)}
-              className="accent-[#3b7cc9] w-5 h-5"
-              required
-            />
-            만 14세 이상입니다.
-          </label>
-          <button
-            type="submit"
-            disabled={!(agreePrivacy && agreeAge)}
-            className="mt-4 px-6 py-3 bg-[#3b7cc9] text-white rounded-lg hover:bg-[#2d62a0] disabled:bg-gray-500"
-          >
-            동의하고 계속하기
-          </button>
-        </form>
-      </div>
+      </main>
     </div>
   );
 };
