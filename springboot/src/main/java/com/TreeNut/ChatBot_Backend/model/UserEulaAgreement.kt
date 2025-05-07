@@ -14,10 +14,10 @@ data class UserEulaAgreement(
     val userid: String,
 
     @Column(nullable = false)
-    val agreement: String,
+    val privacy_policy: Boolean = true,
 
     @Column(nullable = false)
-    val agreed: Boolean = false,
+    val terms_of_service: Boolean = true,
 
     @Column(nullable = false)
     val agreedat: LocalDateTime = LocalDateTime.now()
