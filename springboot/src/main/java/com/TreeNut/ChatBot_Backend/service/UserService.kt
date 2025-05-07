@@ -255,16 +255,16 @@ class UserService(
         }
     }
 
-    @Transactional
-    fun updateUserAgreement(userid: String, chatlogAgree: Boolean, userSettingAgree: Boolean): User {
-        val user = userRepository.findByUserid(userid)
-            ?: throw RuntimeException("User not found")
-        val updatedUser = user.copy(
-            chatlog_agree = chatlogAgree,
-            user_setting_agree = userSettingAgree
-        )
-        return userRepository.save(updatedUser)
-    }
+    // @Transactional
+    // fun updateUserAgreement(userid: String, chatlogAgree: Boolean, userSettingAgree: Boolean): User {
+    //     val user = userRepository.findByUserid(userid)
+    //         ?: throw RuntimeException("User not found")
+    //     val updatedUser = user.copy(
+    //         chatlog_agree = chatlogAgree,
+    //         user_setting_agree = userSettingAgree
+    //     )
+    //     return userRepository.save(updatedUser)
+    // }
 
     @Transactional(readOnly = true)
     fun getMembership(userid: String): String {

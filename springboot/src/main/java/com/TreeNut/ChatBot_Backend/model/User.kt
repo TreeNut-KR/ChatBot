@@ -39,11 +39,11 @@ data class User(
     @Column(name = "membership", nullable = false)
     val membership: MembershipType = MembershipType.BASIC,
 
-    @Column(name = "chatlog_agree", nullable = false)
-    val chatlog_agree: Boolean = true,
+    // @Column(name = "chatlog_agree", nullable = false)
+    // val chatlog_agree: Boolean = true,
 
-    @Column(name = "user_setting_agree", nullable = false)
-    val user_setting_agree: Boolean = true,
+    // @Column(name = "user_setting_agree", nullable = false)
+    // val user_setting_agree: Boolean = true,
 
     @Column(name = "created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),
@@ -51,8 +51,8 @@ data class User(
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
-    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, MembershipType.BASIC, true, true, LocalDateTime.now(), LocalDateTime.now())
-
+    // constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, MembershipType.BASIC, true, true, LocalDateTime.now(), LocalDateTime.now())
+    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, MembershipType.BASIC, LocalDateTime.now(), LocalDateTime.now())
     @PreUpdate
     fun onUpdate() {
         updatedAt = LocalDateTime.now()
