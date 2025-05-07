@@ -68,7 +68,7 @@ const Sidebar: React.FC = () => {
         </div>
         <div className="mt-4 flex flex-col gap-5">
           <button
-            onClick={() => handleNavigation('/')}
+            onClick={() => handleNavigation('/home')}
             className="flex flex-col items-center text-white py-2"
           >
             <span className="p-2 hover:bg-[#2A2927] hover:rounded-md hover:text-[#FFA500] flex justify-center items-center w-10 h-10">
