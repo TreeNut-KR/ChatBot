@@ -23,17 +23,40 @@ function DriveManager() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [characterInfo, setCharacterInfo] = useState({}); // 이미지ID별 캐릭터 정보
 
   useEffect(() => {
     loadFiles();
   }, []);
 
+  // 파일 목록 불러오고, 각 파일의 이미지ID로 캐릭터 정보도 불러오기
   const loadFiles = async () => {
     try {
       setLoading(true);
       const response = await axios.get('/api/drive/files');
       setFiles(response.data);
       setError(null);
+
+      // 각 파일의 이미지ID로 캐릭터 정보 조회
+      const info = {};
+      await Promise.all(
+        response.data.map(async (file) => {
+          const match = file.googleusercontentLink
+            ? file.googleusercontentLink.match(/\/d\/([^/?]+)/)
+            : null;
+          const imageId = match ? match[1] : null;
+          if (imageId) {
+            try {
+              const res = await axios.get(`/api/characters/by-image/${imageId}`);
+              // 여러 개면 첫 번째만 사용
+              info[imageId] = Array.isArray(res.data) ? res.data[0] : res.data;
+            } catch (e) {
+              info[imageId] = null;
+            }
+          }
+        })
+      );
+      setCharacterInfo(info);
     } catch (err) {
       setError('파일 목록을 불러오는데 실패했습니다.');
       console.error('파일 목록 로드 실패:', err);
@@ -146,41 +169,72 @@ function DriveManager() {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>사진</TableCell>
+                <TableCell>캐릭터명</TableCell>
                 <TableCell>파일명</TableCell>
+                <TableCell>생성자</TableCell>
                 <TableCell>생성일</TableCell>
                 <TableCell>미리보기</TableCell>
                 <TableCell>작업</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {files.map((file) => (
-                <TableRow key={file.id}>
-                  <TableCell>{file.name}</TableCell>
-                  <TableCell>
-                    {new Date(file.createdTime).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <a
-                      href={file.webViewLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      보기
-                    </a>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      size="small"
-                      startIcon={<DeleteIcon />}
-                      onClick={() => handleDelete(file.id)}
-                    >
-                      삭제
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {files.map((file) => {
+                const match = file.googleusercontentLink
+                  ? file.googleusercontentLink.match(/\/d\/([^/?]+)/)
+                  : null;
+                const imageId = match ? match[1] : null;
+                const character = imageId ? characterInfo[imageId] : null;
+                return (
+                  <TableRow key={file.id}>
+                    {/* 사진(작게) */}
+                    <TableCell>
+                      <img
+                        src={file.thumbnailLink || file.googleusercontentLink || file.webViewLink}
+                        alt={file.name}
+                        style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4 }}
+                        referrerPolicy="no-referrer"
+                      />
+                    </TableCell>
+                    {/* 캐릭터명 */}
+                    <TableCell>
+                      {character ? character.character_name : <span style={{ color: '#888' }}>-</span>}
+                    </TableCell>
+                    {/* 파일명 */}
+                    <TableCell>{file.name}</TableCell>
+                    {/* 생성자 */}
+                    <TableCell>
+                      {character ? character.userid : <span style={{ color: '#888' }}>-</span>}
+                    </TableCell>
+                    {/* 생성일 */}
+                    <TableCell>
+                      {new Date(file.createdTime).toLocaleString()}
+                    </TableCell>
+                    {/* 미리보기 */}
+                    <TableCell>
+                      <a
+                        href={file.googleusercontentLink || file.webViewLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        보기
+                      </a>
+                    </TableCell>
+                    {/* 작업 */}
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(file.id)}
+                      >
+                        삭제
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>

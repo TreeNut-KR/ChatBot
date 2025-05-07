@@ -127,6 +127,25 @@ app.get('/api/drive/files/:fileId', async (req, res) => {
   }
 });
 
+// 이미지ID로 캐릭터 정보 조회 API
+app.get('/api/characters/by-image/:imageId', async (req, res) => {
+  const imageId = req.params.imageId;
+  try {
+    // image 컬럼에 해당 ID가 포함된 캐릭터 검색
+    const [rows] = await pool.query(
+      'SELECT * FROM characters WHERE image LIKE ?',
+      [`%${imageId}%`]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: '해당 이미지ID의 캐릭터를 찾을 수 없습니다.' });
+    }
+    res.json(rows); // 여러 개면 배열로 반환
+  } catch (err) {
+    console.error('이미지ID로 캐릭터 조회 오류:', err);
+    res.status(500).json({ error: 'DB 조회 오류' });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/build/index.html'));
 });

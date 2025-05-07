@@ -62,18 +62,17 @@ class DriveService {
         throw new Error('드라이브 서비스가 초기화되지 않았습니다');
       }
 
-      // auth 토큰 테스트
-      const authClient = await this.auth.getClient();
-      console.log('인증 클라이언트 생성 성공');
-
       const response = await this.drive.files.list({
         pageSize: 30,
-        fields: 'files(id, name, mimeType, createdTime, webViewLink)',
+        fields: 'files(id, name, mimeType, createdTime, webViewLink, thumbnailLink)',
         orderBy: 'createdTime desc'
       });
 
-      console.log(`파일 목록 조회 성공: ${response.data.files.length}개의 파일`);
-      return response.data.files;
+      return response.data.files.map(file => ({
+        ...file,
+        googleusercontentLink: file.id ? `https://lh3.googleusercontent.com/d/${file.id}` : undefined,
+        thumbnailLink: file.thumbnailLink // 썸네일 링크 추가
+      }));
     } catch (error) {
       console.error('파일 목록 조회 실패:', error);
       throw error;
@@ -88,13 +87,35 @@ class DriveService {
         body: Buffer.isBuffer(buffer) ? require('streamifier').createReadStream(buffer) : buffer
       };
 
+      // 파일 업로드
       const response = await this.drive.files.create({
         resource: fileMetadata,
         media,
         fields: 'id, name, webViewLink, createdTime, mimeType'
       });
 
-      return response.data;
+      const fileId = response.data.id;
+
+      // anyone에게 읽기 권한 부여
+      await this.drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone'
+        }
+      });
+
+      // 변경된 파일 정보 다시 조회
+      const file = await this.drive.files.get({
+        fileId,
+        fields: 'id, name, createdTime, mimeType'
+      });
+
+      // 직접 URL 생성
+      return {
+        ...file.data,
+        googleusercontentLink: `https://lh3.googleusercontent.com/d/${fileId}`
+      };
     } catch (error) {
       console.error('구글 드라이브 파일 업로드 실패:', error);
       throw error;
