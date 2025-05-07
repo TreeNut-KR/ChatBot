@@ -5,6 +5,7 @@ import logo_kakao_kr from './logo/logo_kakao_kr.png';
 import logo_google_kr from './logo/logo_google_kr.png';
 import { useGoogleLogin } from '@react-oauth/google';
 import { setCookie, getCookie, removeCookie, setObjectCookie } from '../../Cookies';
+import { useNavigate } from 'react-router-dom'; // 추가
 
 // 인앱 브라우저 감지 함수
 const isInAppBrowser = () => {
@@ -41,24 +42,9 @@ const handleGoogleSocialLogin = async (code: string, setError: (msg: string) => 
       }
     );
     const data = await serverResponse.json();
-    const { token, user_id, user_email, user_name } = data;
+    const { token } = data;
 
     setCookie('jwt-token', token);
-    setCookie('user_id', user_id);
-    setCookie('user_email', user_email);
-    setCookie('user_name', user_name);
-
-    setObjectCookie('user_info', {
-      id: user_id,
-      name: user_name,
-      email: user_email,
-      picture: ''
-    });
-
-    // 이전 사용자와 다르면 채팅방 초기화
-    const previousUserId = getCookie('previous_user_id') || '';
-    if (previousUserId !== user_id) removeCookie('mongo_chatroomid');
-    setCookie('previous_user_id', user_id);
 
     return true;
   } catch (error: any) {
@@ -86,6 +72,15 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate(); // 추가
+
+  // jwt-token이 있으면 /home으로 이동
+  useEffect(() => {
+    const token = getCookie('jwt-token');
+    if (token) {
+      navigate('/home', { replace: true });
+    }
+  }, [navigate]);
 
   const googleLogin = useGoogleLogin({
     flow: 'auth-code',
@@ -161,15 +156,8 @@ const Login: React.FC = () => {
       const response = await axios.post('/server/user/login', { id: Id, pw: password });
       if (response.status === 200) {
         setSuccess(true);
-        const { token, name } = response.data;
+        const { token } = response.data;
         setCookie('jwt-token', token);
-        setCookie('user_id', Id);
-        setCookie('user_name', name);
-
-        // chatlog_agree와 user_setting_agree를 true로 저장
-        setCookie('chatlog_agree', 'true');
-        setCookie('user_setting_agree', 'true');
-
         window.location.href = '/';
       } else {
         setError('로그인 실패. 다시 시도해 주세요.');
@@ -182,76 +170,81 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen w-[90vw]">
-      <form className="bg-white p-12 rounded-md text-left w-full max-w-sm" onSubmit={handleSubmit}>
-        <div className="flex justify-center items-center">
-          <h2 className="text-green-600 text-2xl mb-2 whitespace-nowrap">TreeNut</h2>
-        </div>
-        <div className="flex justify-center items-center">
-          <h2 className="text-lg mb-3 whitespace-nowrap">AI 어시스턴트한테 도움을 받아보세요!</h2>
-        </div>
-        <h2 className="text-center text-sm mb-6 text-gray-600">
-          TreeNut과 함께 편리한 AI 서비스를 이용해보세요
-        </h2>
-        <div className="flex flex-col items-center mb-5">
-          <img
-            src={logo_naver_kr}
-            alt="Naver Logo"
-            className="w-72 mb-4 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
-            onClick={handleNaverLogin}
-          />
-          <img
-            src={logo_kakao_kr}
-            alt="Kakao Logo"
-            className="w-72 mb-4 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
-            onClick={handleKakaoLogin}
-          />
-          <img
-            src={logo_google_kr}
-            alt="Google Logo"
-            className="w-72 mb-4 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
-            onClick={handleGoogleLogin}
-            onTouchStart={handleGoogleLogin}
-          />
-        </div>
-        <div className="flex items-center mb-6">
-          <div className="flex-1 h-[1px] bg-gray-300"></div>
-          <span className="mx-4 text-gray-600 text-sm">또는</span>
-          <div className="flex-1 h-[1px] bg-gray-300"></div>
-        </div>
-        <div className="mb-4">
-          <input
-            type="text"
-            id="Id"
-            value={Id}
-            onChange={(e) => setId(e.target.value)}
-            required
-            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="아이디"
-          />
-        </div>
-        <div className="mb-4">
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-2 focus:ring-green-500"
-            placeholder="비밀번호"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full font-semibold tracking-wider py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:bg-green-400"
-        >
-          {isLoading ? '로그인 중...' : '로그인'}
-        </button>
-      </form>
-      {error && <p className="text-red-600 mt-4 text-sm">{error}</p>}
-      {success && <p className="text-green-600 mt-4 text-sm">로그인 성공!</p>}
-    </div>
+    <form className="bg-white p-8 rounded-lg text-left w-full max-w-md shadow-lg" onSubmit={handleSubmit}>
+      <div className="flex justify-center items-center mb-1">
+        <h2 className="text-green-600 text-2xl whitespace-nowrap">TreeNut</h2>
+      </div>
+      <div className="flex justify-center items-center mb-1">
+        <h2 className="text-lg whitespace-nowrap">AI 어시스턴트한테 도움을 받아보세요!</h2>
+      </div>
+      <h2 className="text-center text-sm mb-3 text-gray-600">
+        TreeNut과 함께 편리한 AI 서비스를 이용해보세요
+      </h2>
+      <div className="flex flex-col items-center mb-3">
+        <img
+          src={logo_naver_kr}
+          alt="Naver Logo"
+          className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
+          onClick={handleNaverLogin}
+        />
+        <img
+          src={logo_kakao_kr}
+          alt="Kakao Logo"
+          className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
+          onClick={handleKakaoLogin}
+        />
+        <img
+          src={logo_google_kr}
+          alt="Google Logo"
+          className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
+          onClick={handleGoogleLogin}
+          onTouchStart={handleGoogleLogin}
+        />
+      </div>
+      <div className="flex items-center mb-4">
+        <div className="flex-1 h-[1px] bg-gray-300"></div>
+        <span className="mx-2 text-gray-600 text-sm">또는</span>
+        <div className="flex-1 h-[1px] bg-gray-300"></div>
+      </div>
+      <div className="mb-2">
+        <input
+          type="text"
+          id="Id"
+          value={Id}
+          onChange={(e) => setId(e.target.value)}
+          required
+          className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="아이디"
+        />
+      </div>
+      <div className="mb-2">
+        <input
+          type="password"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="비밀번호"
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full font-semibold tracking-wider py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:bg-green-400"
+      >
+        {isLoading ? '로그인 중...' : '로그인'}
+      </button>
+      <button
+        type="button"
+        onClick={() => navigate('/register')}
+        className="w-full mt-2 font-semibold tracking-wider py-2 bg-white text-green-600 border border-green-600 rounded-md hover:bg-green-50 transition"
+      >
+        회원가입
+      </button>
+      {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
+      {success && <p className="text-green-600 mt-3 text-sm">로그인 성공!</p>}
+    </form>
   );
 };
 
