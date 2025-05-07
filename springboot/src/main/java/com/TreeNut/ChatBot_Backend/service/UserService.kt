@@ -20,10 +20,13 @@ import javax.crypto.SecretKey
 import org.springframework.dao.DataIntegrityViolationException
 import java.sql.SQLIntegrityConstraintViolationException
 import org.slf4j.LoggerFactory
+import com.TreeNut.ChatBot_Backend.model.UserEulaAgreement
+import com.TreeNut.ChatBot_Backend.repository.UserEulaAgreementRepository
 
 @Service
 class UserService(
     private val userRepository: UserRepository,
+    private val userEulaAgreementRepository: UserEulaAgreementRepository,
     private val webClientBuilder: WebClient.Builder,
     private val tokenAuth: TokenAuth,
     @Value("\${jwt.secret}") private val jwtSecret: String,
@@ -279,5 +282,24 @@ class UserService(
             ?: throw RuntimeException("User not found")
         val updatedUser = user.copy(membership = MembershipType.valueOf(membership.uppercase()))
         return userRepository.save(updatedUser)
+    }
+
+    @Transactional
+    fun saveUserAgreement(userid: String, agreements: List<String>) {
+        val user = userRepository.findByUserid(userid)
+            ?: throw RuntimeException("User not found")
+        agreements.forEach { agreement ->
+            val exists = userEulaAgreementRepository.existsByUseridAndAgreement(userid, agreement)
+            if (!exists) { // 중복 방지
+                userEulaAgreementRepository.save(
+                    UserEulaAgreement(
+                        userid = user.userid,
+                        agreement = agreement,
+                        agreed = true,
+                        agreedat = java.time.LocalDateTime.now()
+                    )
+                )
+            }
+        }
     }
 }
