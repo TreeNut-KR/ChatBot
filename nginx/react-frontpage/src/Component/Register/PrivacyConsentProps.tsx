@@ -104,7 +104,7 @@ const privacyMarkdown = `
 - **개인정보 보호 책임자**
     - 성명: **김준건**
     - 직책: **CEO**
-    - 전화번호: **010-7282-1097**
+    - 전화번호: **010-7549-6378**
     - 이메일: **treenutcorp@gmail.com**
 
 ---
@@ -131,7 +131,7 @@ const PrivacyConsent: React.FC<PrivacyConsentProps> = ({ onAgree }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (agreePrivacy && agreeAge) {
-      navigate('/resister');
+      navigate('/register');
       if (onAgree) onAgree();
     }
   };
