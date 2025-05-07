@@ -85,13 +85,10 @@ CREATE TABLE email_verification (
 
 CREATE TABLE user_eula_agreements (
     id INT AUTO_INCREMENT,
-    userid VARCHAR(50) NOT NULL,
-    agreement VARCHAR(255) NOT NULL,
-    agreed BOOLEAN DEFAULT FALSE,
+    userid VARCHAR(50) NOT NULL UNIQUE,
+    privacy_policy BOOLEAN DEFAULT TRUE,
+    terms_of_service BOOLEAN DEFAULT TRUE,
     agreedat DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE (userid, agreement), -- 중복 방지
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
-
-ALTER TABLE user_eula_agreements ADD COLUMN agreement VARCHAR(255) NOT NULL;

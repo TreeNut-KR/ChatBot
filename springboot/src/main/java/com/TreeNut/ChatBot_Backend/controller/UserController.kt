@@ -41,12 +41,19 @@ class UserController(
         val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
-        // val chatlogAgree = body["chatlog_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Chatlog agreement is required"))
-        // val userSettingAgree = body["user_setting_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User setting agreement is required"))
+        val privacyPolicy = body["privacy_policy"]?.toBooleanStrictOrNull()
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Privacy policy is required"))
+        val termsOfService = body["terms_of_service"]?.toBooleanStrictOrNull()
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Terms of service is required"))
 
-        //val user = User(userid = userid, username = username, email = email, password = password, chatlog_agree = chatlogAgree.toBoolean(), user_setting_agree = userSettingAgree.toBoolean())
+        if (!privacyPolicy || !termsOfService) {
+            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "모든 필수 약관에 동의해야 합니다."))
+        }
+
         val user = User(userid = userid, username = username, email = email, password = password)
         val registeredUser = userService.register(user)
+
+        userService.updateUserEulaAgreement(userid, privacyPolicy, termsOfService)
 
         val token = tokenAuth.generateToken(registeredUser.userid)
         return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to registeredUser.username))
@@ -213,34 +220,6 @@ class UserController(
             ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Invalid membership type"))
         } catch (e: Exception) {
             ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
-        }
-    }
-
-    @PostMapping("/agreements")
-    fun saveUserAgreements(
-        @RequestBody body: Map<String, Any>,
-        @RequestHeader("Authorization") userToken: String
-    ): ResponseEntity<Any> {
-        val userid = userService.getUserid(userToken)
-        val agreementsMap = body["agreements"] as? Map<*, *>
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "agreements 필드가 필요합니다."))
-
-        // Map<String, Int>으로 변환
-        val agreements = agreementsMap.mapNotNull { (k, v) ->
-            if (k is String && (v is Int || v is Number)) k to (v as Number).toInt() else null
-        }.toMap()
-
-        // 필수 약관명
-        val required = listOf("privacy_policy", "terms_of_service")
-        if (required.any { agreements[it] != 1 }) {
-            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "모든 약관에 동의해야 합니다."))
-        }
-
-        return try {
-            userService.saveUserAgreement(userid, required)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to "약관 동의 성공"))
-        } catch (e: Exception) {
-            ResponseEntity.status(500).body(mapOf("status" to 500, "message" to e.message))
         }
     }
 }
