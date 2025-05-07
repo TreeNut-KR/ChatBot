@@ -285,21 +285,14 @@ class UserService(
     }
 
     @Transactional
-    fun saveUserAgreement(userid: String, agreements: List<String>) {
+    fun updateUserEulaAgreement(userid: String, privacyPolicy: Boolean, termsOfService: Boolean): UserEulaAgreement {
         val user = userRepository.findByUserid(userid)
             ?: throw RuntimeException("User not found")
-        agreements.forEach { agreement ->
-            val exists = userEulaAgreementRepository.existsByUseridAndAgreement(userid, agreement)
-            if (!exists) { // 중복 방지
-                userEulaAgreementRepository.save(
-                    UserEulaAgreement(
-                        userid = user.userid,
-                        agreement = agreement,
-                        agreed = true,
-                        agreedat = java.time.LocalDateTime.now()
-                    )
-                )
-            }
-        }
+        val userEulaAgreement = UserEulaAgreement(
+            userid = user.userid,
+            privacy_policy = privacyPolicy,
+            terms_of_service = termsOfService
+        )
+        return userEulaAgreementRepository.save(userEulaAgreement)
     }
 }
