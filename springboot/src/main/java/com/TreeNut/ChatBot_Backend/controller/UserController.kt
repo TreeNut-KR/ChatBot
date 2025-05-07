@@ -216,17 +216,31 @@ class UserController(
         }
     }
 
-    // @PostMapping("/updateAgree")
-    // fun updateAgree(@RequestBody body: Map<String, Boolean>, @RequestHeader("Authorization") userToken: String): ResponseEntity<Map<String, Any>> {
-    //     val userid = userService.getUserid(userToken)
-    //     val chatlogAgree = body["chatlog_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Chatlog agreement is required"))
-    //     val userSettingAgree = body["user_setting_agree"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "User setting agreement is required"))
+    @PostMapping("/agreements")
+    fun saveUserAgreements(
+        @RequestBody body: Map<String, Any>,
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Any> {
+        val userid = userService.getUserid(userToken)
+        val agreementsMap = body["agreements"] as? Map<*, *>
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "agreements 필드가 필요합니다."))
 
-    //     return try {
-    //         val updatedUser = userService.updateUserAgreement(userid, chatlogAgree, userSettingAgree)
-    //         ResponseEntity.ok(mapOf("status" to 200, "message" to "Agreements updated successfully"))
-    //     } catch (e: Exception) {
-    //         ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
-    //     }
-    // }
+        // Map<String, Int>으로 변환
+        val agreements = agreementsMap.mapNotNull { (k, v) ->
+            if (k is String && (v is Int || v is Number)) k to (v as Number).toInt() else null
+        }.toMap()
+
+        // 필수 약관명
+        val required = listOf("privacy_policy", "terms_of_service")
+        if (required.any { agreements[it] != 1 }) {
+            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "모든 약관에 동의해야 합니다."))
+        }
+
+        return try {
+            userService.saveUserAgreement(userid, required)
+            ResponseEntity.ok(mapOf("status" to 200, "message" to "약관 동의 성공"))
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("status" to 500, "message" to e.message))
+        }
+    }
 }
