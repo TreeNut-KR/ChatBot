@@ -33,7 +33,7 @@ const Sidebar: React.FC = () => {
     setIsAuthenticated(false);
     
     // 디폴트 페이지로 리다이렉트
-    navigate('/');
+    navigate('/home');
   };
 
   const handleMouseEnter = () => {
@@ -63,7 +63,7 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="h-screen max-w-[80px] min-w-[60px] px-2 py-5 bg-[#161514] flex flex-col justify-between">
       <div>
-        <div className="mb-4 cursor-pointer" onClick={() => handleNavigation('/')}>
+        <div className="mb-4 cursor-pointer" onClick={() => handleNavigation('/home')}>
           <img src="/images/logo.png" alt="Logo" className="w-full h-auto" />
         </div>
         <div className="mt-4 flex flex-col gap-5">

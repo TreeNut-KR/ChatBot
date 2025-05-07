@@ -60,15 +60,15 @@ const Resister: React.FC = () => {
         pw: password,
         name: username,
         email: email,
-        chatlog_agree: true,
-        user_setting_agree: true,
+        privacy_policy: agreePrivacy,      // 체크박스 값 반영
+        terms_of_service: agreeAge,        // 체크박스 값 반영
       });
 
       if (response.status === 200) {
         window.alert('회원가입 성공!');
         console.log('회원가입 성공:', response.data);
 
-        navigate('/login');
+        navigate('/home');
       }
     } catch (error) {
       window.alert('회원가입 실패. 다시 시도해 주세요.');
@@ -224,7 +224,6 @@ const Resister: React.FC = () => {
         <button
           type="submit"
           className="w-full p-2 font-semibold bg-green-600 text-white rounded hover:bg-green-700 transition mt-4"
-          disabled={!agreePrivacy || !agreeAge}
         >
           회원가입
         </button>
