@@ -253,6 +253,12 @@ const CharacterChatRoom: React.FC = () => {
             </code>
           );
         },
+        em: ({ children }) => (
+          <em className="text-gray-400 italic">{children}</em>
+        ),
+        strong: ({ children }) => (
+          <strong className="text-gray-400 italic">{children}</strong>
+        ),
         p: ({ children }) => <p className="mb-2">{children}</p>,
         ul: ({ children }) => <ul className="list-disc ml-5 mb-2">{children}</ul>,
         ol: ({ children }) => <ol className="list-decimal ml-5 mb-2">{children}</ol>,

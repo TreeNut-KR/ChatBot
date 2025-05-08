@@ -25,7 +25,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
   const [userInput, setUserInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [model, setModel] = useState<string>('Llama');
-  const [googleAccess, setGoogleAccess] = useState<string>("true");
+  const [googleAccess, setGoogleAccess] = useState<string>("false");
   const chatContainerRef = useRef<HTMLDivElement>(null!);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
@@ -345,15 +345,15 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     }
   }, [model]); // model이 변경될 때만 실행
 
-  // Google 접근 설정 변경 시 알림 추가
-  useEffect(() => {
-    if (messages.length > 0) {
-      // 서버 메시지 대신 토스트 메시지만 표시
-      showToast(`Google 접근이 ${googleAccess === "true" ? '활성화' : '비활성화'}되었습니다.`, 'info');
-      // Google 접근 설정 쿠키로 저장 (선택 사항)
-      setCookie('google_access', googleAccess);
-    }
-  }, [googleAccess]); // googleAccess 변경 시 실행
+  // // Google 접근 설정 변경 시 알림 추가
+  // useEffect(() => {
+  //   if (messages.length > 0) {
+  //     // 서버 메시지 대신 토스트 메시지만 표시
+  //     showToast(`Google 접근이 ${googleAccess === "true" ? '활성화' : '비활성화'}되었습니다.`, 'info');
+  //     // Google 접근 설정 쿠키로 저장 (선택 사항)
+  //     setCookie('google_access', googleAccess);
+  //   }
+  // }, [googleAccess]); // googleAccess 변경 시 실행
 
   // 컴포넌트 마운트 시 쿠키에서 설정 로드 (선택 사항)
   useEffect(() => {
