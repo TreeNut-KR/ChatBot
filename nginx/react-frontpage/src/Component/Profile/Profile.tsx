@@ -1,96 +1,374 @@
 import React, { useState, useEffect } from 'react';
 
+// 쿠키에서 값을 읽어오는 함수
+const getCookieValue = (name: string): string => {
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=');
+    if (cookieName === name) {
+      return decodeURIComponent(cookieValue);
+    }
+  }
+  return '';
+};
+
+// 멤버십 타입 정의 - DB 구조와 맞춤
+type MembershipType = 'BASIC' | 'VIP';
+
 const Profile: React.FC = () => {
-  const [userInfo, setUserInfo] = useState({ name: '', email: '' });
-  const [editedInfo, setEditedInfo] = useState({ name: '', email: '', pw: '' });
+  const [userInfo, setUserInfo] = useState({ name: '', email: '', userid: '' });
+  const [editedInfo, setEditedInfo] = useState({ name: '', email: '', userid: '', pw: '' });
+  const [membership, setMembership] = useState<MembershipType>('BASIC');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const [emailVerifyStatus, setEmailVerifyStatus] = useState<'idle' | 'success' | 'error' | 'expired' | 'notfound'>('idle');
+  const [emailVerifyMessage, setEmailVerifyMessage] = useState('');
 
   useEffect(() => {
-    const fetchUserInfo = async () => {
+    // 사용자 정보와 멤버십 정보 모두 가져오기
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+
       try {
-        const response = await fetch('http://localhost:8080/server/user/findmyinfo', {
+        // 사용자 정보 가져오기
+        await fetchUserInfo();
+
+        // 멤버십 정보 별도 요청
+        const jwtToken = getCookieValue('jwt-token');
+        const membershipRes = await fetch('/server/user/membership', {
           method: 'GET',
           headers: {
-            'Authorization': localStorage.getItem('jwt-token') || ''
-          }
+            'Authorization': jwtToken || ''
+          },
+          credentials: 'include'
         });
-        const data = await response.json();
-        console.log('User Info Fetched:', data);
-        setUserInfo(data);
-        setEditedInfo({ ...data, pw: '' });
+        if (membershipRes.ok) {
+          const membershipData = await membershipRes.json();
+          if (membershipData.membership) {
+            setMembership(membershipData.membership as MembershipType);
+          }
+        }
       } catch (error) {
-        console.error('Error fetching user info:', error);
-        alert('사용자 정보를 불러오는 중 오류가 발생했습니다.');
+        console.error('사용자 정보를 가져오는 중 오류가 발생했습니다:', error);
+        setError('사용자 정보를 불러올 수 없습니다. 다시 시도해 주세요.');
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchUserInfo();
+
+    fetchData();
   }, []);
+
+  const fetchUserInfo = async () => {
+    try {
+      const jwtToken = getCookieValue('jwt-token');
+      
+      const response = await fetch('/server/user/findmyinfo', {
+        method: 'GET',
+        headers: {
+          'Authorization': jwtToken || ''
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`사용자 정보 조회 실패: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('User Info Fetched:', data);
+      setUserInfo(data);
+      setEditedInfo({ ...data, pw: '' }); // data에 userid 포함
+      
+      // DB의 users 테이블에 membership 필드가 있으므로 이 정보를 사용
+      if (data.membership) {
+        setMembership(data.membership as MembershipType);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      throw error;
+    }
+  };
 
   const handleUpdate = async () => {
     try {
       console.log('Updating User Info:', editedInfo);
-      const response = await fetch('http://localhost:8080/server/user/changeUsername', {
+      
+      const jwtToken = getCookieValue('jwt-token');
+      
+      const response = await fetch('/server/user/changeUsername', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': localStorage.getItem('jwt-token') || ''
+          'Authorization': jwtToken || ''
         },
+        credentials: 'include',
         body: JSON.stringify(editedInfo)
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update user info');
+      }
+      
       const result = await response.json();
       console.log('Update Response:', result);
       alert('사용자 정보가 성공적으로 업데이트되었습니다.');
+      
+      // 사용자 정보 다시 가져오기
+      fetchUserInfo();
     } catch (error) {
       console.error('Error updating user info:', error);
       alert('사용자 정보를 업데이트하는 중 오류가 발생했습니다.');
     }
   };
 
-  return (
-    <div className="w-3/5 h-[55vh] mx-auto mt-12 flex flex-col justify-between">
-      {/* 프로필 이미지 */}
-      <div className="flex justify-center mb-4">
-        <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center shadow">
-          <span className="text-gray-400 text-6xl">👤</span>
-        </div>
+  // 인증 메일 발송
+  const handleSendVerification = async () => {
+    setEmailVerifyStatus('idle');
+    setEmailVerifyMessage('');
+    try {
+      const jwtToken = getCookieValue('jwt-token');
+      const res = await fetch('/server/user/email/Verification', {
+        method: 'POST',
+        headers: {
+          'Authorization': jwtToken || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: emailInput })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setIsEmailSent(true);
+        setEmailVerifyMessage('인증 코드가 이메일로 전송되었습니다.');
+      } else {
+        setEmailVerifyStatus('error');
+        setEmailVerifyMessage(data.message || '이메일 인증 요청에 실패했습니다.');
+      }
+    } catch (e: any) {
+      setEmailVerifyStatus('error');
+      setEmailVerifyMessage(e.message || '이메일 인증 요청 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 인증 코드 확인
+  const handleVerifyCode = async () => {
+    setEmailVerifyStatus('idle');
+    setEmailVerifyMessage('');
+    try {
+      const jwtToken = getCookieValue('jwt-token');
+      const res = await fetch('/server/user/email/verify-code', {
+        method: 'POST',
+        headers: {
+          'Authorization': jwtToken || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: emailInput, code: verificationCode })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setEmailVerifyStatus('success');
+        setEmailVerifyMessage('이메일 인증이 완료되었습니다.');
+        // 멤버십 정보 갱신 등 추가 처리
+      } else if (data.code === 'expired_verification_code') {
+        setEmailVerifyStatus('expired');
+        setEmailVerifyMessage('인증 코드가 만료되었습니다.');
+      } else if (data.code === 'invalid_verification_code') {
+        setEmailVerifyStatus('error');
+        setEmailVerifyMessage('인증 코드가 일치하지 않습니다.');
+      } else if (data.code === 'not_found_verification_code') {
+        setEmailVerifyStatus('notfound');
+        setEmailVerifyMessage('인증 코드가 존재하지 않습니다.');
+      } else {
+        setEmailVerifyStatus('error');
+        setEmailVerifyMessage(data.detail || '이메일 인증에 실패했습니다.');
+      }
+    } catch (e: any) {
+      setEmailVerifyStatus('error');
+      setEmailVerifyMessage(e.message || '이메일 인증 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 멤버십 배지 색상 설정
+  const getMembershipBadgeColor = () => {
+    switch (membership) {
+      case 'BASIC': return 'bg-gray-600';
+      case 'VIP': return 'bg-[#ffc107]';
+      default: return 'bg-gray-600';
+    }
+  };
+
+  // 멤버십 설명 표시
+  const getMembershipDescription = () => {
+    switch (membership) {
+      case 'BASIC': 
+        return '기본 멤버십';
+      case 'VIP': 
+        return 'VIP 멤버십 - 프리미엄 기능 사용 가능';
+      default: 
+        return '';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#3b7cc9]"></div>
       </div>
+    );
+  }
 
-      {/* 프로필 정보 */}
-      <div className="space-y-8">
-        {/* 닉네임 */}
-        <div className="flex flex-col items-start w-2/5 mx-auto">
-          <label className="block text-white text-lg font-semibold mb-1">닉네임</label>
-          <input
-            type="text"
-            value={editedInfo.name}
-            onChange={(e) => setEditedInfo({ ...editedInfo, name: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white bg-transparent text-lg"
-          />
+  if (error) {
+    return (
+      <div className="w-full h-[60vh] flex flex-col items-center justify-center">
+        <div className="text-red-500 text-xl mb-4">⚠️ {error}</div>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-[#3b7cc9] text-white rounded hover:bg-[#2d62a0] transition-colors"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-4xl mx-auto mt-8 px-4">
+      <h1 className="text-3xl font-bold text-white mb-6">내 프로필</h1>
+      
+      <div className="bg-[#2a2928] rounded-lg p-8 shadow-lg">
+        {/* 프로필 상단 영역: 이미지와 멤버십 배지 */}
+        <div className="flex flex-col items-center mb-8">
+          {/* 프로필 이미지 */}
+          <div className="w-32 h-32 bg-[#3f3f3f] rounded-full flex items-center justify-center shadow-md mb-4 border-2 border-[#3b7cc9]">
+            <span className="text-6xl">👤</span>
+          </div>
+          
+          {/* 멤버십 배지 */}
+          <div className="flex flex-col items-center">
+            <span className={`${getMembershipBadgeColor()} text-white px-4 py-1 rounded-full font-semibold shadow-sm`}>
+              {membership}
+            </span>
+            <p className="text-gray-300 mt-2 text-sm">{getMembershipDescription()}</p>
+          </div>
         </div>
 
-        {/* 계정 */}
-        <div className="flex flex-col items-start w-2/5 mx-auto">
-          <label className="block text-white text-lg font-semibold mb-1">계정</label>
-          <input
-            type="text"
-            value={editedInfo.email}
-            readOnly
-            className="bg-transparent w-full text-white focus:outline-none text-lg border border-gray-300 rounded-lg px-4 py-2 cursor-not-allowed"
-          />
-        </div>
+        {/* 프로필 정보 폼 */}
+        <div className="space-y-6">
+          {/* 닉네임 */}
+          <div className="mb-4">
+            <label htmlFor="name" className="block text-white font-medium mb-2">
+              닉네임
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={editedInfo.name}
+              onChange={(e) => setEditedInfo({ ...editedInfo, name: e.target.value })}
+              className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#3b7cc9]"
+              placeholder="닉네임을 입력하세요"
+            />
+          </div>
 
-        {/* 버튼 */}
-        <div className="flex justify-start w-2/5 mx-auto gap-4 flex-wrap">
-          <button
-            onClick={handleUpdate}
-            className="flex-grow px-6 py-2 md:px-16 md:py-2 rounded-lg bg-green-700 font-semibold text-white hover:bg-green-800 text-sm md:text-base"
-          >
-            변경하기
-          </button>
-          <button 
-            className="flex-grow px-6 py-2 md:px-16 md:py-2 bg-red-700 text-white rounded-lg font-semibold hover:bg-red-800 text-sm md:text-base"
-          >
-            회원탈퇴
-          </button>
+          {/* ID */}
+          <div className="mb-4">
+            <label htmlFor="userid" className="block text-white font-medium mb-2">
+              ID
+            </label>
+            <input
+              type="text"
+              id="userid"
+              value={editedInfo.userid}
+              readOnly
+              className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
+            />
+            <p className="text-gray-400 text-sm mt-1">계정 ID는 변경할 수 없습니다</p>
+          </div>
+
+          {/* 이메일 인증 */}
+          <div className="mb-6">
+            <label className="block text-white font-medium mb-2">이메일</label>
+            {membership === 'VIP' ? (
+              <>
+                <input
+                  type="email"
+                  value={userInfo.email}
+                  readOnly
+                  className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
+                  aria-labelledby="email-label"
+                  title="현재 이메일 주소"
+                  placeholder="이메일 주소"
+                />
+                <p className="text-gray-400 text-sm mt-1">계정에 등록된 이메일은 변경할 수 없습니다</p>
+              </>
+            ) : (
+              <>
+                <div className="flex w-full space-x-4">
+                  {/* 이메일 입력창 */}
+                  <input
+                    type="email"
+                    placeholder="이메일을 입력하세요"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                  />
+
+                  {/* 인증 버튼 */}
+                  <button
+                    onClick={handleSendVerification}
+                    className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
+                  >
+                    인증 요청
+                  </button>
+                </div>
+                {isEmailSent && (
+                  <div className="mt-4">
+                    <label className="block text-white font-medium mb-2">인증 코드</label>
+                    <div className="flex w-full space-x-4">
+                      <input
+                        type="text"
+                        placeholder="인증 코드를 입력하세요"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                      />
+                      <button
+                        onClick={handleVerifyCode}
+                        className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
+                      >
+                        인증 확인
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {emailVerifyMessage && (
+                  <p className={`mt-2 text-sm ${emailVerifyStatus === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                    {emailVerifyMessage}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* 버튼 영역 */}
+          <div className="flex flex-wrap gap-4 mt-8">
+            <button
+              onClick={handleUpdate}
+              className="flex-1 px-6 py-3 bg-[#3b7cc9] text-white rounded-lg hover:bg-[#2d62a0] transition-colors font-medium"
+            >
+              변경사항 저장
+            </button>
+            <button 
+              className="flex-1 px-6 py-3 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium"
+            >
+              회원탈퇴
+            </button>
+          </div>
         </div>
       </div>
     </div>

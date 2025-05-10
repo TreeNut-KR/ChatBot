@@ -33,3 +33,28 @@ code {
   scrollbar-width: none; /* Firefox */
 }
 
+/* 크롬 브라우저 텍스트 오버플로우 문제 해결을 위한 CSS */
+@supports (-webkit-appearance: none) {
+  .message-content {
+    max-width: 100%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  
+  pre {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    max-width: 100% !important;
+  }
+  
+  code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+    display: block;
+    overflow-x: auto;
+  }
+}
+

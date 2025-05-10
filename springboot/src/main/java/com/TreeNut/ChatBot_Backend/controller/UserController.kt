@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.slf4j.LoggerFactory
 
 @RestController
 @RequestMapping("/server/user")
@@ -31,15 +32,28 @@ class UserController(
     @Value("\${spring.security.oauth2.client.registration.google.authorization-grant-type}") private val googleGrantType: String,
     @Value("\${spring.security.oauth2.client.registration.google.scope}") private val googleScope: String
 ) {
+    // logger 추가
+    private val logger = LoggerFactory.getLogger(UserController::class.java)
+
     @PostMapping("/register")
     fun register(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val username = body["name"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Name is required"))
         val userid = body["id"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "ID is required"))
         val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
         val password = body["pw"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Password is required"))
+        val privacyPolicy = body["privacy_policy"]?.toBooleanStrictOrNull()
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Privacy policy is required"))
+        val termsOfService = body["terms_of_service"]?.toBooleanStrictOrNull()
+            ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Terms of service is required"))
+
+        if (!privacyPolicy || !termsOfService) {
+            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "모든 필수 약관에 동의해야 합니다."))
+        }
 
         val user = User(userid = userid, username = username, email = email, password = password)
         val registeredUser = userService.register(user)
+
+        userService.updateUserEulaAgreement(userid, privacyPolicy, termsOfService)
 
         val token = tokenAuth.generateToken(registeredUser.userid)
         return ResponseEntity.ok(mapOf("status" to 200, "token" to token, "name" to registeredUser.username))
@@ -95,6 +109,7 @@ class UserController(
     @PostMapping("/social/google/login")
     fun googleLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
         val code = body["code"]
+        val redirectUri = body["redirect_uri"] ?: googleRedirectUri // 프론트에서 전달받은 값 우선 사용
         if (code.isNullOrEmpty()) {
             return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 없음"))
         }
@@ -104,7 +119,7 @@ class UserController(
                 add("grant_type", googleGrantType)
                 add("client_id", googleClientId)
                 add("client_secret", googleClientSecret)
-                add("redirect_uri", googleRedirectUri)
+                add("redirect_uri", redirectUri) // 여기서 postmessage 가능
                 add("code", code)
                 add("scope", "https://www.googleapis.com/auth/userinfo.email profile openid")
             }
@@ -131,8 +146,14 @@ class UserController(
                 
             val nickname = userInfoResponse["name"] as String
             val googleId = userInfoResponse["sub"].toString()
+            val email = userInfoResponse["email"] as String?
 
-            val user = userService.registerGoogleUser(googleId, nickname, null)
+            logger.info("Google 유저 정보 수신:")
+            logger.info("이름: $nickname")
+            logger.info("Google ID: $googleId")
+            logger.info("이메일: $email")
+
+            val user = userService.registerGoogleUser(googleId, nickname, email)
             val token = tokenAuth.generateToken(user.userid)
 
             ResponseEntity.ok(mapOf(
@@ -141,11 +162,8 @@ class UserController(
                 "message" to "구글 로그인 성공"
             ))
         } catch (e: Exception) {
-            if (e is WebClientResponseException) {
-                val statusCode = e.rawStatusCode
-                val statusText = e.statusText
-                val responseBody = e.responseBodyAsString
-            }
+            println("Google Login Error: ${e.message}")
+            e.printStackTrace()
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
         }
@@ -163,7 +181,7 @@ class UserController(
         val userid = userService.getUserid(userToken)
         val name = userService.getUsername(userid)
         val email = userService.getUseremail(userid)
-        return ResponseEntity.ok(mapOf("name" to name, "email" to email))
+        return ResponseEntity.ok(mapOf("name" to name, "userid" to userid,"email" to email))
     }
 
     @PostMapping("/changeUsername")
@@ -178,29 +196,34 @@ class UserController(
             ResponseEntity.status(500).body(mapOf("status" to 500, "message" to "Internal server error"))
         }
     }
-}
-    /* @PostMapping("/social/naver/login")
-    fun naverLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
-        val code = body["code"]
-        val state = body["state"]
-        if (code.isNullOrEmpty() || state.isNullOrEmpty()) {
-            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 또는 상태 없음"))
-        }
 
-        return try {
-            val response = userService.naverLogin(code, state)
-            ResponseEntity.ok(response)
-        } catch (e: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
-        }
+    @GetMapping("/membership")
+    fun getMembership(@RequestHeader("Authorization") userToken: String): ResponseEntity<Map<String, Any>> {
+        val userid = userService.getUserid(userToken)
+        val membership = userService.getMembership(userid)
+        return ResponseEntity.ok(mapOf("status" to 200, "membership" to membership))
     }
 
-    @GetMapping("/oauth/callback/naver")
-    fun naverCallback(
-        @RequestParam code: String,
-        @RequestParam state: String,
-        request: HttpServletRequest
+    @PostMapping("/email/Verification")
+    fun emailVerification(
+        @RequestBody body: Map<String, String>,
+        @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Map<String, Any>> {
-        return naverLogin(mapOf("code" to code, "state" to state))
-    } */
+        val userid = userService.getUserid(userToken)
+        val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
+        val result = userService.requestEmailVerification(email, userid)
+        return ResponseEntity.ok(result)
+    }
+
+    @PostMapping("/email/verify-code")
+    fun verifyEmailCode(
+        @RequestBody body: Map<String, String>,
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Map<String, Any>> {
+        val userid = userService.getUserid(userToken)
+        val email = body["email"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Email is required"))
+        val code = body["code"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Code is required"))
+        val result = userService.verifyEmailCode(userid, email, code)
+        return ResponseEntity.ok(result)
+    }
+}

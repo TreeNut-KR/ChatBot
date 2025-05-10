@@ -237,3 +237,11 @@ springboot/.gradle/8.8/fileHashes/fileHashes.lock
 
 ### GCC KEY
 chatbot-character-image-6b2ea50ecd70.json
+
+### SSL KEY ###
+nginx/certificates/*
+
+### adminController ###
+admincontroller/client/build/*
+admincontroller/client/node_modules/*
+admincontroller/server/node_modules/*

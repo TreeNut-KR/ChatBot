@@ -1,0 +1,111 @@
+.character-grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)); /* 최대 4열 고정 */
+  gap: 20px;
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .character-grid-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .character-grid-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .character-grid-container {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  border-radius: 10px;
+  position: relative; /* 창작자 이름 배치를 위해 position 설정 */
+  transition: all 0.3s ease;
+}
+
+.character-card:hover {
+  box-shadow: 0 10px 10px rgba(106, 106, 106, 0.4);
+  transform: translateY(-5px); /* 살짝 위로 올라가는 효과 */
+  z-index: 1; /* 다른 요소 위로 올라오도록 설정 */
+}
+
+.character-image-container {
+  width: 181px; /* 정사각형 */
+  height: 181px; /* 정사각형 */
+  overflow: hidden;
+  border-radius: 10px;
+  margin-bottom: 15px; /* 이미지와 이름 사이 간격 */
+}
+
+.character-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.character-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.character-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 10px; /* 이름과 설명 사이 간격 */
+}
+
+.character-description {
+  font-size: 14px;
+  color: #a8a69d;
+  text-align: left; /* 왼쪽 정렬 */
+  line-height: 1.4;
+  margin-bottom: 20px; /* 설명과 창작자 이름 사이 간격 */
+  width: 100%; /* 카드의 전체 너비 사용 */
+}
+
+.character-creator {
+  position: absolute; /* 창작자 이름을 카드 내부에 배치 */
+  bottom: 10px; /* 카드의 아래쪽에 배치 */
+  left: 15px; /* 카드의 왼쪽에 배치 */
+  font-size: 12px;
+  color: #888888; /* 창작자 이름 색상 */
+  text-align: left;
+}
+
+.character-button {
+  padding: 8px 16px;
+  background-color: #3f3f3f;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.character-button:hover {
+  background-color: #565656;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;  
+  overflow: hidden;
+}
