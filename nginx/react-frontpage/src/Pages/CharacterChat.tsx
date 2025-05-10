@@ -4,20 +4,13 @@ import Banner from '../Component/Banner/Banner';
 import CharacterSwiper from '../Component/CharacterMain/CharacterSwiper';
 import Header from '../Component/Header/Header';
 import CharacterDetailModal from '../Component/CharacterMain/CharacterDetailModal';
-import axios from 'axios';
 import CharacterChatSidebar from '../Component/CharacterMain/CharacterChatSidebar';
-
-// 쿠키에서 값을 읽어오는 함수 (Profile.tsx에서 가져옴)
-const getCookieValue = (name: string): string => {
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.trim().split('=');
-    if (cookieName === name) {
-      return decodeURIComponent(cookieValue);
-    }
-  }
-  return '';
-};
+// api.ts의 함수 가져오기
+import { 
+  fetchCharacterChatRooms, 
+  createCharacterChatRoom,
+  getUserId
+} from '../Component/Chatting/Services/api';
 
 const CharacterChatPage: React.FC = () => {
   const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
@@ -27,22 +20,17 @@ const CharacterChatPage: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // 내 채팅방 목록 불러오기
+  // 내 채팅방 목록 불러오기 - api.ts 활용
   useEffect(() => {
     const fetchMyRooms = async () => {
       try {
-        const token = getCookieValue('jwt-token');
-        if (!token) return;
-        const res = await axios.get('/server/chatroom/character/find_my_rooms', {
-          headers: { Authorization: token },
-        });
-        if (res.data?.status === 200 && Array.isArray(res.data.rooms)) {
-          setMyRooms(res.data.rooms);
-        }
+        const rooms = await fetchCharacterChatRooms();
+        setMyRooms(rooms);
       } catch (e) {
-        // 무시 또는 필요시 에러 처리
+        console.error('채팅방 목록을 불러오는데 실패했습니다.', e);
       }
     };
+    
     fetchMyRooms();
   
     // 포커스 될 때마다 목록 새로고침
@@ -55,24 +43,20 @@ const CharacterChatPage: React.FC = () => {
     setSelectedCharacter(character);
   };
 
-  // 채팅 시작 버튼 클릭 시
+  // 채팅 시작 버튼 클릭 시 - api.ts 활용
   const handleChat = async (character: any) => {
     setSelectedCharacter(null);
     try {
-      const token = getCookieValue('jwt-token');
-      if (!token) {
+      const userId = getUserId();
+      if (!userId) {
         alert('로그인이 필요합니다.');
         return;
       }
-      const res = await axios.get(
-        `/server/chatroom/character/${character.idx}`,
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
-      );
-      const roomId = res.data?.mysql_characterroom?.mongo_chatroomid;
+      
+      // api.ts의 createCharacterChatRoom 호출
+      const response = await createCharacterChatRoom(character.idx);
+      const roomId = response?.mysql_characterroom?.mongo_chatroomid;
+      
       if (roomId) {
         navigate(`/chat/${roomId}`);
       } else {
