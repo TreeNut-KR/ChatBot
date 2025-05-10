@@ -19,26 +19,28 @@ Routers:
 
 # Handlers
 from .handlers import error_handler as ChatError
-from .handlers.mysql_handler import mysql_handler
 
 # Schemas
 from .schemas import chat_schema as ChatModel
 
 # Routers
-from .routers import mysql_controller as MysqlController
 from .routers import mongo_controller as MongoController
 from .routers import smtp_controller as SmtpController
+
+# App State
+from . import app_state 
 
 __all__ = [
     # Handlers
     'ChatError',
-    'mysql_handler',
 
     # Schemas
     'ChatModel',
 
     # Routers
-    'MysqlController',
     'MongoController',
     'SmtpController',
+    
+    # App State
+    'app_state',
 ]

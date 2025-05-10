@@ -5,11 +5,12 @@ from pydantic import ValidationError
 from .. import ChatModel, ChatError
 from ...dependencies import MongoDBHandler, get_mongo_handler
 
-office_router = APIRouter()
+character_router = APIRouter()
 
-@office_router.post("/users/{user_id}", summary="유저 채팅방 ID 생성")
+@character_router.post("/users/{user_id}", summary="유저 채팅방 ID 생성")
 async def create_chat(
     req: Request,
+    request: ChatModel.ChatBot_Id_Request,
     user_id: str = Path(..., description="유저 ID"),
     mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
 ):
@@ -17,10 +18,16 @@ async def create_chat(
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
     '''
     try:
-        document_id = await mongo_handler.create_office_collection(
+        # character_idx가 양수인지 확인
+        if request.character_idx <= 0:
+            raise ChatError.BadRequestException("character_idx는 양수여야 합니다.")
+            
+        document_id = await mongo_handler.create_chatbot_collection(
             user_id=user_id,
-            router="office"
+            character=request.character_idx,
+            router="chatbot"
         )
+        
         if not document_id:
             raise ChatError.InternalServerErrorException(detail="채팅방을 생성할 수 없습니다.")
         
@@ -34,31 +41,31 @@ async def create_chat(
                     "title": "유저 채팅방 ID 생성",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "GET",
                     "title": "유저 채팅 불러오기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PUT",
                     "title": "유저 채팅 저장",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PATCH",
                     "title": "유저 최근 채팅 업데이트",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "DELETE",
                     "title": "유저 채팅방 지우기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}/idx/{{index}}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}/idx/{{index}}",
                     "rel": f"/users/{user_id}/documents/{document_id}/idx/",
                     "type": "DELETE",
                     "title": "유저 index까지의 채팅 일부 지우기",
@@ -72,7 +79,7 @@ async def create_chat(
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
 
-@office_router.get("/users/{user_id}/documents/{document_id}", summary="유저 채팅 불러오기")
+@character_router.get("/users/{user_id}/documents/{document_id}", summary="유저 채팅 불러오기")
 async def load_chat_log(
     req: Request,
     user_id: str = Path(..., description="유저 ID"),
@@ -83,14 +90,15 @@ async def load_chat_log(
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
     '''
     try:
-        chat_logs = await mongo_handler.get_offic_log(
+        chat_logs, character_idx = await mongo_handler.get_chatbot_log(
             user_id=user_id,
             document_id=document_id,
-            router="office"
+            router="chatbot"
         )
 
         response_data = {
             "id": document_id,
+            "character_idx": character_idx,
             "value": chat_logs,
             "_links": [
                 {
@@ -100,31 +108,31 @@ async def load_chat_log(
                     "title": "유저 채팅 불러오기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}",
                     "rel": f"/users/{user_id}",
                     "type": "GET",
                     "title": "유저 채팅방 ID 생성",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PUT",
                     "title": "유저 채팅 저장",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PATCH",
                     "title": "유저 최근 채팅 업데이트",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "DELETE",
                     "title": "유저 채팅방 지우기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}/idx/{{index}}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}/idx/{{index}}",
                     "rel": f"/users/{user_id}/documents/{document_id}/idx/",
                     "type": "DELETE",
                     "title": "유저 index까지의 채팅 일부 지우기",
@@ -142,10 +150,10 @@ async def load_chat_log(
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
 
-@office_router.put("/users/{user_id}/documents/{document_id}", summary="유저 채팅 저장")
+@character_router.put("/users/{user_id}/documents/{document_id}", summary="유저 채팅 저장")
 async def save_chat_log(
     req: Request,
-    request: ChatModel.Office_Create_Request,
+    request: ChatModel.ChatBot_Create_Request,
     user_id: str = Path(..., description="유저 ID"),
     document_id: str = Path(..., description="채팅방 ID"),
     mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
@@ -161,7 +169,7 @@ async def save_chat_log(
         if not filtered_data.get("output_data"):
             filtered_data["output_data"] = "서버 에러가 있습니다. 다시 시도해주세요."
         
-        response_message = await mongo_handler.add_office_log(
+        response_message = await mongo_handler.add_chatbot_log(
             user_id=user_id,
             document_id=document_id,
             new_data=filtered_data
@@ -176,31 +184,31 @@ async def save_chat_log(
                     "title": "유저 채팅 저장",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}",
                     "rel": f"/users/{user_id}",
                     "type": "GET",
                     "title": "유저 채팅방 ID 생성",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "GET",
                     "title": "유저 채팅 불러오기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PATCH",
                     "title": "유저 최근 채팅 업데이트",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "DELETE",
                     "title": "유저 채팅방 지우기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}/idx/{{index}}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}/idx/{{index}}",
                     "rel": f"/users/{user_id}/documents/{document_id}/idx/",
                     "type": "DELETE",
                     "title": "유저 index까지의 채팅 일부 지우기",
@@ -216,12 +224,12 @@ async def save_chat_log(
     except ChatError.NotFoundException as e:
         raise ChatError.NotFoundException(detail=str(e))
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
-    
-@office_router.patch("/users/{user_id}/documents/{document_id}", summary="유저 최근 채팅 업데이트")
+        raise  ChatError.InternalServerErrorException(detail=str(e))
+
+@character_router.patch("/users/{user_id}/documents/{document_id}", summary="유저 최근 채팅 업데이트")
 async def update_chat_log(
     req: Request,
-    request: ChatModel.Office_Update_Request,
+    request: ChatModel.ChatBot_Update_Request,
     user_id: str = Path(..., description="유저 ID"),
     document_id: str = Path(..., description="채팅방 ID"),
     mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
@@ -232,16 +240,16 @@ async def update_chat_log(
     try:
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
-        
+    
         # output_data가 비어있거나 None인 경우 대체 문장 설정
         if not filtered_data.get("output_data"):
             filtered_data["output_data"] = "서버 에러가 있습니다. 다시 시도해주세요."
         
-        response_message = await mongo_handler.update_office_log(
+        response_message = await mongo_handler.update_chatbot_log(
             user_id=user_id,
             document_id=document_id,
             new_Data=filtered_data
-        )
+        ) 
         response_data = {
             "Result": response_message,
             "_links": [
@@ -252,31 +260,31 @@ async def update_chat_log(
                     "title": "유저 최근 채팅 업데이트",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}",
                     "rel": f"/users/{user_id}",
                     "type": "GET",
                     "title": "유저 채팅방 ID 생성",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "GET",
                     "title": "유저 채팅 불러오기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PUT",
                     "title": "유저 채팅 저장",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "DELETE",
                     "title": "유저 채팅방 지우기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}/idx/{{index}}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}/idx/{{index}}",
                     "rel": f"/users/{user_id}/documents/{document_id}/idx/",
                     "type": "DELETE",
                     "title": "유저 index까지의 채팅 일부 지우기",
@@ -294,7 +302,7 @@ async def update_chat_log(
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
 
-@office_router.delete("/users/{user_id}/documents/{document_id}", summary="유저 채팅방 지우기")
+@character_router.delete("/users/{user_id}/documents/{document_id}", summary="유저 채팅방 지우기")
 async def delete_chat_room(
     req: Request,
     user_id: str = Path(..., description="유저 ID"),
@@ -308,7 +316,7 @@ async def delete_chat_room(
         response_message = await mongo_handler.remove_collection(
             user_id=user_id,
             document_id=document_id,
-            router="office"
+            router="chatbot"
         )
         response_data = {
             "Result": response_message,
@@ -326,31 +334,31 @@ async def delete_chat_room(
                     "title": "유저 채팅방 ID 생성",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}",
                     "rel": f"/users/{user_id}",
                     "type": "GET",
                     "title": "유저 채팅방 ID 생성",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "GET",
                     "title": "유저 채팅 불러오기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PUT",
                     "title": "유저 채팅 저장",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PATCH",
                     "title": "유저 최근 채팅 업데이트",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}/idx/{{index}}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}/idx/{{index}}",
                     "rel": f"/users/{user_id}/documents/{document_id}/idx/",
                     "type": "DELETE",
                     "title": "유저 index까지의 채팅 일부 지우기",
@@ -368,7 +376,7 @@ async def delete_chat_room(
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
 
-@office_router.delete("/users/{user_id}/documents/{document_id}/idx/{index}", summary="유저 index까지의 채팅 일부 지우기")
+@character_router.delete("/users/{user_id}/documents/{document_id}/idx/{index}", summary="유저 index까지의 채팅 일부 지우기")
 async def delete_chat_log(
     req: Request,
     user_id: str = Path(..., description="유저 ID"),
@@ -384,7 +392,7 @@ async def delete_chat_log(
             user_id=user_id,
             document_id=document_id,
             selected_count=index,
-            router="office"
+            router="chatbot"
         )
         response_data = {
             "Result": response_message,
@@ -398,31 +406,31 @@ async def delete_chat_log(
                     "description": "index 값까지의 채팅을 삭제하려는 인덱스(자연수 값: index > 0)를 URL에 교체하세요"
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}",
                     "rel": f"/users/{user_id}",
                     "type": "GET",
                     "title": "유저 채팅방 ID 생성",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "GET",
                     "title": "유저 채팅 불러오기",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PUT",
                     "title": "유저 채팅 저장",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "PATCH",
                     "title": "유저 최근 채팅 업데이트",
                 },
                 {
-                    "href": f"{str(req.base_url)}mongo/offices/users/{user_id}/documents/{document_id}",
+                    "href": f"{str(req.base_url)}mongo/characters/users/{user_id}/documents/{document_id}",
                     "rel": f"/users/{user_id}/documents/{document_id}",
                     "type": "DELETE",
                     "title": "유저 채팅방 지우기",
