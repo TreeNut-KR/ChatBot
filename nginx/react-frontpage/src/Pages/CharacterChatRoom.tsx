@@ -1,23 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import Header from '../Component/Header/Header';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import CharacterChatSidebar from '../Component/CharacterMain/CharacterChatSidebar';
-
-// 쿠키에서 값을 읽어오는 함수
-const getCookieValue = (name: string): string => {
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.trim().split('=');
-    if (cookieName === name) {
-      return decodeURIComponent(cookieValue);
-    }
-  }
-  return '';
-};
+// api.ts의 함수 가져오기
+import { 
+  loadCharacterChatLogs, 
+  getCharacterResponse, 
+  fetchCharacterChatRooms, 
+  getCharacterDetails,
+  getUserId
+} from '../Component/Chatting/Services/api';
 
 // Character 인터페이스 정의
 interface Character {
@@ -41,14 +36,12 @@ interface Message {
 const CharacterChatRoom: React.FC = () => {
   const { uuid } = useParams<{ uuid: string }>();
   const decodedUuid = decodeURIComponent(uuid || '');
-  console.log('Decoded URL UUID:', decodedUuid); // URL에서 받은 UUID 값 확인
-
+  
   const [character, setCharacter] = useState<Character | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
   const [selectedModel, setSelectedModel] = useState('Llama'); // 기본 모델 설정
   const [myRooms, setMyRooms] = useState<
     { roomid: string; Title: string; character_name: string; character_img: string }[]
@@ -67,7 +60,7 @@ const CharacterChatRoom: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // 채팅방이 변경될 때마다 상태 초기화
+  // 채팅방이 변경될 때마다 상태 초기화 - api.ts 활용
   useEffect(() => {
     // 상태 초기화
     setMessages([]);
@@ -77,14 +70,10 @@ const CharacterChatRoom: React.FC = () => {
     
     const fetchCharacterDetails = async () => {
       try {
-        const jwtToken = getCookieValue('jwt-token');
-        // 1. 채팅 로그 먼저 불러오기
-        const logsResponse = await axios.get(`/server/chatroom/character/${decodedUuid}/load_logs`, {
-          headers: { Authorization: jwtToken },
-        });
-        const logsData = logsResponse.data;
+        // 1. 채팅 로그 먼저 불러오기 - api.ts 활용
+        const logsData = await loadCharacterChatLogs(decodedUuid);
 
-        if (!logsData || logsData.status !== 200 || !logsData.logs || !logsData.logs.character_idx) {
+        if (!logsData || !logsData.logs || !logsData.logs.character_idx) {
           setError('채팅 로그 정보를 가져오는데 실패했습니다.');
           setLoading(false);
           return;
@@ -92,12 +81,12 @@ const CharacterChatRoom: React.FC = () => {
 
         const characterIdx = logsData.logs.character_idx;
 
-        // 2. 캐릭터 정보 불러오기
+        // 2. 캐릭터 정보 불러오기 - api.ts 활용
         let detailsData = null;
         try {
-          const detailsResponse = await axios.get(`/server/character/details/idx/${characterIdx}`);
-          detailsData = detailsResponse.data;
-        } catch {
+          detailsData = await getCharacterDetails(characterIdx);
+        } catch (error) {
+          console.error('캐릭터 정보 로딩 실패:', error);
           detailsData = null;
         }
 
@@ -140,6 +129,7 @@ const CharacterChatRoom: React.FC = () => {
         }
         setLoading(false);
       } catch (err: any) {
+        console.error('채팅 정보 로딩 오류:', err);
         setError('채팅 정보를 불러오는데 실패했습니다.');
         setLoading(false);
       }
@@ -150,22 +140,17 @@ const CharacterChatRoom: React.FC = () => {
     }
   }, [decodedUuid]); // uuid가 바뀔 때마다 실행
 
-  // 내 채팅방 목록 불러오기
+  // 내 채팅방 목록 불러오기 - api.ts 활용
   useEffect(() => {
     const fetchMyRooms = async () => {
       try {
-        const token = getCookieValue('jwt-token');
-        if (!token) return;
-        const res = await axios.get('/server/chatroom/character/find_my_rooms', {
-          headers: { Authorization: token },
-        });
-        if (res.data?.status === 200 && Array.isArray(res.data.rooms)) {
-          setMyRooms(res.data.rooms);
-        }
+        const rooms = await fetchCharacterChatRooms();
+        setMyRooms(rooms);
       } catch (e) {
-        // 필요시 에러 처리
+        console.error('채팅방 목록을 불러오는데 실패했습니다.', e);
       }
     };
+    
     fetchMyRooms();
 
     // 포커스 될 때마다 목록 새로고침
@@ -173,6 +158,7 @@ const CharacterChatRoom: React.FC = () => {
     return () => window.removeEventListener('focus', fetchMyRooms);
   }, []);
 
+  // 메시지 전송 - api.ts 활용
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
   
@@ -187,27 +173,11 @@ const CharacterChatRoom: React.FC = () => {
     setNewMessage('');
   
     try {
-      const jwtToken = getCookieValue('jwt-token');
-      if (!jwtToken) {
-        throw new Error('로그인이 필요합니다.');
-      }
-  
-      const response = await axios.post(
-        `/server/chatroom/character/${decodedUuid}/get_response`,
-        {
-          input_data_set: newMessage,
-          route_set: selectedModel,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // api.ts의 getCharacterResponse 호출
+      const response = await getCharacterResponse(decodedUuid, newMessage, selectedModel);
   
       // 응답에서 여러 필드 중 실제 답변이 있는 곳을 우선적으로 사용
-      const data = response.data;
+      const data = response;
       const answer =
         data.response ||
         data.output_data ||
@@ -307,7 +277,6 @@ const CharacterChatRoom: React.FC = () => {
         <div className="flex w-full max-w-[1280px] justify-center p-4 text-red-500 text-center py-10">
           {error || '캐릭터 정보를 불러올 수 없습니다.'}
         </div>
-        {debugInfo}
       </div>
     );
   }

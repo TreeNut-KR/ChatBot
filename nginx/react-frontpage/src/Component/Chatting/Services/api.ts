@@ -1,5 +1,6 @@
 import { getCookie } from '../../../Cookies';
 import { ChatRoom } from '../Types';
+import axios from 'axios';
 
 // 토큰 가져오기 및 형식 처리 함수 - localStorage 대신 쿠키 사용
 export const getAuthHeader = (): Record<string, string> => {
@@ -23,26 +24,17 @@ export const getAuthHeader = (): Record<string, string> => {
 
 export const API_BASE_URL = '/server';
 
-// 임시 인터페이스 정의 - Types.ts에 있다면 이 부분은 제거
-// 이미 불러온 ChatRoom 인터페이스를 사용하나,
-// 정의되지 않은 경우를 대비하여 주석 처리된 코드를 남겨둠
-/*
-interface ChatRoom {
-  id: string;
-  title?: string;
-  last_message?: string;
-  created_at?: string;
-  updated_at?: string;
-  updatedAt?: string; // 서버 응답의 다양한 형태 대응
-  timestamp?: string; // 내부적으로 추가하는 필드
-  [key: string]: any; // 기타 가능한 필드들
-}
-*/
+// 사용자 ID 가져오기 함수 추가 (쿠키 사용)
+export const getUserId = (): string | null => {
+  return getCookie('user_id') || null;
+};
+
+// ================ Office 채팅방 API ================
 
 // 채팅방 목록 가져오기
 export const fetchChatRooms = async (): Promise<ChatRoom[]> => {
   try {
-    const url = `${API_BASE_URL}/chatroom/office/find_my_rooms`;
+    const url = `${API_BASE_URL}/rooms/office`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -95,7 +87,7 @@ export const fetchChatRooms = async (): Promise<ChatRoom[]> => {
   }
 };
 
-// 채팅방 삭제하기 함수 개선
+// 채팅방 삭제하기
 export const deleteChatRoom = async (roomId: string) => {
   if (!roomId) {
     throw new Error('채팅방 ID가 없습니다.');
@@ -103,7 +95,7 @@ export const deleteChatRoom = async (roomId: string) => {
 
   // roomId가 공백이 있는 경우를 대비해 trim() 처리
   const trimmedRoomId = roomId.trim();
-  const url = `${API_BASE_URL}/chatroom/office/${encodeURIComponent(trimmedRoomId)}/delete_room`;
+  const url = `${API_BASE_URL}/rooms/office/${encodeURIComponent(trimmedRoomId)}`;
   console.log('삭제 요청 URL:', url);
 
   try {
@@ -133,10 +125,10 @@ export const deleteChatRoom = async (roomId: string) => {
 
 // 새 채팅방 생성하기
 export const createNewChatRoom = async () => {
-  const url = `${API_BASE_URL}/chatroom/office`;
+  const url = `${API_BASE_URL}/rooms/office`;
 
   const response = await fetch(url, {
-    method: 'GET',
+    method: 'POST',
     headers: getAuthHeader(),
   });
 
@@ -144,12 +136,15 @@ export const createNewChatRoom = async () => {
     throw new Error('새 채팅방 생성에 실패했습니다.');
   }
 
-  return await response.json();
+  // 콘솔에 응답 구조 기록
+  const data = await response.json();
+  console.log('채팅방 생성 응답:', data);
+  return data;
 };
 
 // 챗봇 응답 받기
 export const getChatResponse = async (roomId: string, inputText: string, model: string, googleAccess: string) => {
-  const url = `${API_BASE_URL}/chatroom/office/${roomId}/get_response`;
+  const url = `${API_BASE_URL}/rooms/office/${roomId}/logs`;
   
   const requestBody = {
     input_data_set: inputText,
@@ -172,12 +167,11 @@ export const getChatResponse = async (roomId: string, inputText: string, model: 
 
 // 채팅 로그 불러오기
 export const loadChatLogs = async (roomId: string) => {
-  const url = `${API_BASE_URL}/chatroom/office/${roomId}/load_logs`;
+  const url = `${API_BASE_URL}/rooms/office/${roomId}/logs`;
 
   const response = await fetch(url, {
-    method: 'POST',
+    method: 'GET',
     headers: getAuthHeader(),
-    body: JSON.stringify({}),
   });
 
   if (!response.ok) {
@@ -187,7 +181,155 @@ export const loadChatLogs = async (roomId: string) => {
   return await response.json();
 };
 
-// 사용자 ID 가져오기 함수 추가 (쿠키 사용)
-export const getUserId = (): string | null => {
-  return getCookie('user_id') || null;
+// ================ Character 채팅방 API ================
+
+// 캐릭터 채팅방 목록 가져오기
+export const fetchCharacterChatRooms = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/rooms/character`, {
+      headers: getAuthHeader(),
+    });
+    
+    if (response.data?.status === 200 && Array.isArray(response.data.rooms)) {
+      return response.data.rooms;
+    }
+    return [];
+  } catch (error) {
+    console.error('캐릭터 채팅방 목록 가져오기 오류:', error);
+    return [];
+  }
+};
+
+// 캐릭터 채팅방 생성하기
+export const createCharacterChatRoom = async (characterIdx: number) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/rooms/character`, 
+      { character_idx: characterIdx },
+      { headers: getAuthHeader() }
+    );
+    
+    if (response.data?.status !== 200) {
+      throw new Error(response.data?.message || '채팅방 생성 실패');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('캐릭터 채팅방 생성 오류:', error);
+    throw error;
+  }
+};
+
+// 캐릭터 채팅 로그 가져오기
+export const loadCharacterChatLogs = async (roomId: string) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/rooms/character/${roomId}/logs`,
+      { headers: getAuthHeader() }
+    );
+    
+    if (response.data?.status !== 200) {
+      throw new Error(response.data?.message || '로그 로드 실패');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('캐릭터 채팅 로그 가져오기 오류:', error);
+    throw error;
+  }
+};
+
+// 캐릭터 응답 받기
+export const getCharacterResponse = async (roomId: string, inputText: string, model: string) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/rooms/character/${roomId}/logs`,
+      {
+        input_data_set: inputText,
+        route_set: model,
+      },
+      { headers: getAuthHeader() }
+    );
+    
+    if (response.data?.status !== 200) {
+      throw new Error(response.data?.message || '응답 생성 실패');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('캐릭터 응답 가져오기 오류:', error);
+    throw error;
+  }
+};
+
+// 캐릭터 상세 정보 가져오기
+export const getCharacterDetails = async (characterIdx: number) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/character/details/idx/${characterIdx}`);
+    return response.data;
+  } catch (error) {
+    console.error('캐릭터 정보 가져오기 오류:', error);
+    throw error;
+  }
+};
+
+// 캐릭터 채팅방 삭제하기 
+export const deleteCharacterChatRoom = async (roomId: string) => {
+  try {
+    const response = await axios.delete(
+      `${API_BASE_URL}/rooms/character/${roomId}`,
+      { headers: getAuthHeader() }
+    );
+    
+    if (response.data?.status !== 200) {
+      throw new Error(response.data?.message || '채팅방 삭제 실패');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('캐릭터 채팅방 삭제 오류:', error);
+    throw error;
+  }
+};
+
+// 캐릭터 채팅 로그 수정
+export const updateCharacterChatLog = async (roomId: string, inputText: string, model: string) => {
+  try {
+    const response = await axios.put(
+      `${API_BASE_URL}/rooms/character/${roomId}/logs`,
+      {
+        input_data_set: inputText,
+        route_set: model,
+      },
+      { headers: getAuthHeader() }
+    );
+    
+    if (response.data?.status !== 200) {
+      throw new Error(response.data?.message || '로그 수정 실패');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('캐릭터 채팅 로그 수정 오류:', error);
+    throw error;
+  }
+};
+
+// 캐릭터 채팅 로그 삭제
+export const deleteCharacterChatLog = async (roomId: string, logIndex: number) => {
+  try {
+    const response = await axios.delete(
+      `${API_BASE_URL}/rooms/character/${roomId}/logs/${logIndex}`,
+      { headers: getAuthHeader() }
+    );
+    
+    if (response.data?.status !== 200) {
+      throw new Error(response.data?.message || '로그 삭제 실패');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('캐릭터 채팅 로그 삭제 오류:', error);
+    throw error;
+  }
 };

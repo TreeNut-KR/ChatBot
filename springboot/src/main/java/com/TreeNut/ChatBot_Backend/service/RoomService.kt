@@ -196,7 +196,6 @@ class RoomService(
     fun updateOfficeRoomLog( 
         userid: String,
         mongo_chatroomid: String,  // 필드명 변경
-        index: Int,
         input_data_set: String,
         google_access_set: Boolean,
         route: String
@@ -487,7 +486,6 @@ class RoomService(
     fun updateCharacterRoomLog(
         userid: String,
         mongo_chatroomid: String,
-        index: Int,
         input_data_set: String,
         characterName: String,
         greeting: String,
