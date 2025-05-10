@@ -245,3 +245,4 @@ nginx/certificates/*
 admincontroller/client/build/*
 admincontroller/client/node_modules/*
 admincontroller/server/node_modules/*
+secureModule.js

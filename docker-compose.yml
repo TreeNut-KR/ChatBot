@@ -58,10 +58,14 @@ services:
     ports:
       - "5785:5785"
     environment:
-      - TZ=Asia/Seoul
-      - NODE_ENV=production
+      TZ: "Asia/Seoul"
+      NODE_ENV: "production"
+      GOOGLE_APPLICATION_CREDENTIALS_JSON_CONTENT: ${GOOGLE_APPLICATION_CREDENTIALS_JSON_CONTENT}
     depends_on:
-      - springboot
+      mysql:
+        condition: service_healthy
+      springboot:
+        condition: service_started
 
   mysql:
     restart: unless-stopped
@@ -84,6 +88,10 @@ services:
       "--skip-host-cache",
       "--skip-name-resolve"
       ]
+    healthcheck:                       # 헬스체크 추가
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
 
   mongodb:
     restart: unless-stopped

@@ -4,11 +4,32 @@
 
 .App-header {
   background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  padding: 20px;
   color: white;
+  margin-bottom: 20px;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* DriveManager 관련 스타일 */
+.file-list {
+  margin-top: 20px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.preview-link {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.preview-link:hover {
+  text-decoration: underline;
 }

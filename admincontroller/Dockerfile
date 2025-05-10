@@ -1,21 +1,20 @@
-# Node.js 이미지 사용
-FROM node:18-alpine
+FROM node:16
 
-# 작업 디렉토리 설정
 WORKDIR /app
+COPY . .
 
-# package.json 복사 및 서버 의존성 설치
-COPY server/package*.json ./
+# 서버 종속성 설치
+WORKDIR /app/server
 RUN npm install
 
-# 서버 코드 복사
-COPY server ./server
+# 클라이언트 종속성 설치 및 빌드
+WORKDIR /app/client
+RUN npm install
+RUN npm run build
 
-# 빌드된 클라이언트 파일만 복사
-COPY client/build ./client/build
+# 서버 디렉토리로 다시 이동
+WORKDIR /app/server
 
-# 포트 설정
 EXPOSE 5785
 
-# 서버 실행
-CMD ["node", "server/server.js"]
+CMD ["node", "server.js"]
