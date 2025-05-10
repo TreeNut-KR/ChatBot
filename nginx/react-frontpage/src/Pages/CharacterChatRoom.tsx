@@ -67,7 +67,14 @@ const CharacterChatRoom: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // 채팅방이 변경될 때마다 상태 초기화
   useEffect(() => {
+    // 상태 초기화
+    setMessages([]);
+    setCharacter(null);
+    setError(null);
+    setLoading(true);
+    
     const fetchCharacterDetails = async () => {
       try {
         const jwtToken = getCookieValue('jwt-token');
@@ -91,47 +98,46 @@ const CharacterChatRoom: React.FC = () => {
           const detailsResponse = await axios.get(`/server/character/details/idx/${characterIdx}`);
           detailsData = detailsResponse.data;
         } catch {
-          // 캐릭터가 존재하지 않거나 삭제된 경우
           detailsData = null;
         }
 
         if (detailsData) {
           setCharacter(detailsData);
 
-          // 캐릭터의 인삿말 추가
-          if (detailsData.greeting) {
+          // 3. 채팅 로그를 메시지 배열로 변환
+          const chatLogs = Array.isArray(logsData.logs.value)
+            ? logsData.logs.value.map((log: any, idx: number) => [
+                {
+                  id: log.index * 2 - 1,
+                  sender: 'user',
+                  content: log.input_data,
+                  timestamp: log.timestamp,
+                },
+                {
+                  id: log.index * 2,
+                  sender: 'character',
+                  content: log.output_data,
+                  timestamp: log.timestamp,
+                },
+              ]).flat()
+            : [];
+
+          setMessages(chatLogs);
+
+          // 채팅 기록이 없을 경우 인사말 추가
+          if (chatLogs.length === 0 && detailsData.greeting) {
             const greetingMessage: Message = {
               id: Date.now(),
               sender: 'character',
               content: detailsData.greeting,
               timestamp: new Date().toISOString(),
             };
-            setMessages((prevMessages) => [greetingMessage, ...prevMessages]);
+            setMessages([greetingMessage]);
           }
         } else {
           setCharacter(null);
           setError('존재하지 않는 캐릭터입니다.');
         }
-
-        // 3. 채팅 로그를 메시지 배열로 변환
-        const chatLogs = Array.isArray(logsData.logs.value)
-          ? logsData.logs.value.map((log: any, idx: number) => [
-              {
-                id: log.index * 2 - 1,
-                sender: 'user',
-                content: log.input_data,
-                timestamp: log.timestamp,
-              },
-              {
-                id: log.index * 2,
-                sender: 'character',
-                content: log.output_data,
-                timestamp: log.timestamp,
-              },
-            ]).flat()
-          : [];
-
-        setMessages((prevMessages) => [...prevMessages, ...chatLogs]);
         setLoading(false);
       } catch (err: any) {
         setError('채팅 정보를 불러오는데 실패했습니다.');
@@ -139,8 +145,10 @@ const CharacterChatRoom: React.FC = () => {
       }
     };
 
-    fetchCharacterDetails();
-  }, [decodedUuid]);
+    if (decodedUuid) {
+      fetchCharacterDetails();
+    }
+  }, [decodedUuid]); // uuid가 바뀔 때마다 실행
 
   // 내 채팅방 목록 불러오기
   useEffect(() => {

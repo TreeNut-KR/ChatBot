@@ -40,47 +40,51 @@ class RoomService(
         userId: String,
         route: String = "Llama",
     ): Mono<String> {
-        return webClient.build()
-            .post()
-            .uri("${pythonServerUrl}/office/{route}", route)
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                mapOf(
-                    "input_data" to inputDataSet,
-                    "google_access" to googleAccessSet,
-                    "db_id" to mongodbId,
-                    "user_id" to userId,
+        return getUserMembership(userId).flatMap { membership ->
+            // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
+            val finalRoute = if (membership == MembershipType.BASIC && route != "Llama") {
+                "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
+            } else {
+                route // VIP 멤버십은 요청한 route 그대로 사용
+            }
+            
+            webClient.build()
+                .post()
+                .uri("${pythonServerUrl}/office/{route}", finalRoute) // finalRoute 사용
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    mapOf(
+                        "input_data" to inputDataSet,
+                        "google_access" to googleAccessSet,
+                        "db_id" to mongodbId,
+                        "user_id" to userId,
+                    )
                 )
-            )
-            .retrieve()
-            .bodyToMono(Map::class.java)
-            .map { response ->
-                @Suppress("UNCHECKED_CAST")
-                val result = response["result"] as? String ?: throw RuntimeException("응답에 'result' 필드가 없습니다.")
-                result
-            }
-            .doOnError { error ->
-                logger.error("[ERROR] Office 응답 처리 중 오류 발생: ${error.message}", error)
-            }
-            .onErrorResume { throwable ->
-                when (throwable) {
-                    is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
-                    else -> Mono.error(throwable)
+                .retrieve()
+                .bodyToMono(Map::class.java)
+                .map { response ->
+                    @Suppress("UNCHECKED_CAST")
+                    val result = response["result"] as? String ?: throw RuntimeException("응답에 'result' 필드가 없습니다.")
+                    result
                 }
-            }
+                .doOnError { error ->
+                    logger.error("[ERROR] Office 응답 처리 중 오류 발생: ${error.message}", error)
+                }
+                .onErrorResume { throwable ->
+                    when (throwable) {
+                        is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
+                        else -> Mono.error(throwable)
+                    }
+                }
+        }
     }
 
     fun createOfficeRoom(userid: String): Mono<Map<String, Any>> {
-        val requestBody = mapOf<String, Any>(
-            "user_id" to userid
-        )
-
         return webClient.build()
             .post()
-            .uri("/mongo/office/create")
+            .uri("/mongo/offices/users/{user_id}", userid)
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
             .map { 
@@ -97,15 +101,13 @@ class RoomService(
     ): Mono<Map<String, Any>> {
         val truncatedOutputData = output_data_set.take(8191)
         val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid,
             "input_data" to input_data_set,
             "output_data" to truncatedOutputData
         )
 
         return webClient.build()
             .put()
-            .uri("/mongo/office/save_log")
+            .uri("/mongo/offices/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
@@ -157,32 +159,19 @@ class RoomService(
     }
 
     fun loadOfficeRoomLogs(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
-        val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid
-
-        )
-
         return webClient.build()
-            .post()
-            .uri("/mongo/office/load_log")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
+            .get()
+            .uri("/mongo/offices/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
+            .accept(MediaType.APPLICATION_JSON)
             .retrieve()
             .bodyToMono(Map::class.java)
     }
 
     fun deleteOfficeRoom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {  // 필드명 변경
-        val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid
-        )
-
         return webClient.build()
             .method(HttpMethod.DELETE)
-            .uri("/mongo/office/delete_room")
+            .uri("/mongo/offices/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
     }
@@ -230,16 +219,13 @@ class RoomService(
             ).flatMap { output_data_set ->
                 val truncatedOutputData = output_data_set.take(8191) // output_data의 길이를 8191자로 제한
                 val requestBody = mapOf(
-                    "user_id" to userid,
-                    "id" to mongo_chatroomid,  // 필드명 변경
-                    "index" to index,
                     "input_data" to input_data_set,
                     "output_data" to truncatedOutputData
                 )
 
                 webClient.build()
-                    .put()
-                    .uri("/mongo/office/update_log")
+                    .patch()
+                    .uri("/mongo/offices/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
@@ -249,17 +235,10 @@ class RoomService(
     }
 
     fun deleteOfficeRoomLog(userid: String, mongo_chatroomid: String, index: Int): Mono<Map<*, *>> {  // 필드명 변경
-        val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid,  // 필드명 변경
-            "index" to index
-        )
-
         return webClient.build()
             .method(HttpMethod.DELETE)
-            .uri("/mongo/office/delete_log")
+            .uri("/mongo/offices/users/{user_id}/documents/{document_id}/idx/{index}", userid, mongo_chatroomid, index)
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
     }
@@ -293,48 +272,56 @@ class RoomService(
         userId: String,
         route: String = "Llama",
     ): Mono<String> {
-        return webClient.build()
-            .post()
-            .uri("${pythonServerUrl}/character/{route}", route)
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .bodyValue(
-                mapOf(
-                    "input_data" to inputDataSet,
-                    "character_name" to characterName,
-                    "greeting" to greeting,
-                    "context" to context,
-                    "db_id" to mongodbId,
-                    "user_id" to userId,
+        return getUserMembership(userId).flatMap { membership ->
+            // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
+            val finalRoute = if (membership == MembershipType.BASIC && route != "Llama") {
+                "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
+            } else {
+                route // VIP 멤버십은 요청한 route 그대로 사용
+            }
+            
+            webClient.build()
+                .post()
+                .uri("${pythonServerUrl}/character/{route}", finalRoute) // finalRoute 사용
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue(
+                    mapOf(
+                        "input_data" to inputDataSet,
+                        "character_name" to characterName,
+                        "greeting" to greeting,
+                        "context" to context,
+                        "db_id" to mongodbId,
+                        "user_id" to userId,
+                    )
                 )
-            )
-            .retrieve()
-            .bodyToMono(Map::class.java)
-            .map { response ->
-                @Suppress("UNCHECKED_CAST")
-                val result = response["result"] as? String ?: throw RuntimeException("응답에 'result' 필드가 없습니다.")
-                result
-            }
-            .doOnError { error ->
-                logger.error("[ERROR] Character 응답 처리 중 오류 발생: ${error.message}", error)
-            }
-            .onErrorResume { throwable ->
-                when (throwable) {
-                    is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
-                    else -> Mono.error(throwable)
+                .retrieve()
+                .bodyToMono(Map::class.java)
+                .map { response ->
+                    @Suppress("UNCHECKED_CAST")
+                    val result = response["result"] as? String ?: throw RuntimeException("응답에 'result' 필드가 없습니다.")
+                    result
                 }
-            }
+                .doOnError { error ->
+                    logger.error("[ERROR] Character 응답 처리 중 오류 발생: ${error.message}", error)
+                }
+                .onErrorResume { throwable ->
+                    when (throwable) {
+                        is TimeoutException -> Mono.error(RuntimeException("요청이 10분 시간 제한을 초과했습니다."))
+                        else -> Mono.error(throwable)
+                    }
+                }
+        }
     }
 
     fun createCharacterRoom(userid: String, characterIdx: Int): Mono<Map<String, Any>> {
         val requestBody = mapOf<String, Any>(
-            "user_id" to userid,
             "character_idx" to characterIdx
         )
 
         return webClient.build()
             .post()
-            .uri("/mongo/chatbot/create")
+            .uri("/mongo/characters/users/{user_id}", userid)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
@@ -354,8 +341,6 @@ class RoomService(
     ): Mono<Map<String, Any>> {
         val truncatedOutputData = output_data_set.take(8191)
         val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid,
             "input_data" to input_data_set,
             "output_data" to truncatedOutputData,
             "img_url" to image_set,
@@ -363,7 +348,7 @@ class RoomService(
 
         return webClient.build()
             .put()
-            .uri("/mongo/chatbot/save_log")
+            .uri("/mongo/characters/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
@@ -454,22 +439,12 @@ class RoomService(
         userid: String,
         mongo_chatroomid: String
     ): Mono<Map<String, Any>> {
-        val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid
-        )
-
         return webClient.build()
-            .post()
-            .uri("/mongo/chatbot/load_log")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
+            .get()
+            .uri("/mongo/characters/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
+            .accept(MediaType.APPLICATION_JSON)
             .retrieve()
-            .bodyToMono(Map::class.java)
-            .map { response -> 
-                @Suppress("UNCHECKED_CAST")
-                response as Map<String, Any>
-            }
+            .bodyToMono<Map<String, Any>>(Map::class.java as Class<Map<String, Any>>)
             .onErrorMap { e ->
                 RuntimeException("채팅 로그 로드 실패: ${e.message}")
             }
@@ -485,16 +460,10 @@ class RoomService(
     }
 
     fun deleteCharacterRoom(userid: String, mongo_chatroomid: String): Mono<Map<*, *>> {
-        val requestBody = mapOf(
-            "user_id" to userid,
-            "id" to mongo_chatroomid
-        )
-
         return webClient.build()
             .method(HttpMethod.DELETE)
-            .uri("/mongo/chatbot/delete_room")
+            .uri("/mongo/characters/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
             .retrieve()
             .bodyToMono(Map::class.java)
     }
@@ -545,17 +514,14 @@ class RoomService(
             ).flatMap { output_data_set ->
                 val truncatedOutputData = output_data_set.take(8191)
                 val requestBody = mapOf(
-                    "user_id" to userid,
-                    "id" to mongo_chatroomid,
-                    "index" to index,
                     "input_data" to input_data_set,
                     "output_data" to truncatedOutputData,
                     "img_url" to image_set,
                 )
 
                 webClient.build()
-                    .put()
-                    .uri("/mongo/chatbot/update_log")
+                    .patch()
+                    .uri("/mongo/characters/users/{user_id}/documents/{document_id}", userid, mongo_chatroomid)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
@@ -573,7 +539,7 @@ class RoomService(
 
         return webClient.build()
             .method(HttpMethod.DELETE)
-            .uri("/mongo/chatbot/delete_log")
+            .uri("/mongo/characters/users/{user_id}/documents/{document_id}/idx/{index}", userid, mongo_chatroomid, index)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
