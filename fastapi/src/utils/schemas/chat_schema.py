@@ -1,7 +1,6 @@
 import re
 import uuid
-from pydantic import BaseModel, Field, field_validator, model_validator, conint
-import httpx
+from pydantic import BaseModel, Field, field_validator, conint
 
 class Validators:
     @staticmethod
@@ -113,104 +112,30 @@ class CommonFields:
         max_length=6,
     )
 
-# Public ---------------------------------------------------------------------------------------------------
-
-class Identifier_Request(BaseModel):
-    user_id: str = CommonFields.user_id_set
-    id: str = CommonFields.id_set
-    
-    @field_validator('id', mode='before') # mode='before'는 필드 값이 검증되기 전에 호출
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class Log_Delete_Request(BaseModel):
-    user_id: str = CommonFields.user_id_set
-    id: str = CommonFields.id_set
-    index: conint(ge=1) = CommonFields.index_set # type: ignore
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class Room_Delete_Request(BaseModel):
-    user_id: str = CommonFields.user_id_set
-    id: str = CommonFields.id_set
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
 # Office ---------------------------------------------------------------------------------------------------
 
-class Office_Id_Request(BaseModel):
-    user_id: str = CommonFields.user_id_set
-
 class Office_Create_Request(BaseModelWithCustomDump):
-    user_id: str = CommonFields.user_id_set
-    id: str = CommonFields.id_set
     input_data: str = CommonFields.input_data_set
     output_data: str = CommonFields.output_data_set
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
 
 class Office_Update_Request(BaseModelWithCustomDump):
-    user_id: str = CommonFields.user_id_set
-    id: str = CommonFields.id_set
     input_data: str = CommonFields.input_data_set
     output_data: str = CommonFields.output_data_set
-    index: conint(ge=1) = CommonFields.index_set # type: ignore
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class Office_Response(BaseModel):
-    id: str = CommonFields.id_set
-    value: list = CommonFields.value_set
-        
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
 
 # ChatBot ---------------------------------------------------------------------------------------------------
 
 class ChatBot_Id_Request(BaseModel):
-    user_id: str = CommonFields.user_id_set
     character_idx: int = CommonFields.character_idx_set
-    
+
 class ChatBot_Create_Request(BaseModelWithCustomDump):
-    user_id: str = CommonFields.user_id_set
-    id: str = CommonFields.id_set
     img_url: str = CommonFields.img_url_set
     input_data: str = CommonFields.input_data_set
     output_data: str = CommonFields.output_data_set
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
 
 class ChatBot_Update_Request(BaseModelWithCustomDump):
-    user_id: str = CommonFields.user_id_set
-    id: str = CommonFields.id_set
     img_url: str = CommonFields.img_url_set
     input_data: str = CommonFields.input_data_set
     output_data: str = CommonFields.output_data_set
-    index: conint(ge=1) = CommonFields.index_set # type: ignore
-    
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
-
-class ChatBot_Response(BaseModel):
-    id: str = CommonFields.id_set
-    character_idx: int = CommonFields.character_idx_set
-    value: list = CommonFields.value_set
-        
-    @field_validator('id', mode='before')
-    def check_id(cls, v):
-        return Validators.validate_uuid(v)
 
 class Email_Request(BaseModel):
     user_id: str = CommonFields.user_id_set

@@ -13,10 +13,11 @@ COPY ./nginx.conf /etc/nginx/nginx.conf
 COPY ./react-frontpage/build /usr/share/nginx/html
 
 # SSL 인증서 복사 및 권한 설정
-COPY ./certificates/* /etc/nginx/certs/
-RUN chmod 644 /etc/nginx/certs/*.crt.pem && \
-    chmod 600 /etc/nginx/certs/*.key.pem && \
-    chmod 644 /etc/nginx/certs/chain-bundle.pem # 또는 root-chain-bundle.pem 또는 두개의 체인파일을 합친 파일
+COPY ./certificates/*.pem /etc/nginx/certs/
+# 파일이 존재하는 경우에만 권한 설정
+RUN chmod 644 /etc/nginx/certs/*.crt.pem || true && \
+    chmod 600 /etc/nginx/certs/*.key.pem || true && \
+    chmod 644 /etc/nginx/certs/*.all.crt.pem || true
 
 # 443 포트 노출
 EXPOSE 443
