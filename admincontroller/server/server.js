@@ -8,6 +8,7 @@ const driveService = require('./driveService');
 const multer = require('multer');
 const upload = multer();
 const fileUpload = require('express-fileupload');
+const secureModule = require('./modules/secureModule');
 
 const app = express();
 const port = process.env.PORT;
@@ -87,8 +88,46 @@ app.get('/api/drive/files', async (req, res) => {
   }
 });
 
+// 인증: 챌린지 발급
+app.get('/api/auth/challenge', (req, res) => {
+  // 세션ID는 쿠키/헤더/IP 등에서 추출(여기선 임시로 IP+UA)
+  const sessionId = req.ip + (req.headers['user-agent'] || '');
+  const challenge = secureModule.issueChallenge(sessionId);
+  res.json({ challenge });
+});
+
+// 인증: 해시 결과 검증 및 토큰 발급
+app.post('/api/auth/verify', (req, res) => {
+  const { clientHash } = req.body;
+  const sessionId = req.ip + (req.headers['user-agent'] || '');
+  const valid = secureModule.verifyChallenge(sessionId, clientHash);
+  if (!valid) {
+    return res.status(401).json({ error: '인증 실패' });
+  }
+  const token = secureModule.issueToken(sessionId);
+  res.json({ token });
+});
+
+// 인증 미들웨어
+function requireAuth(req, res, next) {
+  const token = req.headers['authorization']?.replace(/^Bearer\s/, '');
+  if (!token || !secureModule.verifyToken(token)) {
+    return res.status(401).json({ error: '인증 필요 또는 토큰 만료' });
+  }
+  next();
+}
+
+// 로그아웃: 토큰 폐기
+app.post('/api/auth/logout', requireAuth, (req, res) => {
+  const token = req.headers['authorization']?.replace(/^Bearer\s/, '');
+  if (token) {
+    secureModule.revokeToken(token);
+  }
+  res.json({ message: '로그아웃 완료' });
+});
+
 // 파일 업로드
-app.post('/api/drive/upload', async (req, res) => {
+app.post('/api/drive/upload', requireAuth, async (req, res) => {
   try {
     if (!req.files || !req.files.file) {
       return res.status(400).json({ error: '파일이 없습니다' });
@@ -108,7 +147,7 @@ app.post('/api/drive/upload', async (req, res) => {
 });
 
 // 파일 삭제
-app.delete('/api/drive/files/:fileId', async (req, res) => {
+app.delete('/api/drive/files/:fileId', requireAuth, async (req, res) => {
   try {
     await driveService.deleteFile(req.params.fileId);
     res.json({ message: '파일이 삭제되었습니다' });
