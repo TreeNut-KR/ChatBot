@@ -107,6 +107,7 @@ class RoomController(
         @PathVariable id: String,
         @RequestBody inputData: Map<String, Any>
     ): Mono<ResponseEntity<Map<String, Any>>> {
+        // 토큰 검증 (유지)
         val token = authorization
             ?: return Mono.just(
                 ResponseEntity.badRequest().body(
@@ -149,46 +150,37 @@ class RoomController(
 
         val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
 
-        // 사용자의 멤버십 정보 확인
-        return roomService.getUserMembership(userId).flatMap { membership ->
-            // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
-            val finalRoute = if (membership == MembershipType.BASIC && routeSet != "Llama") {
-                "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
-            } else {
-                routeSet // VIP 멤버십은 요청한 route 그대로 사용
-            }
-
-            roomService.getOffice_Response(
-                inputDataSet = inputDataSet,
-                googleAccessSet = googleAccessSet,
-                mongodbId = id,
-                userId = userId,
-                route = finalRoute
-            ).flatMap { response ->
-                roomService.addOfficeRoom(
-                    userid = userId,
-                    mongo_chatroomid = id,
-                    input_data_set = inputDataSet,
-                    output_data_set = response.toString()
-                ).map {
-                    ResponseEntity.ok(
-                        mapOf(
-                            "status" to 200,
-                            "message" to response.toString()
-                        ) as Map<String, Any>
-                    )
-                }
-            }
-            .onErrorResume { e ->
-                Mono.just(
-                    ResponseEntity.status(500).body(
-                        mapOf(
-                            "status" to 500,
-                            "message" to "에러 발생: ${e.message}"
-                        ) as Map<String, Any>
-                    )
+        // 멤버십 검증 제거 - 직접 서비스 호출
+        return roomService.getOffice_Response(
+            inputDataSet = inputDataSet,
+            googleAccessSet = googleAccessSet,
+            mongodbId = id,
+            userId = userId,
+            route = routeSet
+        ).flatMap { response ->
+            roomService.addOfficeRoom(
+                userid = userId,
+                mongo_chatroomid = id,
+                input_data_set = inputDataSet,
+                output_data_set = response.toString()
+            ).map {
+                ResponseEntity.ok(
+                    mapOf(
+                        "status" to 200,
+                        "message" to response.toString()
+                    ) as Map<String, Any>
                 )
             }
+        }
+        .onErrorResume { e ->
+            Mono.just(
+                ResponseEntity.status(500).body(
+                    mapOf(
+                        "status" to 500,
+                        "message" to "에러 발생: ${e.message}"
+                    ) as Map<String, Any>
+                )
+            )
         }
     }
 
@@ -393,6 +385,7 @@ class RoomController(
         @Parameter(description = "입력 데이터", required = true)
         @RequestBody inputData: Map<String, Any>
     ): Mono<ResponseEntity<Map<String, Any>>> {
+        // 토큰 검증 및 기본 파라미터 검증 (유지)
         val token = authorization
             ?: return Mono.just(
                 ResponseEntity.badRequest().body(
@@ -433,7 +426,6 @@ class RoomController(
                 )
             )
         
-
         val routeSet = inputData["route_set"] as? String
             ?: return Mono.just(
                 ResponseEntity.badRequest().body(
@@ -445,34 +437,26 @@ class RoomController(
             )
 
         val googleAccessSet = (inputData["google_access_set"] as? String)?.toBoolean() ?: false
-        // 사용자의 멤버십 정보 확인 후 업데이트 수행
-        return roomService.getUserMembership(userId).flatMap { membership ->
-            // BASIC 사용자는 "Llama" 모델만 사용할 수 있음
-            val finalRoute = if (membership == MembershipType.BASIC && routeSet != "Llama") {
-                "Llama" // BASIC 멤버십은 무조건 Llama 모델만 사용
-            } else {
-                routeSet // VIP 멤버십은 요청한 route 그대로 사용
-            }
-            
-            roomService.updateOfficeRoomLog(userId, id, index, inputDataSet, googleAccessSet, finalRoute)
-                .map { response ->
-                    ResponseEntity.ok(
-                        mapOf(
-                            "status" to 200,
-                            "message" to "채팅 로그가 성공적으로 수정되었습니다.",
-                            "response" to response
-                        )
-                    )
-                }
-                .defaultIfEmpty(
-                    ResponseEntity.status(400).body(
-                        mapOf(
-                            "status" to 400,
-                            "message" to "채팅 로그 수정 실패"
-                        )
+        
+        // 멤버십 검증 제거 - 직접 서비스 호출
+        return roomService.updateOfficeRoomLog(userId, id, index, inputDataSet, googleAccessSet, routeSet)
+            .map { response ->
+                ResponseEntity.ok(
+                    mapOf(
+                        "status" to 200,
+                        "message" to "채팅 로그가 성공적으로 수정되었습니다.",
+                        "response" to response
                     )
                 )
-        }
+            }
+            .defaultIfEmpty(
+                ResponseEntity.status(400).body(
+                    mapOf(
+                        "status" to 400,
+                        "message" to "채팅 로그 수정 실패"
+                    )
+                )
+            )
     }
 
     @Operation(

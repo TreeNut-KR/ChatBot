@@ -301,7 +301,7 @@ class UserService(
         return try {
             val response = webClientBuilder.build()
                 .post()
-                .uri("/auth/send-verification")
+                .uri("/auth/verification/send")
                 .header("Content-Type", "application/json")
                 .bodyValue(mapOf("email" to email, "user_id" to userid))
                 .retrieve()
@@ -328,7 +328,7 @@ class UserService(
         return try {
             val response = webClientBuilder.build()
                 .post()
-                .uri("/auth/verify-code")
+                .uri("/auth/verification/verify")
                 .header("Content-Type", "application/json")
                 .bodyValue(mapOf("user_id" to userid, "email" to email, "code" to code))
                 .retrieve()

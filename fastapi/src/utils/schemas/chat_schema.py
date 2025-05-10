@@ -138,6 +138,7 @@ class ChatBot_Update_Request(BaseModelWithCustomDump):
     output_data: str = CommonFields.output_data_set
 
 class Email_Request(BaseModel):
+    user_id: str = CommonFields.user_id_set
     email: str = CommonFields.email_set
     
     @field_validator('email')
@@ -145,6 +146,7 @@ class Email_Request(BaseModel):
         return Validators.validate_email(v)
 
 class Verification_Request(BaseModel):
+    user_id: str = CommonFields.user_id_set
     email: str = CommonFields.email_set
     code: str = CommonFields.code_set
     
