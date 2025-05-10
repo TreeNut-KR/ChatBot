@@ -143,6 +143,3 @@ class MySQLDBHandler:
             return "success"
         else:
             return "code is different"
-
-# 핸들러 인스턴스화
-mysql_handler = MySQLDBHandler()

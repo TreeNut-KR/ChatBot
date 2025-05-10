@@ -44,12 +44,18 @@ const useAuthRedirect = () => {
 // Router 내부에서만 훅 사용
 const AppRoutes: React.FC = () => {
   useAuthRedirect();
+  const location = useLocation();
+
+  // /chat/:uuid 경로에서는 SideBar를 숨김
+  const hideSidebar = location.pathname.startsWith('/chat/');
 
   return (
     <div className='flex h-screen'>
-      <div className=" h-full">
-        <SideBar />
-      </div>
+      {!hideSidebar && (
+        <div className="h-full">
+          <SideBar />
+        </div>
+      )}
       <div className="flex-1 h-screen overflow-y-auto flex flex-col items-center bg-[#1a1918]">
         <Routes>
           <Route path="/home" element={<Home />} />

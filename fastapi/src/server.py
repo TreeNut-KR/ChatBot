@@ -10,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import JSONResponse
 
-from utils  import ChatError, mysql_handler, MysqlController, MongoController, SmtpController
+from utils  import ChatError, app_state, MongoController, SmtpController
 
 class ExceptionMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -32,17 +32,17 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
             return getattr(exception, 'detail', str(exception))
         except Exception as ex:
             return f"Unexpected error occurred: {str(ex)}"
-        
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     '''
     FastAPI 애플리케이션의 수명 주기를 관리하는 함수.
     '''
-    await mysql_handler.connect()
+    await app_state.initialize_handlers()
     try:
         yield
     finally:
-        await mysql_handler.disconnect()
+        await app_state.cleanup_handlers()
 
 app = FastAPI(lifespan=lifespan)
 ChatError.add_exception_handlers(app)  # 예외 핸들러 추가
@@ -96,21 +96,6 @@ async def catch_exceptions_middleware(request: Request, call_next):
     except Exception as e:
         error_detail = str(e)
         raise ChatError.InternalServerErrorException(detail=error_detail)
-
-@app.on_event("startup")
-async def startup():
-    await mysql_handler.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await mysql_handler.disconnect()
-
-app.include_router(
-    MysqlController.mysql_router,
-    prefix="/mysql",
-    tags=["MySQL Router"],
-    responses={500: {"description": "Internal Server Error"}}
-)
 
 # FastAPI 애플리케이션에 mongo_router를 추가
 app.include_router(

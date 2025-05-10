@@ -1,12 +1,17 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from starlette.responses import JSONResponse
-from . import ChatError, ChatModel, SMTPHandler, mysql_handler
+
+from . import ChatError, ChatModel, SMTPHandler
+from ..dependencies import MySQLDBHandler, get_mysql_handler
 
 smtp_handler = SMTPHandler()
 smtp_router = APIRouter()
 
-@smtp_router.post("/send-verification", summary="이메일 인증 코드 전송")
-async def send_verification_email(request: ChatModel.Email_Request):
+@smtp_router.post("/verification/send", summary="이메일 인증 코드 전송")
+async def send_verification_email(
+    request: ChatModel.Email_Request,
+    mysql_handler: MySQLDBHandler = Depends(get_mysql_handler)
+):
     '''
     사용자 이메일로 인증 코드를 전송합니다.
     '''
@@ -25,8 +30,11 @@ async def send_verification_email(request: ChatModel.Email_Request):
     except Exception as e:
         raise ChatError.InternalServerErrorException(detail=str(e))
 
-@smtp_router.post("/verify-code", summary="이메일 인증 코드 확인")
-async def verify_email_code(request: ChatModel.Verification_Request):
+@smtp_router.post("/verification/verify", summary="이메일 인증 코드 확인")
+async def verify_email_code(
+    request: ChatModel.Verification_Request,
+    mysql_handler: MySQLDBHandler = Depends(get_mysql_handler)
+):
     '''
     사용자로부터 받은 인증 코드를 검증합니다.
     '''
