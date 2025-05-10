@@ -32,7 +32,7 @@ const CharacterSwiper: React.FC<CharacterSwiperProps> = ({ onCharacterClick }) =
 
   // 이미지 URL 변환 함수 추가
   const getImageUrl = (image: string) => {
-    if (!image) return '/default-character.png';
+    if (!image) return '/images/default-character.png';
     // 이미지id만 남기고 변환
     // const match = image.match(/([a-zA-Z0-9_-]{20,})$/);
     // if (match) {

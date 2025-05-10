@@ -16,22 +16,42 @@ const getCookieValue = (name: string): string => {
 type MembershipType = 'BASIC' | 'VIP';
 
 const Profile: React.FC = () => {
-  const [userInfo, setUserInfo] = useState({ name: '', email: '' });
-  const [editedInfo, setEditedInfo] = useState({ name: '', email: '', pw: '' });
+  const [userInfo, setUserInfo] = useState({ name: '', email: '', userid: '' });
+  const [editedInfo, setEditedInfo] = useState({ name: '', email: '', userid: '', pw: '' });
   const [membership, setMembership] = useState<MembershipType>('BASIC');
-  const [isUpdatingMembership, setIsUpdatingMembership] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const [emailVerifyStatus, setEmailVerifyStatus] = useState<'idle' | 'success' | 'error' | 'expired' | 'notfound'>('idle');
+  const [emailVerifyMessage, setEmailVerifyMessage] = useState('');
 
   useEffect(() => {
-    // 사용자 정보만 가져와서 멤버십 정보도 함께 처리
+    // 사용자 정보와 멤버십 정보 모두 가져오기
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
-        // 사용자 정보 가져오기 - 이 정보에 멤버십 필드도 포함되어 있음
+        // 사용자 정보 가져오기
         await fetchUserInfo();
+
+        // 멤버십 정보 별도 요청
+        const jwtToken = getCookieValue('jwt-token');
+        const membershipRes = await fetch('/server/user/membership', {
+          method: 'GET',
+          headers: {
+            'Authorization': jwtToken || ''
+          },
+          credentials: 'include'
+        });
+        if (membershipRes.ok) {
+          const membershipData = await membershipRes.json();
+          if (membershipData.membership) {
+            setMembership(membershipData.membership as MembershipType);
+          }
+        }
       } catch (error) {
         console.error('사용자 정보를 가져오는 중 오류가 발생했습니다:', error);
         setError('사용자 정보를 불러올 수 없습니다. 다시 시도해 주세요.');
@@ -62,7 +82,7 @@ const Profile: React.FC = () => {
       const data = await response.json();
       console.log('User Info Fetched:', data);
       setUserInfo(data);
-      setEditedInfo({ ...data, pw: '' });
+      setEditedInfo({ ...data, pw: '' }); // data에 userid 포함
       
       // DB의 users 테이블에 membership 필드가 있으므로 이 정보를 사용
       if (data.membership) {
@@ -108,39 +128,69 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleMembershipUpdate = async (newMembership: MembershipType) => {
+  // 인증 메일 발송
+  const handleSendVerification = async () => {
+    setEmailVerifyStatus('idle');
+    setEmailVerifyMessage('');
     try {
-      setIsUpdatingMembership(true);
       const jwtToken = getCookieValue('jwt-token');
-      
-      const response = await fetch('/server/user/membership/update', {
+      const res = await fetch('/server/user/email/Verification', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': jwtToken || ''
+          'Authorization': jwtToken || '',
+          'Content-Type': 'application/json'
         },
-        credentials: 'include',
-        body: JSON.stringify({ membership: newMembership })
+        body: JSON.stringify({ email: emailInput })
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update membership');
-      }
-      
-      const result = await response.json();
-      console.log('Membership Update Response:', result);
-      
-      if (result.status === 200) {
-        setMembership(newMembership);
-        alert(result.message || '멤버십이 성공적으로 변경되었습니다.');
+      const data = await res.json();
+      if (data.status === 'success') {
+        setIsEmailSent(true);
+        setEmailVerifyMessage('인증 코드가 이메일로 전송되었습니다.');
       } else {
-        alert(result.message || '멤버십 변경에 실패했습니다.');
+        setEmailVerifyStatus('error');
+        setEmailVerifyMessage(data.message || '이메일 인증 요청에 실패했습니다.');
       }
-    } catch (error) {
-      console.error('Error updating membership:', error);
-      alert('멤버십을 변경하는 중 오류가 발생했습니다.');
-    } finally {
-      setIsUpdatingMembership(false);
+    } catch (e: any) {
+      setEmailVerifyStatus('error');
+      setEmailVerifyMessage(e.message || '이메일 인증 요청 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 인증 코드 확인
+  const handleVerifyCode = async () => {
+    setEmailVerifyStatus('idle');
+    setEmailVerifyMessage('');
+    try {
+      const jwtToken = getCookieValue('jwt-token');
+      const res = await fetch('/server/user/email/verify-code', {
+        method: 'POST',
+        headers: {
+          'Authorization': jwtToken || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email: emailInput, code: verificationCode })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setEmailVerifyStatus('success');
+        setEmailVerifyMessage('이메일 인증이 완료되었습니다.');
+        // 멤버십 정보 갱신 등 추가 처리
+      } else if (data.code === 'expired_verification_code') {
+        setEmailVerifyStatus('expired');
+        setEmailVerifyMessage('인증 코드가 만료되었습니다.');
+      } else if (data.code === 'invalid_verification_code') {
+        setEmailVerifyStatus('error');
+        setEmailVerifyMessage('인증 코드가 일치하지 않습니다.');
+      } else if (data.code === 'not_found_verification_code') {
+        setEmailVerifyStatus('notfound');
+        setEmailVerifyMessage('인증 코드가 존재하지 않습니다.');
+      } else {
+        setEmailVerifyStatus('error');
+        setEmailVerifyMessage(data.detail || '이메일 인증에 실패했습니다.');
+      }
+    } catch (e: any) {
+      setEmailVerifyStatus('error');
+      setEmailVerifyMessage(e.message || '이메일 인증 중 오류가 발생했습니다.');
     }
   };
 
@@ -225,52 +275,83 @@ const Profile: React.FC = () => {
             />
           </div>
 
-          {/* 계정 */}
+          {/* ID */}
           <div className="mb-4">
-            <label htmlFor="email" className="block text-white font-medium mb-2">
-              계정
+            <label htmlFor="userid" className="block text-white font-medium mb-2">
+              ID
             </label>
             <input
               type="text"
-              id="email"
-              value={editedInfo.email}
+              id="userid"
+              value={editedInfo.userid}
               readOnly
               className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
             />
-            <p className="text-gray-400 text-sm mt-1">계정 이메일은 변경할 수 없습니다</p>
+            <p className="text-gray-400 text-sm mt-1">계정 ID는 변경할 수 없습니다</p>
           </div>
 
-          {/* 멤버십 변경 */}
+          {/* 이메일 인증 */}
           <div className="mb-6">
-            <label className="block text-white font-medium mb-2">
-              멤버십 변경
-            </label>
-            <div className="flex w-full space-x-4">
-              <button
-                onClick={() => handleMembershipUpdate('BASIC')}
-                disabled={membership === 'BASIC' || isUpdatingMembership}
-                className={`flex-1 p-3 rounded-lg text-white font-medium transition-colors
-                  ${membership === 'BASIC' 
-                    ? 'bg-[#3f3f3f] cursor-not-allowed' 
-                    : 'bg-gray-600 hover:bg-gray-700'}`}
-              >
-                BASIC
-              </button>
-              <button
-                onClick={() => handleMembershipUpdate('VIP')}
-                disabled={membership === 'VIP' || isUpdatingMembership}
-                className={`flex-1 p-3 rounded-lg text-white font-medium transition-colors
-                  ${membership === 'VIP' 
-                    ? 'bg-[#ffc107] text-gray-900 cursor-not-allowed' 
-                    : 'bg-[#ffc107] text-gray-900 hover:bg-[#e6af06]'}`}
-              >
-                VIP
-              </button>
-            </div>
-            {isUpdatingMembership && (
-              <div className="w-full flex justify-center mt-4">
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#3b7cc9]"></div>
-              </div>
+            <label className="block text-white font-medium mb-2">이메일</label>
+            {membership === 'VIP' ? (
+              <>
+                <input
+                  type="email"
+                  value={userInfo.email}
+                  readOnly
+                  className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
+                  aria-labelledby="email-label"
+                  title="현재 이메일 주소"
+                  placeholder="이메일 주소"
+                />
+                <p className="text-gray-400 text-sm mt-1">계정에 등록된 이메일은 변경할 수 없습니다</p>
+              </>
+            ) : (
+              <>
+                <div className="flex w-full space-x-4">
+                  {/* 이메일 입력창 */}
+                  <input
+                    type="email"
+                    placeholder="이메일을 입력하세요"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                  />
+
+                  {/* 인증 버튼 */}
+                  <button
+                    onClick={handleSendVerification}
+                    className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
+                  >
+                    인증 요청
+                  </button>
+                </div>
+                {isEmailSent && (
+                  <div className="mt-4">
+                    <label className="block text-white font-medium mb-2">인증 코드</label>
+                    <div className="flex w-full space-x-4">
+                      <input
+                        type="text"
+                        placeholder="인증 코드를 입력하세요"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                      />
+                      <button
+                        onClick={handleVerifyCode}
+                        className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
+                      >
+                        인증 확인
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {emailVerifyMessage && (
+                  <p className={`mt-2 text-sm ${emailVerifyStatus === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                    {emailVerifyMessage}
+                  </p>
+                )}
+              </>
             )}
           </div>
 

@@ -27,7 +27,7 @@ const CharacterDetailModal: React.FC<Props> = ({ character, onClose, onChat }) =
                 ×
             </button>
             <img
-                src={character.image || '/default-character.png'}
+                src={character.image || '/images/default-character.png'}
                 alt={character.characterName}
                 className="w-32 h-32 rounded-full object-cover mx-auto mb-4"
             />

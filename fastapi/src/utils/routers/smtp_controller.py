@@ -11,13 +11,12 @@ async def send_verification_email(request: ChatModel.Email_Request):
     사용자 이메일로 인증 코드를 전송합니다.
     '''
     try:
-        userid = await mysql_handler.get_userid(request.email)
-        membership = await mysql_handler.get_membership_by_userid(userid)
+        membership = await mysql_handler.get_membership_by_userid(request.user_id)
         if membership == "VIP":
-            return {"status": "exception", "message": "이미 인증된 이메일입니다."}
+            return {"status": "exception", "message": "이미 인증된 계정입니다."}
 
         code = smtp_handler.generate_verification_code()
-        await mysql_handler.create_verification_code(code, userid)
+        await mysql_handler.create_verification_code(code, request.user_id)
         success = await smtp_handler.send_verification_email(code, request.email)
         if success:
             return {"status": "success", "message": "인증 코드가 전송되었습니다. 이메일을 확인해주세요."}
@@ -32,8 +31,7 @@ async def verify_email_code(request: ChatModel.Verification_Request):
     사용자로부터 받은 인증 코드를 검증합니다.
     '''
     try:
-        userid = await mysql_handler.get_userid(request.email)
-        result = await mysql_handler.code_verification(request.code, userid)
+        result = await mysql_handler.code_verification(request.code, request.user_id, request.email)
         if result == "success":
             return {
                 "status": "success",

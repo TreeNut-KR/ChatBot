@@ -11,7 +11,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   <div className="bg-gray-900 flex flex-col sm:flex-row items-center justify-between px-5 py-2 border-b border-gray-800 gap-2">
     <h1 className="text-lg text-white font-semibold">TreeNut ChatBot</h1>
     <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
+      {/* <div className="flex items-center gap-2">
         <input 
           type="checkbox" 
           id="googleAccess" 
@@ -25,7 +25,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         <label htmlFor="googleAccess" className="text-gray-400 text-sm cursor-pointer whitespace-nowrap">
           Google 접근
         </label>
-      </div>
+      </div> */}
       
       <div className="flex items-center gap-2">
         <span className="text-gray-400 text-sm">모델:</span>

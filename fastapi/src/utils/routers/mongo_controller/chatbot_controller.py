@@ -35,7 +35,6 @@ async def save_chat_log(request: ChatModel.ChatBot_Create_Request):
     생성된 채팅 문서에 유저의 채팅 데이터를 저장합니다.
     '''
     try:
-        await ChatModel.Validators().url_status(request.img_url)  # 이미지 URL 확인
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
         
@@ -54,7 +53,7 @@ async def save_chat_log(request: ChatModel.ChatBot_Create_Request):
     except ChatError.NotFoundException as e:
         raise ChatError.NotFoundException(detail=str(e))
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise  ChatError.InternalServerErrorException(detail=str(e))
     
 @chatbot_router.put("/update_log", summary="유저 채팅 업데이트")
 async def update_chat_log(request: ChatModel.ChatBot_Update_Request):
@@ -62,7 +61,6 @@ async def update_chat_log(request: ChatModel.ChatBot_Update_Request):
     기존 채팅 문서에 유저의 채팅 데이터를 수정합니다.
     '''
     try:
-        await ChatModel.Validators().url_status(request.img_url)  # 이미지 URL 확인
         request_data = request.model_dump()
         filtered_data = {key: value for key, value in request_data.items() if key != 'id'}
     

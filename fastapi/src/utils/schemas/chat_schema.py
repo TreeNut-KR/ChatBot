@@ -16,27 +16,13 @@ class Validators:
         return v
 
     @staticmethod
-    async def url_status(v: str) -> str:
-        """
-        URL의 연결 테스트 함수
-        """
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.head(v, follow_redirects=True)
-            if response.status_code != 200:
-                raise ValueError('이미지에 접근할 수 없습니다.')
-        except httpx.RequestError:
-            raise ValueError('이미지 URL에 접근하는 중 오류가 발생했습니다.')
-        return v
-
-    @staticmethod
     def validate_email(v: str) -> str:
         """
         이메일 형식 검증 함수
         """
         email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
         if not email_pattern.match(v):
-            raise ValueError('유효한 이메일 형식이 아닙니다.')
+            raise ValueError('지원하는는 이메일 형식이 아닙니다. 다음과 같은 형식을 따르십쇼. ex) user@example.com')
         return v
 
     @staticmethod
@@ -204,13 +190,6 @@ class ChatBot_Create_Request(BaseModelWithCustomDump):
     @field_validator('id', mode='before')
     def check_id(cls, v):
         return Validators.validate_uuid(v)
-    
-    @model_validator(mode='after') # 모델 수준에서 비동기 검증 수행
-    async def check_img_url(cls, values):
-        img_url = values.get('img_url')
-        if img_url:
-            await Validators.url_status(img_url)
-        return values
 
 class ChatBot_Update_Request(BaseModelWithCustomDump):
     user_id: str = CommonFields.user_id_set
@@ -223,13 +202,6 @@ class ChatBot_Update_Request(BaseModelWithCustomDump):
     @field_validator('id', mode='before')
     def check_id(cls, v):
         return Validators.validate_uuid(v)
-    
-    @model_validator(mode='after')
-    async def check_img_url(cls, values):
-        img_url = values.get('img_url')
-        if img_url:
-            await Validators.url_status(img_url)
-        return values
 
 class ChatBot_Response(BaseModel):
     id: str = CommonFields.id_set
@@ -241,6 +213,7 @@ class ChatBot_Response(BaseModel):
         return Validators.validate_uuid(v)
 
 class Email_Request(BaseModel):
+    user_id: str = CommonFields.user_id_set
     email: str = CommonFields.email_set
     
     @field_validator('email')
@@ -248,6 +221,7 @@ class Email_Request(BaseModel):
         return Validators.validate_email(v)
 
 class Verification_Request(BaseModel):
+    user_id: str = CommonFields.user_id_set
     email: str = CommonFields.email_set
     code: str = CommonFields.code_set
     

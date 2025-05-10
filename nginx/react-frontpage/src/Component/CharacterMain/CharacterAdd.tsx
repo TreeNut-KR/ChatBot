@@ -9,7 +9,6 @@ const CharacterAdd: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -36,7 +35,7 @@ const CharacterAdd: React.FC = () => {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
 
     if (name === 'access_level') {
       setCharacterData({
@@ -57,58 +56,20 @@ const CharacterAdd: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
+
+    // 파일 크기 제한 (예: 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setUploadError('파일 크기가 5MB를 초과할 수 없습니다.');
+      return;
+    }
+
     setSelectedFile(file);
 
     // 미리보기
     const reader = new FileReader();
     reader.onloadend = () => setPreviewImage(reader.result as string);
     reader.readAsDataURL(file);
-  };
-
-  const handleImageUpload = async () => {
-    if (!selectedFile) return;
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    setUploading(true);
-    setUploadError(null);
-
-    try {
-      const token = getCookie('jwt-token');
-      if (!token) {
-        setUploadError('로그인이 필요합니다.');
-        setUploading(false);
-        return;
-      }
-
-      const response = await axios.post(
-        'https://treenut.ddns.net/server/character/upload_png_image',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
-      if (response.data && response.data.url) {
-        setCharacterData({
-          ...characterData,
-          image: response.data.url
-        });
-        setPreviewImage(null);
-        setUploadedImageUrl(response.data.url);
-        localStorage.setItem('uploadedCharacterImage', response.data.url);
-      } else {
-        setUploadError('이미지 업로드에 실패했습니다.');
-      }
-    } catch (err: any) {
-      setUploadError(err.response?.data?.message || '이미지 업로드 중 오류가 발생했습니다.');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,7 +93,7 @@ const CharacterAdd: React.FC = () => {
         formData.append('file', selectedFile);
 
         const uploadResponse = await axios.post(
-          'https://treenut.ddns.net/server/character/upload_png_image',
+          '/server/character/upload_png_image',
           formData,
           {
             headers: {
@@ -188,8 +149,6 @@ const CharacterAdd: React.FC = () => {
   };
 
   const handleFormClick = () => {};
-
-  const storedPreview = localStorage.getItem('characterPreviewImage');
 
   return (
     <div className="flex flex-col items-center w-full h-full bg-[#1a1918]">

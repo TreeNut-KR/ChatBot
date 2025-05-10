@@ -790,7 +790,7 @@ class RoomController(
         ApiResponse(responseCode = "400", description = "로그 조회 실패"),
         ApiResponse(responseCode = "401", description = "토큰 인증 실패")
     ])
-    @PostMapping("/character/{id}/load_logs")
+    @GetMapping("/character/{id}/load_logs")
     fun loadCharacterChatLogs(
         @Parameter(description = "인증 토큰", required = true)
         @RequestHeader("Authorization") authorization: String?,
