@@ -108,6 +108,7 @@ jobs:
           echo "${{ secrets.SSL_CHAIN }}" | base64 -d > nginx/certificates/treenut.ddns.net_2025040424819.all.crt.pem
           chmod 644 nginx/certificates/*.crt.pem
           chmod 600 nginx/certificates/*.key.pem
+          ls -la nginx/certificates/ # 디버깅용 파일 목록 확인
       
       - name: Build and push Nginx image
         uses: docker/build-push-action@v3
