@@ -27,13 +27,17 @@ function DriveManager() {
 
   useEffect(() => {
     loadFiles();
+    // eslint-disable-next-line
   }, []);
 
   // 파일 목록 불러오고, 각 파일의 이미지ID로 캐릭터 정보도 불러오기
   const loadFiles = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/drive/files');
+      const token = localStorage.getItem('admin-token');
+      const response = await axios.get('/api/drive/files', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setFiles(response.data);
       setError(null);
 
@@ -47,8 +51,10 @@ function DriveManager() {
           const imageId = match ? match[1] : null;
           if (imageId) {
             try {
-              const res = await axios.get(`/api/characters/by-image/${imageId}`);
-              // 여러 개면 첫 번째만 사용
+              // 캐릭터 정보 API도 토큰 필요하다면 아래처럼 추가
+              const res = await axios.get(`/api/characters/by-image/${imageId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
               info[imageId] = Array.isArray(res.data) ? res.data[0] : res.data;
             } catch (e) {
               info[imageId] = null;
@@ -77,10 +83,13 @@ function DriveManager() {
 
     try {
       setLoading(true);
+      const token = localStorage.getItem('admin-token');
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      await axios.post('/api/drive/upload', formData);
+      await axios.post('/api/drive/upload', formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSuccessMessage('파일이 성공적으로 업로드되었습니다.');
       setSelectedFile(null);
       loadFiles();
@@ -99,7 +108,10 @@ function DriveManager() {
 
     try {
       setLoading(true);
-      await axios.delete(`/api/drive/files/${fileId}`);
+      const token = localStorage.getItem('admin-token');
+      await axios.delete(`/api/drive/files/${fileId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSuccessMessage('파일이 성공적으로 삭제되었습니다.');
       loadFiles();
     } catch (err) {

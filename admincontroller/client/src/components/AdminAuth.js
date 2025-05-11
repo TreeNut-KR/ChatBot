@@ -6,6 +6,7 @@ function AdminAuth({ onAuthSuccess }) {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [timer, setTimer] = useState(300); // 5분(300초)
+  const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef(null);
 
   // 챌린지 및 타이머 초기화
@@ -42,6 +43,8 @@ function AdminAuth({ onAuthSuccess }) {
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (submitting) return; // 중복 방지
+    setSubmitting(true);
     setError('');
     const res = await fetch('/api/auth/verify', {
       method: 'POST',
@@ -55,6 +58,7 @@ function AdminAuth({ onAuthSuccess }) {
     } else {
       setError('인증 실패. 다시 시도하세요.');
     }
+    setSubmitting(false);
   };
 
   const handleKeyDown = (e) => {
