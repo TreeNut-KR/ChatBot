@@ -1,4 +1,4 @@
-import { getCookie } from '../../../Cookies';
+import { setCookie, getCookie } from '../../../Cookies';
 import { ChatRoom } from '../Types';
 import axios from 'axios';
 
@@ -26,7 +26,31 @@ export const API_BASE_URL = '/server';
 
 // 사용자 ID 가져오기 함수 추가 (쿠키 사용)
 export const getUserId = (): string | null => {
-  return getCookie('user_id') || null;
+  // 기존 user_id 쿠키 확인
+  const userIdCookie = getCookie('user_id');
+  if (userIdCookie) return userIdCookie;
+  
+  // jwt-token에서 사용자 ID 추출 시도
+  const token = getCookie('jwt-token');
+  if (token) {
+    try {
+      // JWT 토큰 디코딩
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      
+      // JWT의 sub 필드가 사용자 ID
+      if (payload && payload.sub) {
+        // 추출한 ID를 쿠키에도 저장해서 다음에 바로 사용
+        setCookie('user_id', payload.sub);
+        return payload.sub;
+      }
+    } catch (e) {
+      console.error('JWT 토큰 디코딩 오류:', e);
+    }
+  }
+  
+  return null;
 };
 
 // ================ Office 채팅방 API ================

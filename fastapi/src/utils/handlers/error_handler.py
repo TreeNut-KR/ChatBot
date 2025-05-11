@@ -1,41 +1,38 @@
 '''
-파일은 FastAPI 애플리케이션에서 발생하는 예외를 처리하는 모듈입니다.
+FastAPI 애플리케이션에서 발생하는 예외를 처리하는 모듈입니다.
 '''
-
+import uuid
 import os
 import logging
-from logging.handlers import BaseRotatingHandler
-from typing import Callable, Dict, Type, Optional
-from fastapi.responses import JSONResponse
-from fastapi import FastAPI, HTTPException, Request
-from datetime import datetime, timedelta
 import traceback
-from starlette.middleware.base import BaseHTTPMiddleware
+from datetime import datetime
+from typing import Callable, Dict, Optional, Type, Any
+
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
-from typing import Any
+from starlette.middleware.base import BaseHTTPMiddleware
 
-# 현재 파일의 상위 디렉토리 경로
-current_directory = os.path.dirname(os.path.abspath(__file__))
-parent_directory =  os.path.dirname(os.path.dirname(current_directory))
 
-# 로그 디렉토리 및 파일 경로 설정
-log_dir = os.path.join(parent_directory, "logs")
+# ==========================
+# 1. 로그 디렉토리 및 설정
+# ==========================
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.abspath(__file__)
+            )
+        )
+    )
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
 
-# 로그 디렉토리가 없는 경우 생성
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-
-# Logger 설정
-logger = logging.getLogger("fastapi_error_handlers")
-logger.setLevel(logging.DEBUG)
-
-class DailyRotatingFileHandler(BaseRotatingHandler):
+class DailyRotatingFileHandler(logging.handlers.BaseRotatingHandler):
     """
-    날짜별로 로그 파일을 회전시키는 핸들러.
+    날짜별 로그 파일을 생성하는 커스텀 핸들러입니다.
     """
     def __init__(self, dir_path: str, date_format: str = "%Y%m%d", encoding=None):
-        # 로그 파일 디렉토리와 날짜 형식을 저장
         self.dir_path = dir_path
         self.date_format = date_format
         self.current_date = datetime.now().strftime(self.date_format)
@@ -43,347 +40,211 @@ class DailyRotatingFileHandler(BaseRotatingHandler):
         super().__init__(log_file, 'a', encoding)
 
     def shouldRollover(self, record):
-        # 로그의 날짜가 변경되었는지 확인
-        log_date = datetime.now().strftime(self.date_format)
-        return log_date != self.current_date
+        return datetime.now().strftime(self.date_format) != self.current_date
 
     def doRollover(self):
-        # 로그 파일의 날짜가 변경되었을 때 롤오버 수행
         self.current_date = datetime.now().strftime(self.date_format)
         self.baseFilename = os.path.join(self.dir_path, f"{self.current_date}.log")
         if self.stream:
             self.stream.close()
             self.stream = self._open()
 
-# DailyRotatingFileHandler 설정
-file_handler = DailyRotatingFileHandler(log_dir, encoding='utf-8')
-file_handler.setLevel(logging.DEBUG)
 
-# StreamHandler 설정 (터미널 출력용)
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.DEBUG)
+# ==========================
+# 2. Logger 구성
+# ==========================
+logger = logging.getLogger("fastapi_error_handlers")
+logger.setLevel(logging.DEBUG)
 
-# 로그 포맷 설정
 formatter = logging.Formatter(
-    '[%(asctime)s] %(levelname)s in %(module)s: %(message)s\n'
-    '%(message)s\n',
-    datefmt='%Y-%m-%d %H:%M:%S',
+    '[%(asctime)s] %(levelname)s in %(module)s:\n%(message)s\n',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
-file_handler.setFormatter(formatter)
-stream_handler.setFormatter(formatter)
 
-# Logger에 핸들러 추가
+file_handler = DailyRotatingFileHandler(LOG_DIR, encoding='utf-8')
+file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
-# 예외 클래스 정의
-class NotFoundException(HTTPException):
-    def __init__(self, detail: str = "Resource not found"):
-        super().__init__(status_code=404, detail=detail)
+# ==========================
+# 3. 예외 클래스 정의
+# ==========================
+class BaseCustomException(HTTPException):
+    def __init__(self, status_code: int, detail: str):
+        super().__init__(status_code=status_code, detail=detail)
 
-class BadRequestException(HTTPException):
-    def __init__(self, detail: str = "Bad request"):
-        super().__init__(status_code=400, detail=detail)
+class NotFoundException(BaseCustomException):
+    def __init__(self, detail="Resource not found"):
+        super().__init__(404, detail)
 
-class UnauthorizedException(HTTPException):
-    def __init__(self, detail: str = "Unauthorized"):
-        super().__init__(status_code=401, detail=detail)
+class BadRequestException(BaseCustomException):
+    def __init__(self, detail="Bad request"):
+        super().__init__(400, detail)
 
-class ForbiddenException(HTTPException):
-    def __init__(self, detail: str = "Forbidden"):
-        super().__init__(status_code=403, detail=detail)
+class UnauthorizedException(BaseCustomException):
+    def __init__(self, detail="Unauthorized"):
+        super().__init__(401, detail)
 
-class ValueErrorException(HTTPException):
-    def __init__(self, detail: str = "Value Error"):
-        super().__init__(status_code=422, detail=detail)
+class ForbiddenException(BaseCustomException):
+    def __init__(self, detail="Forbidden"):
+        super().__init__(403, detail)
 
-class InternalServerErrorException(HTTPException):
-    def __init__(self, detail: Optional[str] = None):
-        super().__init__(status_code=500, detail=detail)
+class ValueErrorException(BaseCustomException):
+    def __init__(self, detail="Invalid value"):
+        super().__init__(422, detail)
 
-class DatabaseErrorException(HTTPException):
-    def __init__(self, detail: str = "Database Error"):
-        super().__init__(status_code=503, detail=detail)
+class InternalServerErrorException(BaseCustomException):
+    def __init__(self, detail="Internal Server Error"):
+        trace_id = uuid.uuid4()
+        super().__init__(500, detail)
 
-class IPRestrictedException(HTTPException):
-    def __init__(self, detail: str = "Unauthorized IP address"):
-        super().__init__(status_code=403, detail=detail)
+class DatabaseErrorException(BaseCustomException):
+    def __init__(self, detail="Database Error"):
+        super().__init__(503, detail)
 
-class MethodNotAllowedException(HTTPException):
-    def __init__(self, detail: str = "Method Not Allowed"):
-        super().__init__(status_code=405, detail=detail)
+class IPRestrictedException(BaseCustomException):
+    def __init__(self, detail="Unauthorized IP address"):
+        super().__init__(403, detail)
 
-# 기존 클래스에 RouteNotFoundException 추가
-class RouteNotFoundException(HTTPException):
-    def __init__(self, detail: str = "Route not found"):
-        super().__init__(status_code=404, detail=detail)
+class MethodNotAllowedException(BaseCustomException):
+    def __init__(self, detail="Method Not Allowed"):
+        super().__init__(405, detail)
 
-# 예외와 핸들러 매핑
-exception_handlers: Dict[Type[HTTPException], Callable[[Request, HTTPException], JSONResponse]] = {
-    NotFoundException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "The requested resource could not be found."},
-    ),
-    BadRequestException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "The request was invalid."},
-    ),
-    UnauthorizedException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "Unauthorized access."},
-    ),
-    ForbiddenException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "Access to this resource is forbidden."},
-    ),
-    ValueErrorException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "The input data is invalid."},
-    ),
-    InternalServerErrorException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "An internal server error occurred."},
-    ),
-    DatabaseErrorException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "A database error occurred. Please contact the administrator."},
-    ),
-    IPRestrictedException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-    ),
-    MethodNotAllowedException: lambda request, exc: JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": "The method used in the request is not allowed."},
-    ),
-}
+class RouteNotFoundException(BaseCustomException):
+    def __init__(self, detail="Route not found"):
+        super().__init__(404, detail)
 
-# 기본 예외 처리기
-async def generic_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+
+# ==========================
+# 4. 핸들러 함수
+# ==========================
+def log_error(
+    *,
+    exc: Exception,
+    request: Request,
+    status_code: int,
+    detail: str,
+    extra: dict = None
+):
     """
-    FastAPI 애플리케이션에서 발생한 HTTPException을 처리하며,
-    요청 정보와 예외에 대한 상세한 정보를 로그에 기록합니다.
+    에러 정보를 로그로 기록하는 함수.
     """
-    handler = exception_handlers.get(type(exc), None)
-
+    body = ""
     try:
-        # 요청 본문 읽기
-        body = await request.body()
-        body_text = body.decode("utf-8") if body else ""
-    except Exception as e:
-        body_text = f"Failed to read request body: {str(e)}"
-
-    # 클라이언트 IP 주소 가져오기
+        body = request._body.decode('utf-8') if hasattr(request, "_body") and request._body else ""
+    except Exception:
+        pass
     client_ip = request.client.host if request.client else "Unknown"
-    
-    # 요청 쿼리 파라미터 가져오기
     query_params = dict(request.query_params)
+    # 포맷터에 맡기고, 메시지는 본문만 작성
+    log_msg = (
+        f"{'='*80}\n"
+        f"Error Type: {type(exc).__name__}\n"
+        f"Status: {status_code}\n"
+        f"Detail: {detail}\n"
+        f"URL: {request.url}\n"
+        f"Method: {request.method}\n"
+        f"Client IP: {client_ip}\n"
+        f"Body: {body}\n"
+        f"Query: {query_params}\n"
+    )
+    # traceback이 extra에 있으면 별도로 추가
+    if extra and "traceback" in extra:
+        log_msg += f"Traceback:\n{extra['traceback']}\n"
+    if extra:
+        log_msg += f"Extra: {extra}\n"
+    log_msg += f"{'='*80}"
+    logger.error(log_msg)
 
-    # 상세 로그 데이터 구성
-    log_data = {
-        "timestamp": datetime.now().isoformat(),
-        "error_code": exc.status_code,
-        "error_type": exc.__class__.__name__,
-        "error_detail": exc.detail,
-        "request": {
-            "url": str(request.url),
-            "method": request.method,
-            "client_ip": client_ip,
-            "headers": dict(request.headers),
-            "query_params": query_params,
-            "body": body_text
-        }
+class ExceptionHandlerFactory:
+    handlers: Dict[Type[HTTPException], Callable[[Request, HTTPException], JSONResponse]] = {
+        NotFoundException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Not found"}),
+        BadRequestException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Bad request"}),
+        UnauthorizedException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Unauthorized"}),
+        ForbiddenException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Forbidden"}),
+        ValueErrorException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Invalid input"}),
+        InternalServerErrorException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Server error"}),
+        DatabaseErrorException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Database error"}),
+        IPRestrictedException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}),
+        MethodNotAllowedException: lambda req, exc: JSONResponse(status_code=exc.status_code, content={"detail": "Not allowed"})
     }
 
-    # 로그 메시지 포맷팅
-    log_message = (
-        f"\n{'='*80}\n"
-        f"Error Event Details:\n"
-        f"Timestamp: {log_data['timestamp']}\n"
-        f"Error Code: {log_data['error_code']}\n"
-        f"Error Type: {log_data['error_type']}\n"
-        f"Error Detail: {log_data['error_detail']}\n"
-        f"Request URL: {log_data['request']['url']}\n"
-        f"Method: {log_data['request']['method']}\n"
-        f"Client IP: {log_data['request']['client_ip']}\n"
-        f"Query Parameters: {log_data['request']['query_params']}\n"
-        f"Headers: {log_data['request']['headers']}\n"
-        f"Body: {log_data['request']['body']}\n"
-        f"{'='*80}"
-    )
-
-    # 에러 심각도에 따른 로그 레벨 설정
-    if exc.status_code >= 500:
-        logger.error(log_message, exc_info=True)
-    elif exc.status_code >= 400:
-        logger.warning(log_message)
-    else:
-        logger.info(log_message)
-
-    # 정의된 핸들러가 있을 경우 호출, 없으면 기본 500 응답
-    if handler:
-        return handler(request, exc)
-    else:
-        return JSONResponse(
+    @staticmethod
+    async def generic_handler(request: Request, exc: HTTPException) -> JSONResponse:
+        handler = ExceptionHandlerFactory.handlers.get(type(exc))
+        log_error(
+            exc=exc,
+            request=request,
+            status_code=exc.status_code,
+            detail=exc.detail
+        )
+        return handler(request, exc) if handler else JSONResponse(
             status_code=500,
-            content={
-                "detail": "An unexpected error occurred.",
-                "error_type": exc.__class__.__name__,
-                "timestamp": datetime.now().isoformat()
-            },
+            content={"detail": "Unexpected error", "type": type(exc).__name__}
         )
 
-# ErrorLoggingMiddleware 클래스 추가
+    @staticmethod
+    async def validation_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        error_details = [
+            {"location": err["loc"], "message": err["msg"], "type": err["type"]}
+            for err in exc.errors()
+        ]
+        log_error(
+            exc=exc,
+            request=request,
+            status_code=422,
+            detail="입력 데이터 검증 실패",
+            extra={"validation_errors": error_details}
+        )
+        return JSONResponse(status_code=422, content={"detail": error_details, "message": "입력 데이터 검증 실패"})
+
+    @staticmethod
+    async def database_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
+        log_error(
+            exc=exc,
+            request=request,
+            status_code=503,
+            detail="데이터베이스 오류",
+            extra={"traceback": traceback.format_exc()}
+        )
+        return JSONResponse(status_code=503, content={"detail": "데이터베이스 오류", "message": "관리자에게 문의하세요."})
+
+
+# ==========================
+# 5. 미들웨어
+# ==========================
 class ErrorLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Any) -> Any:
+    async def dispatch(self, request: Request, call_next: Callable) -> Any:
         try:
-            response = await call_next(request)
-            return response
+            return await call_next(request)
         except Exception as exc:
-            logger.error(f"Uncaught exception: {str(exc)}")
-            logger.error(traceback.format_exc())
             raise exc
 
-# ValidationErrorHandler 함수 추가
-async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    """
-    요청 데이터 검증 실패시 발생하는 오류를 처리합니다.
-    """
-    error_details = []
-    for error in exc.errors():
-        error_details.append({
-            "location": error["loc"],
-            "message": error["msg"],
-            "type": error["type"]
-        })
-
-    log_data = {
-        "timestamp": datetime.now().isoformat(),
-        "error_type": "ValidationError",
-        "error_details": error_details,
-        "request": {
-            "url": str(request.url),
-            "method": request.method,
-            "client_ip": request.client.host if request.client else "Unknown",
-            "headers": dict(request.headers)
-        }
-    }
-
-    log_message = (
-        f"\n{'='*80}\n"
-        f"Validation Error Details:\n"
-        f"Timestamp: {log_data['timestamp']}\n"
-        f"Error Type: {log_data['error_type']}\n"
-        f"Error Details: {log_data['error_details']}\n"
-        f"Request URL: {log_data['request']['url']}\n"
-        f"Method: {log_data['request']['method']}\n"
-        f"Client IP: {log_data['request']['client_ip']}\n"
-        f"Headers: {log_data['request']['headers']}\n"
-        f"{'='*80}"
-    )
-
-    logger.warning(log_message)
-
-    return JSONResponse(
-        status_code=422,
-        content={
-            "detail": error_details,
-            "message": "입력 데이터 검증에 실패했습니다."
-        }
-    )
-
-# DatabaseErrorHandler 함수 추가
-async def database_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-    """
-    데이터베이스 관련 오류를 처리합니다.
-    """
-    log_data = {
-        "timestamp": datetime.now().isoformat(),
-        "error_type": "DatabaseError",
-        "error_message": str(exc),
-        "traceback": traceback.format_exc(),
-        "request": {
-            "url": str(request.url),
-            "method": request.method,
-            "client_ip": request.client.host if request.client else "Unknown"
-        }
-    }
-
-    log_message = (
-        f"\n{'='*80}\n"
-        f"Database Error Details:\n"
-        f"Timestamp: {log_data['timestamp']}\n"
-        f"Error Type: {log_data['error_type']}\n"
-        f"Error Message: {log_data['error_message']}\n"
-        f"Request URL: {log_data['request']['url']}\n"
-        f"Method: {log_data['request']['method']}\n"
-        f"Client IP: {log_data['request']['client_ip']}\n"
-        f"Traceback:\n{log_data['traceback']}\n"
-        f"{'='*80}"
-    )
-
-    logger.error(log_message)
-
-    return JSONResponse(
-        status_code=503,
-        content={
-            "detail": "데이터베이스 오류가 발생했습니다.",
-            "message": "시스템 관리자에게 문의하세요."
-        }
-    )
-
-# 라우트 관련 로깅을 위한 미들웨어 추가
 class RouteLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Any) -> Any:
-        try:
-            response = await call_next(request)
-            
-            # 404 응답 로깅
-            if response.status_code == 404:
-                log_data = {
-                    "timestamp": datetime.now().isoformat(),
-                    "status_code": response.status_code,
-                    "path": request.url.path,
-                    "method": request.method,
-                    "client_ip": request.client.host if request.client else "Unknown",
-                    "user_agent": request.headers.get("user-agent", "Unknown")
-                }
+    async def dispatch(self, request: Request, call_next: Callable) -> Any:
+        response = await call_next(request)
+        if response.status_code == 404:
+            logger.warning(
+                f"Route Not Found: {request.url.path} | Method: {request.method} | IP: {request.client.host}"
+            )
+        return response
 
-                log_message = (
-                    f"\n{'='*80}\n"
-                    f"Route Not Found:\n"
-                    f"Timestamp: {log_data['timestamp']}\n"
-                    f"Status Code: {log_data['status_code']}\n"
-                    f"Path: {log_data['path']}\n"
-                    f"Method: {log_data['method']}\n"
-                    f"Client IP: {log_data['client_ip']}\n"
-                    f"User Agent: {log_data['user_agent']}\n"
-                    f"{'='*80}"
-                )
-                
-                logger.warning(log_message)
 
-            return response
-            
-        except Exception as exc:
-            logger.error(f"Route processing error: {str(exc)}")
-            logger.error(traceback.format_exc())
-            raise exc
+# ==========================
+# 6. 예외 핸들러 등록기
+# ==========================
+class ExceptionManager:
+    @staticmethod
+    def register(app: FastAPI):
+        for exc_type in ExceptionHandlerFactory.handlers:
+            app.add_exception_handler(exc_type, ExceptionHandlerFactory.generic_handler)
 
-# add_exception_handlers 함수 수정
-def add_exception_handlers(app: FastAPI):
-    """
-    FastAPI 애플리케이션에 모든 예외 핸들러를 추가합니다.
-    """
-    # 기존 예외 핸들러 등록
-    for exc_type in exception_handlers:
-        app.add_exception_handler(exc_type, generic_exception_handler)
-    
-    # 추가 예외 핸들러 등록
-    app.add_exception_handler(RequestValidationError, validation_error_handler)
-    app.add_exception_handler(SQLAlchemyError, database_error_handler)
-    app.add_exception_handler(RouteNotFoundException, generic_exception_handler)
-    
-    # 미들웨어 추가
-    app.add_middleware(ErrorLoggingMiddleware)
-    app.add_middleware(RouteLoggingMiddleware)
+        app.add_exception_handler(RequestValidationError, ExceptionHandlerFactory.validation_handler)
+        app.add_exception_handler(SQLAlchemyError, ExceptionHandlerFactory.database_handler)
+        app.add_exception_handler(RouteNotFoundException, ExceptionHandlerFactory.generic_handler)
+
+        app.add_middleware(ErrorLoggingMiddleware)
+        app.add_middleware(RouteLoggingMiddleware)
