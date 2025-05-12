@@ -71,15 +71,11 @@ services:
         condition: service_healthy
     volumes:
       - ./mysql/migrations:/flyway/sql
-    command: [
-      "-url=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}",
-      "-user=root",
-      "-password=${MYSQL_ROOT_PASSWORD}",
-      "-baselineOnMigrate=true",
-      "migrate"
-    ]
+      - ./mysql/flyway-migrate.sh:/flyway/flyway-migrate.sh
     environment:
-      TZ: Asia/Seoul
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    entrypoint: ["/bin/bash", "/flyway/flyway-migrate.sh"]
 
   mysql:
     restart: unless-stopped
