@@ -55,10 +55,10 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String, @Value("
                 throw TokenSignatureException("토큰 서명 검증에 실패했습니다.")
             } catch (e: JwtException) {
                 logger.error("JWT exception: ${e.message}", e)
-                throw TokenJwtException("토큰 처리 중 오류가 발생했습니다: ${e.message}")
+                throw TokenJwtException("토큰 처리 중 오류가 발생했습니다.")
             } catch (e: Exception) {
                 logger.error("Unknown exception: ${e.message}", e)
-                throw RuntimeException("알 수 없는 오류가 발생했습니다: ${e.message}")
+                throw RuntimeException("알 수 없는 오류가 발생했습니다.")
             }
         } else if (dotCount == 1) {
             // Google Access Token 처리 (verifyGoogleToken 함수는 별도로 구현해야 함)
@@ -80,10 +80,11 @@ class TokenAuth(@Value("\${jwt.secret}") private val jwtSecret: String, @Value("
         return Jwts.builder()
             .setSubject(userId)
             .setIssuedAt(Date())
-            .setExpiration(Date(System.currentTimeMillis() + 86400000)) // 1일 후 만료
+            .setExpiration(Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000)) // 7일 후 만료
             .signWith(key, SignatureAlgorithm.HS512)
             .compact()
     }
+
     fun verifyGoogleToken(accessToken: String): String? {
         val webClient = WebClient.create()
         try {

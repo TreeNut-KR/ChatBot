@@ -34,5 +34,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src /app/src
 COPY src/.env /app/src/.env
 
-# 어플리케이션 실행 (MySQL 준비 대기)
-CMD ["/usr/local/bin/wait-for-it", "mysql:3306", "--", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+# # 어플리케이션 실행 (MySQL 준비 대기)
+# CMD ["/usr/local/bin/wait-for-it", "mysql:3306", "--", "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
