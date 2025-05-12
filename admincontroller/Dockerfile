@@ -1,7 +1,14 @@
 FROM node:16
 
+# netcat 설치 추가
+RUN apt-get update && apt-get install -y netcat
+
 WORKDIR /app
 COPY . .
+
+# wait-for-it.sh 복사 및 실행 권한 부여 (server 디렉토리로 복사)
+COPY wait-for-it.sh /app/server/wait-for-it.sh
+RUN sed -i 's/\r$//' /app/server/wait-for-it.sh && chmod +x /app/server/wait-for-it.sh
 
 # 서버 종속성 설치
 WORKDIR /app/server
@@ -17,4 +24,4 @@ WORKDIR /app/server
 
 EXPOSE 5785
 
-CMD ["node", "server.js"]
+CMD ["./wait-for-it.sh", "mysql:3306", "--", "node", "server.js"]

@@ -1,9 +1,9 @@
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '1234' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_ROOT_USER}'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 
-CREATE DATABASE IF NOT EXISTS chatbot;
+CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
 
-USE chatbot;
+USE ${MYSQL_DATABASE};
 
 -- 유저
 CREATE TABLE users (
@@ -17,15 +17,12 @@ CREATE TABLE users (
     login_type ENUM('LOCAL', 'KAKAO', 'GOOGLE') DEFAULT 'LOCAL',
     manager_boolean BOOLEAN,
     membership ENUM('BASIC', 'VIP') DEFAULT 'BASIC',
-    -- chatlog_agree BOOLEAN DEFAULT FALSE,
-    -- user_setting_agree BOOLEAN DEFAULT FALSE,
+    chatlog_agree BOOLEAN DEFAULT FALSE,
+    user_setting_agree BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (idx)
 ) ENGINE=InnoDB CHARSET=utf8mb4;
-
--- users 테이블에 이메일 인증 상태 컬럼 추가
-ALTER TABLE users ADD COLUMN email_verification_status ENUM('PENDING', 'VERIFIED', 'SOCIAL') DEFAULT 'PENDING';
 
 -- 캐릭터
 CREATE TABLE characters (
@@ -45,8 +42,6 @@ CREATE TABLE characters (
     PRIMARY KEY (idx),
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;
-
-ALTER TABLE characters MODIFY character_setting LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- 채팅방 (캐릭터 채팅)
 CREATE TABLE chatroom (
@@ -79,16 +74,6 @@ CREATE TABLE email_verification (
     verification_code CHAR(6) NOT NULL,
     expiry_time DATETIME NOT NULL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
-) ENGINE=InnoDB CHARSET=utf8mb4;
-
-CREATE TABLE user_eula_agreements (
-    id INT AUTO_INCREMENT,
-    userid VARCHAR(50) NOT NULL UNIQUE,
-    privacy_policy BOOLEAN DEFAULT TRUE,
-    terms_of_service BOOLEAN DEFAULT TRUE,
-    agreedat DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (userid) REFERENCES users(userid) ON DELETE CASCADE
 ) ENGINE=InnoDB CHARSET=utf8mb4;

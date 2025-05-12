@@ -48,7 +48,7 @@ services:
       - TZ=Asia/Seoul  # 한국 시간대 설정
     command: ["./gradlew build -x test --no-daemon"] # 테스트를 건너뛰고 빌드
     depends_on:
-      - mysql  # MySQL 서비스에 의존
+      - mysql
 
   admincontroller:
     restart: always
@@ -62,10 +62,24 @@ services:
       NODE_ENV: "production"
       GOOGLE_APPLICATION_CREDENTIALS_JSON_CONTENT: ${GOOGLE_APPLICATION_CREDENTIALS_JSON_CONTENT}
     depends_on:
+      - mysql
+
+  flyway:
+    image: flyway/flyway:7.15.0
+    depends_on:
       mysql:
         condition: service_healthy
-      springboot:
-        condition: service_started
+    volumes:
+      - ./mysql/migrations:/flyway/sql
+    command: [
+      "-url=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}",
+      "-user=root",
+      "-password=${MYSQL_ROOT_PASSWORD}",
+      "-baselineOnMigrate=true",
+      "migrate"
+    ]
+    environment:
+      TZ: Asia/Seoul
 
   mysql:
     restart: unless-stopped
@@ -75,7 +89,7 @@ services:
       - "3308:3306"
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+      MYSQL_ROOT_USER: ${MYSQL_ROOT_USER}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       TZ: Asia/Seoul  # 한국 시간대 설정
     volumes:
@@ -88,9 +102,9 @@ services:
       "--skip-host-cache",
       "--skip-name-resolve"
       ]
-    healthcheck:                       # 헬스체크 추가
+    healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 5s
+      timeout: 1s
       retries: 10
 
   mongodb:
