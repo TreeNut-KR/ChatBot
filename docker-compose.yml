@@ -99,9 +99,10 @@ services:
       "--skip-name-resolve"
       ]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 1s
-      retries: 10
+      test: ["CMD", "mysql", "-uroot", "-p${MYSQL_ROOT_PASSWORD}", "-e", "USE TEST; SHOW TABLES LIKE 'users';"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
   mongodb:
     restart: unless-stopped
