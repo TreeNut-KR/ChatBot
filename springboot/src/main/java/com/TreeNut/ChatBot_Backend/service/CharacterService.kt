@@ -112,6 +112,11 @@ class CharacterService(
         return Mono.just(ResponseEntity.ok(inputDataSet as Map<String, Any>))
     }
 
+    fun updateAccessLevel(character: Character, accessLevel: Boolean) {
+        val updatedCharacter = character.copy(accessLevel = accessLevel)
+        characterRepository.save(updatedCharacter)
+    }
+
     fun getCharacterById(request: HttpServletRequest, characterId: Long): Character? {
         val token = request.getHeader("Authorization")
         if (token == null || !token.startsWith("Bearer ")) {
@@ -138,20 +143,6 @@ class CharacterService(
             .firstOrNull() ?: throw RuntimeException("Character not found")
         // 캐릭터 삭제
         characterRepository.delete(character)
-    }
-
-    fun openCharacterList(): List<Map<String, Any>> {
-        // 모든 캐릭터를 가져온 후, AccessLevel이 True인 캐릭터의 characterName만 필터링
-        return characterRepository.findAll()
-            .filter { it.accessLevel == true }
-            .map {
-                mapOf(
-                    "character_name" to (it.characterName ?: ""),
-                    "userid" to (it.userid ?: ""),
-                    "description" to (it.description ?: ""),
-                    "image" to (it.image ?: "")
-                )
-            } // characterName, userid, description만 선택하여 반환
     }
 
     fun myCharacterList(tokenUserId: String): List<Map<String, Any>> {
