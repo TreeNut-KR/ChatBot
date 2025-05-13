@@ -32,7 +32,7 @@ class CharacterController(
     private val googleDriveService: GoogleDriveService,
     private val userRepository: UserRepository
 ) {
-    @PostMapping("/add")
+    @PostMapping("/")
     fun addCharacter(
         @RequestBody body: Map<String, Any>,
         @RequestHeader("Authorization") authorization: String?
@@ -84,39 +84,9 @@ class CharacterController(
         }
     }
 
-    @PostMapping("/add_image")
-    fun addCharacterImage(
-        @RequestParam("file") file: MultipartFile,
-        @RequestHeader("Authorization") authorization : String?
-        ): ResponseEntity<Map<String, Any>> {
-            val token = authorization
-            ?:return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
-
-        // 임시 파일 생성
-        val tempFile = File.createTempFile("upload", file.originalFilename)
-        ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Image File is required"))
-
-        // 파일을 임시 파일로 복사
-        file.inputStream.use { inputStream ->
-            tempFile.outputStream().use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
-
-        return try {
-            // GCS에 이미지 업로드
-            val imageUrl = googleDriveService.uploadImageAndGetLink(tempFile.absolutePath)
-            // 임시 파일 삭제
-            tempFile.delete()
-            ResponseEntity.ok(mapOf("status" to "success", "url" to imageUrl))
-        } catch (e: Exception) {
-            ResponseEntity.status(500).body(mapOf("status" to "error", "message" to (e.message ?: "An error occurred")))
-        }
-    }
-
-    @PutMapping("/edit")
+    @PutMapping("/{character_name}")
     fun editCharacter(
-        @RequestParam character_name: String,
+        @PathVariable character_name: String,
         @RequestBody body: Map<String, Any>,
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
@@ -149,9 +119,9 @@ class CharacterController(
         }
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/{character_name}")
     fun deleteCharacter(
-        @RequestParam character_name: String,
+        @PathVariable character_name: String,
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
         return try {
@@ -181,10 +151,10 @@ class CharacterController(
         }
     }
 
-    @PutMapping("/manage_character_private")
+    @PatchMapping("/{character_name}/manage/{access_level}")
     fun manage_character_private(
-        @RequestParam character_name: String,
-        @RequestBody body: Map<String, Any>,
+        @PathVariable character_name: String,
+        @PathVariable access_level: Boolean,
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
         return try {
@@ -201,19 +171,9 @@ class CharacterController(
             if(user?.manager_boolean != true)
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("status" to 403, "message" to "권한이 없습니다. 관리자만 접근할 수 있습니다."))
 
-            // 캐릭터를 업데이트하기 위한 객체 생성
-            val editedCharacterEntity = character.copy(
-                characterName = character.characterName,
-                description = character.description,
-                greeting = character.greeting,
-                image = character.image,
-                characterSetting = character.characterSetting,
-                accessLevel = body["access_level"] as? Boolean ?: character.accessLevel,
-                userid = character.userid
-            )
+            // accessLevel만 업데이트
+            characterService.updateAccessLevel(character, access_level)
 
-            // 업데이트 수행
-            characterService.editCharacter(character_name, editedCharacterEntity, userToken)
             ResponseEntity.ok(mapOf("status" to 200, "message" to "Character updated successfully"))
         } catch (e: Exception) {
             e.printStackTrace()
@@ -221,21 +181,8 @@ class CharacterController(
         }
     }
 
-    @GetMapping("/open_character_list")
-    fun getOpenCharacterList(
-    ): ResponseEntity<List<Map<String, Any>>> {
-        return try {
-            // 접근 가능한 캐릭터의 이름 목록 가져오기
-            val accessibleCharacterNames = characterService.openCharacterList()
-            ResponseEntity.ok(accessibleCharacterNames)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(emptyList())
-        }
-    }
-
-    @GetMapping("/my_character_list")
-    fun getOpenCharacterList(
+    @GetMapping("/mycharacter")
+    fun getMyCharacterList(
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
         return try {
@@ -256,8 +203,8 @@ class CharacterController(
         }
     }
     
-    @GetMapping("/search")
-    fun searchCharacter(@RequestParam("character_name") characterName: String): ResponseEntity<List<Map<String, Any>>> {
+    @GetMapping("/{characterName}/list")
+    fun searchCharacter(@PathVariable characterName: String): ResponseEntity<List<Map<String, Any>>> {
         val characters = characterService.searchCharacterByName(characterName)
         return if (characters.isNotEmpty()) {
             ResponseEntity.ok(characters)
@@ -266,9 +213,9 @@ class CharacterController(
         }
     }
 
-    @GetMapping("/add_like_count")
+    @PatchMapping("/{character_name}/like")
     fun AddLikeCount(
-        @RequestParam character_name: String,
+        @PathVariable character_name: String,
         @RequestHeader("Authorization") userToken: String
     ): ResponseEntity<Any> {
         return try {
@@ -277,31 +224,30 @@ class CharacterController(
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 404, "message" to "Character not found"))
 
             // 토큰 확인
-            val token = userToken
+            val token = userToken?.substringAfter("Bearer ")
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
 
             // JWT에서 사용자 ID 추출
             val tokenUserId = tokenAuth.authGuard(token)
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-
             // 캐릭터 좋아요 추가 수행 수행
-            characterService.add_like_count(character, tokenUserId)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to "Character add like successfully"))
+            // characterService.add_like_count(character, tokenUserId)
+            ResponseEntity.ok(mapOf("status" to 200, "message" to characterService.add_like_count(character, tokenUserId)))
         } catch (e: Exception) {
             e.printStackTrace()
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))
         }
     }
 
-    @GetMapping("/details/{name}")
-    fun getCharacterDetailsByName(@PathVariable name: String): ResponseEntity<Map<String, Any>> {
-        val character = characterService.getCharacterDetailsByName(name)
+    @GetMapping("{character_name}/detail")
+    fun getCharacterDetailsByName(@PathVariable character_name: String): ResponseEntity<Map<String, Any>> {
+        val character = characterService.getCharacterDetailsByName(character_name)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("message" to "Character not found"))
         return ResponseEntity.ok(character)
     }
 
-    @GetMapping("/details/idx/{idx}")
+    @GetMapping("/idx/{idx}/detail")
     fun getCharacterDetailsByIdx(
         @PathVariable idx: Long
     ): ResponseEntity<Any> {
@@ -316,54 +262,7 @@ class CharacterController(
         }
     }
 
-    // 추가 테스트 엔드포인트
-    @GetMapping("/test")
-    fun testEndpoint(): ResponseEntity<Map<String, Any>> {
-        println("CharacterController - /test 엔드포인트 호출됨")
-        return ResponseEntity.ok(mapOf(
-            "status" to "success",
-            "message" to "API is working",
-            "timestamp" to System.currentTimeMillis()
-        ))
-    }
-
-    @PostMapping("/upload_image")
-    fun uploadCharacterImage(
-        @RequestParam("file") file: MultipartFile,
-        @RequestHeader("Authorization") authorization: String?
-    ): ResponseEntity<Map<String, Any>> {
-        val token = authorization?.substringAfter("Bearer ")
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "토큰 없음"))
-
-        // JWT에서 사용자 ID 추출
-        val userid = tokenAuth.authGuard(token)
-            ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
-
-        // 파일 확장자 확인
-        if (file.contentType != "image/png") {
-            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Only PNG files are allowed"))
-        }
-
-        // 임시 파일 생성
-        val tempFile = File.createTempFile("upload", ".png")
-        file.inputStream.use { inputStream ->
-            tempFile.outputStream().use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
-
-        return try {
-            // Google Drive에 이미지 업로드
-            val imageUrl = googleDriveService.uploadImageAndGetLink(tempFile.absolutePath)
-            // 임시 파일 삭제
-            tempFile.delete()
-            ResponseEntity.ok(mapOf("status" to "success", "url" to imageUrl))
-        } catch (e: Exception) {
-            ResponseEntity.status(500).body(mapOf("status" to "error", "message" to (e.message ?: "An error occurred")))
-        }
-    }
-
-    @PostMapping("/upload_png_image")
+    @PostMapping("/pngimage")
     fun uploadCharacterImage(
         @RequestParam("file") file: MultipartFile
     ): ResponseEntity<Map<String, Any>> {
