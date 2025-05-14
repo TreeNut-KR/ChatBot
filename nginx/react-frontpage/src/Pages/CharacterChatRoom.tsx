@@ -11,7 +11,9 @@ import {
   getCharacterResponse, 
   fetchCharacterChatRooms, 
   getCharacterDetails,
-  getUserId
+  getUserId,
+  deleteCharacterChatLog,
+  updateCharacterChatLog
 } from '../Component/Chatting/Services/api';
 
 // Character 인터페이스 정의
@@ -31,6 +33,7 @@ interface Message {
   sender: 'user' | 'character';
   content: string;
   timestamp: string;
+  index?: number; // index 필드 추가
 }
 
 const CharacterChatRoom: React.FC = () => {
@@ -47,6 +50,9 @@ const CharacterChatRoom: React.FC = () => {
     { roomid: string; Title: string; character_name: string; character_img: string }[]
   >([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false); // 메시지 전송 중 상태 추가
+  const [editMode, setEditMode] = useState(false); // 수정 모드 여부
+  const [editMessage, setEditMessage] = useState(''); // 수정할 메시지
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -67,7 +73,7 @@ const CharacterChatRoom: React.FC = () => {
     setCharacter(null);
     setError(null);
     setLoading(true);
-    
+
     const fetchCharacterDetails = async () => {
       try {
         // 1. 채팅 로그 먼저 불러오기 - api.ts 활용
@@ -101,28 +107,31 @@ const CharacterChatRoom: React.FC = () => {
                   sender: 'user',
                   content: log.input_data,
                   timestamp: log.timestamp,
+                  index: log.index, // index 추가
                 },
                 {
                   id: log.index * 2,
                   sender: 'character',
                   content: log.output_data,
                   timestamp: log.timestamp,
+                  index: log.index, // index 추가
                 },
               ]).flat()
             : [];
 
-          setMessages(chatLogs);
-
-          // 채팅 기록이 없을 경우 인사말 추가
-          if (chatLogs.length === 0 && detailsData.greeting) {
-            const greetingMessage: Message = {
-              id: Date.now(),
+          // 인사말 메시지 생성
+          let greetingMessage: Message | null = null;
+          if (detailsData.greeting) {
+            greetingMessage = {
+              id: -1, // 항상 최상단에 위치하도록 음수 ID 사용
               sender: 'character',
               content: detailsData.greeting,
-              timestamp: new Date().toISOString(),
+              timestamp: '', // 인사말은 시간 표시 안 함
             };
-            setMessages([greetingMessage]);
           }
+
+          // 인사말을 항상 최상단에 유지
+          setMessages(greetingMessage ? [greetingMessage, ...chatLogs] : chatLogs);
         } else {
           setCharacter(null);
           setError('존재하지 않는 캐릭터입니다.');
@@ -160,22 +169,30 @@ const CharacterChatRoom: React.FC = () => {
 
   // 메시지 전송 - api.ts 활용
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-  
+    if (!newMessage.trim() || isSending) return;
+
+    setIsSending(true); // 전송 중 상태로 변경
+
+    // 가장 마지막 메시지의 index를 찾음
+    const lastIndex = messages
+      .filter((msg) => typeof msg.index === 'number')
+      .reduce((max, msg) => Math.max(max, msg.index ?? 0), 0);
+
     const userMessage: Message = {
       id: Date.now(),
       sender: 'user',
       content: newMessage,
       timestamp: new Date().toISOString(),
+      index: lastIndex + 1, // 사용자 메시지도 index 부여
     };
-  
+
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setNewMessage('');
-  
+
     try {
       // api.ts의 getCharacterResponse 호출
       const response = await getCharacterResponse(decodedUuid, newMessage, selectedModel);
-  
+
       // 응답에서 여러 필드 중 실제 답변이 있는 곳을 우선적으로 사용
       const data = response;
       const answer =
@@ -184,14 +201,15 @@ const CharacterChatRoom: React.FC = () => {
         data.result ||
         data.message ||
         '응답을 받지 못했습니다.';
-  
+
       const characterResponse: Message = {
         id: Date.now() + 1,
         sender: 'character',
         content: answer,
         timestamp: new Date().toISOString(),
+        index: lastIndex + 1, // 답변 메시지도 index 부여
       };
-  
+
       setMessages((prevMessages) => [...prevMessages, characterResponse]);
     } catch (err) {
       console.error('메시지 전송 중 오류가 발생했습니다:', err);
@@ -200,14 +218,149 @@ const CharacterChatRoom: React.FC = () => {
         sender: 'character',
         content: '메시지 전송 중 오류가 발생했습니다. 다시 시도해주세요.',
         timestamp: new Date().toISOString(),
+        index: lastIndex + 1, // 오류 메시지도 index 부여
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
+    } finally {
+      setIsSending(false); // 전송 완료 후 상태 해제
     }
   };
 
   const handleRoomClick = (roomid: string) => {
     setSidebarOpen(false);
     navigate(`/chat/${encodeURIComponent(roomid)}`);
+  };
+
+  // 대화 삭제 핸들러
+  const handleDeleteChatFromIndex = async (index: number | undefined) => {
+    if (!index) return;
+    if (!window.confirm(`${index}번 index부터 최신까지의 대화를 삭제하시겠습니까?`)) return;
+    try {
+      await deleteCharacterChatLog(decodedUuid, index);
+      // 삭제 후 메시지 새로고침
+      const logsData = await loadCharacterChatLogs(decodedUuid);
+      const characterIdx = logsData.logs.character_idx;
+      let detailsData = null;
+      try {
+        detailsData = await getCharacterDetails(characterIdx);
+      } catch (error) {
+        detailsData = null;
+      }
+      const chatLogs = Array.isArray(logsData.logs.value)
+        ? logsData.logs.value.map((log: any, idx: number) => [
+            {
+              id: log.index * 2 - 1,
+              sender: 'user',
+              content: log.input_data,
+              timestamp: log.timestamp,
+              index: log.index,
+            },
+            {
+              id: log.index * 2,
+              sender: 'character',
+              content: log.output_data,
+              timestamp: log.timestamp,
+              index: log.index,
+            },
+          ]).flat()
+        : [];
+      let greetingMessage: Message | null = null;
+      if (detailsData && detailsData.greeting) {
+        greetingMessage = {
+          id: -1,
+          sender: 'character',
+          content: detailsData.greeting,
+          timestamp: '',
+        };
+      }
+      setMessages(greetingMessage ? [greetingMessage, ...chatLogs] : chatLogs);
+    } catch (e) {
+      alert('대화 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 최신 index 계산
+  const latestIndex = React.useMemo(() => {
+    const idxArr = messages
+      .filter((msg) => typeof msg.index === 'number')
+      .map((msg) => msg.index as number);
+    return idxArr.length > 0 ? Math.max(...idxArr) : undefined;
+  }, [messages]);
+
+  // 최신 user 메시지 찾기
+  const latestUserMsg = React.useMemo(
+    () =>
+      messages
+        .filter((msg) => msg.sender === 'user' && msg.index === latestIndex)
+        .slice(-1)[0],
+    [messages, latestIndex]
+  );
+
+  // 수정 버튼 클릭 시
+  const handleEditClick = () => {
+    if (latestUserMsg) {
+      setEditMode(true);
+      setEditMessage(latestUserMsg.content);
+      setNewMessage(''); // 입력창 비움
+    }
+  };
+
+  // 수정 취소
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditMessage('');
+  };
+
+  // 수정 전송
+  const handleEditSubmit = async () => {
+    if (!editMessage.trim() || !latestIndex) return;
+    setIsSending(true);
+    try {
+      await updateCharacterChatLog(decodedUuid, editMessage, selectedModel);
+      // 수정 후 대화 새로고침
+      const logsData = await loadCharacterChatLogs(decodedUuid);
+      const characterIdx = logsData.logs.character_idx;
+      let detailsData = null;
+      try {
+        detailsData = await getCharacterDetails(characterIdx);
+      } catch (error) {
+        detailsData = null;
+      }
+      const chatLogs = Array.isArray(logsData.logs.value)
+        ? logsData.logs.value.map((log: any, idx: number) => [
+            {
+              id: log.index * 2 - 1,
+              sender: 'user',
+              content: log.input_data,
+              timestamp: log.timestamp,
+              index: log.index,
+            },
+            {
+              id: log.index * 2,
+              sender: 'character',
+              content: log.output_data,
+              timestamp: log.timestamp,
+              index: log.index,
+            },
+          ]).flat()
+        : [];
+      let greetingMessage: Message | null = null;
+      if (detailsData && detailsData.greeting) {
+        greetingMessage = {
+          id: -1,
+          sender: 'character',
+          content: detailsData.greeting,
+          timestamp: '',
+        };
+      }
+      setMessages(greetingMessage ? [greetingMessage, ...chatLogs] : chatLogs);
+      setEditMode(false);
+      setEditMessage('');
+    } catch (e) {
+      alert('대화 수정 중 오류가 발생했습니다.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // 마크다운 컴포넌트 - 코드 블록 커스텀 렌더링
@@ -340,39 +493,110 @@ const CharacterChatRoom: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 bg-[#2a2928] rounded-lg mb-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`mb-4 flex ${
-                    message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.sender === 'character' && (
-                    <img
-                      src={character.image || '/images/default-character.png'}
-                      alt={character.characterName}
-                      className="w-8 h-8 rounded-full object-cover mr-2"
-                    />
-                  )}
-                  <div
-                    className={`p-3 rounded-lg max-w-[70%] ${
-                      message.sender === 'user'
-                        ? 'bg-[#3b7cc9] text-white'
-                        : 'bg-[#3f3f3f] text-white'
-                    }`}
-                  >
-                    <MarkdownRenderer content={message.content} />
+              {messages.map((message, idx) => {
+                // 인사말 메시지는 항상 최상단에 character로 표시
+                if (idx === 0 && message.id === -1 && message.sender === 'character') {
+                  return (
                     <div
-                      className={`text-xs mt-1 ${
-                        message.sender === 'user' ? 'text-blue-200' : 'text-gray-400'
+                      key="greeting"
+                      className="mb-6 flex justify-start"
+                    >
+                      <img
+                        src={character.image || '/images/default-character.png'}
+                        alt={character.characterName}
+                        className="w-8 h-8 rounded-full object-cover mr-2"
+                      />
+                      <div className="p-3 rounded-lg max-w-[70%] bg-[#3f3f3f] text-white border-l-4 border-blue-400">
+                        <MarkdownRenderer content={message.content} />
+                        {/* 인사말은 시간 표시 없음 */}
+                      </div>
+                    </div>
+                  );
+                }
+                // 일반 메시지
+                const isLatestUser =
+                  message.sender === 'user' &&
+                  message.index === latestIndex;
+                return (
+                  <div
+                    key={message.id}
+                    className={`relative mb-4 flex ${
+                      message.sender === 'user' ? 'justify-end' : 'justify-start'
+                    } group`}
+                  >
+                    {message.sender === 'character' && (
+                      <img
+                        src={character.image || '/images/default-character.png'}
+                        alt={character.characterName}
+                        className="w-8 h-8 rounded-full object-cover mr-2"
+                      />
+                    )}
+                    <div
+                      className={`relative p-4 rounded-lg bg-[#2e2d2c] text-white group-hover:bg-[#3a3938] transition max-w-[70%] ${
+                        message.sender === 'user'
+                          ? 'bg-[#3b7cc9] text-white'
+                          : 'bg-[#2e2d2c] text-white'
                       }`}
                     >
-                      {new Date(message.timestamp).toLocaleTimeString()}
+                      {/* 수정 모드일 때 최신 user input만 점멸 효과 */}
+                      {isLatestUser && editMode ? (
+                        <div className="animate-pulse">
+                          <MarkdownRenderer content={editMessage} />
+                        </div>
+                      ) : (
+                        <MarkdownRenderer content={message.content} />
+                      )}
+                      <div
+                        className={`flex items-center text-xs mt-1 ${
+                          message.sender === 'user' ? 'text-blue-200' : 'text-gray-400'
+                        }`}
+                      >
+                        {/* 시간 */}
+                        <span>
+                          {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
+                        </span>
+                        {/* index가 있고 character 메시지일 때만 삭제 버튼 표시 */}
+                        {message.sender === 'character' && message.index !== undefined && (
+                          <button
+                            className="ml-2 text-xs text-gray-400 hover:text-red-500 active:text-red-600 bg-transparent flex items-center gap-1 transition-colors"
+                            title={`${message.index}번 index부터 최신까지 삭제`}
+                            onClick={() => handleDeleteChatFromIndex(message.index)}
+                            tabIndex={0}
+                          >
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 6h8M6 9h2M5 3h4l1 1h2v2H2V4h2l1-1z" />
+                            </svg>
+                            여기서부터 최신까지 삭제
+                          </button>
+                        )}
+                        {/* 최신 user input에만 수정 버튼 */}
+                        {isLatestUser && !editMode && (
+                          <button
+                            className="ml-2 text-xs text-gray-400 hover:text-blue-500 active:text-blue-600 bg-transparent flex items-center gap-1 transition-colors"
+                            title="최신 입력 수정"
+                            onClick={handleEditClick}
+                            tabIndex={0}
+                          >
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M2 12.5V17h4.5l9.1-9.1-4.5-4.5L2 12.5zM17.7 6.3a1 1 0 0 0 0-1.4l-2.6-2.6a1 1 0 0 0-1.4 0l-1.1 1.1 4.5 4.5 1.1-1.1z"/>
+                            </svg>
+                            수정
+                          </button>
+                        )}
+                      </div>
                     </div>
+                    {message.sender === 'user'}
                   </div>
-                  {message.sender === 'user'}
+                );
+              })}
+              {/* 로딩 중 표시 */}
+              {isSending && (
+                <div className="mb-4 flex justify-start">
+                  <div className="p-3 rounded-lg max-w-[70%] bg-[#3f3f3f] text-white opacity-80">
+                    <span className="animate-pulse">답변 생성 중...</span>
+                  </div>
                 </div>
-              ))}
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -384,31 +608,56 @@ const CharacterChatRoom: React.FC = () => {
                   className="w-[80px] p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none flex-shrink-0"
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
+                  disabled={editMode}
                 >
                   <option value="Llama">Free</option>
                   <option value="gpt4.1_mini">Pro</option>
                   <option value="gpt4.1">Pro+</option>
                 </select>
 
-                {/* 입력창 */}
+                {/* 입력창: 수정모드면 editMessage, 아니면 newMessage */}
                 <textarea
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  value={editMode ? editMessage : newMessage}
+                  onChange={(e) =>
+                    editMode
+                      ? setEditMessage(e.target.value)
+                      : setNewMessage(e.target.value)
+                  }
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto'; // 높이를 초기화
-                    target.style.height = `${Math.min(target.scrollHeight, 120)}px`; // 최대 높이 120px (5줄)
+                    target.style.height = 'auto';
+                    target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
                   }}
                   placeholder=""
                   className="flex-1 p-3 bg-[#3f3f3f] text-white border-none focus:outline-none rounded-lg resize-none overflow-y-auto"
-                  rows={1} // 기본 줄 수
-                  style={{ maxHeight: '120px' }} // 최대 높이 (5줄)
+                  rows={1}
+                  style={{ maxHeight: '120px', minWidth: editMode ? '0' : '120px' }}
+                  disabled={isSending}
                 ></textarea>
+
+                {/* 취소 버튼: 수정모드일 때만 노출 */}
+                {editMode && (
+                  <button
+                    onClick={handleCancelEdit}
+                    className="w-11 h-11 flex items-center justify-center bg-red-600 text-white rounded-lg hover:bg-red-700 flex-shrink-0 transition-colors"
+                    style={{ fontSize: '22px', fontWeight: 'bold' }}
+                    aria-label="수정 취소"
+                  >
+                    ⨉
+                  </button>
+                )}
 
                 {/* 전송 버튼 */}
                 <button
-                  onClick={handleSendMessage}
-                  className="w-[45px] px-4 py-3 bg-[#3b7cc9] text-white rounded-lg hover:bg-[#2d62a0] flex-shrink-0"
+                  onClick={editMode ? handleEditSubmit : handleSendMessage}
+                  className={`w-11 h-11 flex items-center justify-center rounded-lg flex-shrink-0 transition-colors ${
+                    editMode
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-[#3b7cc9] text-white hover:bg-[#2d62a0]'
+                  }`}
+                  disabled={isSending}
+                  style={{ fontSize: '22px', fontWeight: 'bold' }}
+                  aria-label="전송"
                 >
                   ▶
                 </button>
