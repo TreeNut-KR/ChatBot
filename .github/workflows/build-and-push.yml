@@ -25,7 +25,7 @@ jobs:
           # 태그에서 v 접두사 제거
           VERSION=$(echo ${{ env.TAG_NAME }} | sed 's/^v//')
           
-          # 버전 정보 업데이트
+          # FastAPI 버전 정보 업데이트
           sed -i "s/- \*\*버전\*\*: .*/- \*\*버전\*\*: $VERSION/" fastapi/src/docs/api_specification.md
           
           # 변경된 내용을 확인
@@ -33,8 +33,18 @@ jobs:
       
       - name: Prepare Release Notes
         run: |
-          # API 명세서를 릴리스 노트로 사용하기 위해 임시 파일로 저장
-          cp fastapi/src/docs/api_specification.md release_notes.md
+          # 임시 릴리스 노트 파일 생성
+          echo "# 릴리스 ${{ env.TAG_NAME }}" > release_notes.md
+          echo "" >> release_notes.md
+          
+          # FastAPI 명세서 추가
+          echo "## FastAPI 명세서" >> release_notes.md
+          cat fastapi/src/docs/api_specification.md >> release_notes.md
+          echo "" >> release_notes.md
+          
+          # SpringBoot RoomController 명세서 추가
+          echo "## SpringBoot RoomController 명세서" >> release_notes.md
+          cat springboot/src/docs/RoomController.md >> release_notes.md
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -43,7 +53,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-          body_path: release_notes.md  # API 명세서를 릴리스 노트로 사용
+          body_path: release_notes.md  # 통합된 릴리스 노트 사용
           files: |
             docker-compose.yml  # 배포 파일 포함
         env:

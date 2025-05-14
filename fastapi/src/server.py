@@ -12,27 +12,6 @@ from starlette.responses import JSONResponse
 
 from utils  import ChatError, app_state, MongoController, SmtpController
 
-class ExceptionMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        try:
-            response = await call_next(request)
-            return response
-        except Exception as e:
-            # 예외 세부 사항을 보다 안전하게 처리
-            error_detail = self._get_error_detail(e)
-            return JSONResponse(
-                status_code=500,
-                content={"detail": error_detail}
-            )
-    
-    def _get_error_detail(self, exception: Exception) -> str:
-        if isinstance(exception, TypeError):
-            return str(exception)
-        try:
-            return getattr(exception, 'detail', str(exception))
-        except Exception as ex:
-            return f"Unexpected error occurred: {str(ex)}"
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     '''
@@ -45,7 +24,6 @@ async def lifespan(app: FastAPI):
         await app_state.cleanup_handlers()
 
 app = FastAPI(lifespan=lifespan)
-ChatError.add_exception_handlers(app)  # 예외 핸들러 추가
 
 def custom_openapi():
     if app.openapi_schema:
@@ -67,10 +45,11 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
-app.add_middleware(ExceptionMiddleware)
+ChatError.ExceptionManager.register(app)
+
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET", "your-secret-key")  # 기본 비밀 키 추가
+    secret_key=os.getenv("SESSION_SECRET"), # 세션 비밀 키, 사용을 원할 경우에 ENV에 설정
 )
 app.add_middleware(
     CORSMiddleware,
@@ -80,22 +59,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.openapi = custom_openapi
-
-@app.middleware("http")
-async def catch_exceptions_middleware(request: Request, call_next):
-    """
-    모든 HTTP 요청에 대해 예외를 처리하는 미들웨어입니다.
-    """
-    try:
-        response = await call_next(request)
-        return response
-    except ValidationError as e:
-        raise ChatError.BadRequestException(detail=str(e))
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        error_detail = str(e)
-        raise ChatError.InternalServerErrorException(detail=error_detail)
 
 # FastAPI 애플리케이션에 mongo_router를 추가
 app.include_router(
