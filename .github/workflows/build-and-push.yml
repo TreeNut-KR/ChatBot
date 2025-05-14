@@ -45,6 +45,17 @@ jobs:
           # SpringBoot RoomController 명세서 추가
           echo "## SpringBoot RoomController 명세서" >> release_notes.md
           cat springboot/src/docs/RoomController.md >> release_notes.md
+          echo "" >> release_notes.md
+
+          # SpringBoot UserController 명세서 추가
+          echo "## SpringBoot UserController 명세서" >> release_notes.md
+          cat springboot/src/docs/UserController.md >> release_notes.md
+          echo "" >> release_notes.md
+
+          # SpringBoot CharacterController 명세서 추가
+          echo "## SpringBoot CharacterController 명세서" >> release_notes.md
+          cat springboot/src/docs/CharacterController.md >> release_notes.md
+          echo "" >> release_notes.md
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
