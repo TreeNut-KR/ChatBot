@@ -9,7 +9,8 @@ import CharacterChatSidebar from '../Component/CharacterMain/CharacterChatSideba
 import { 
   fetchCharacterChatRooms, 
   createCharacterChatRoom,
-  getUserId
+  getUserId,
+  deleteCharacterChatRoom // 삭제 API 임포트
 } from '../Component/Chatting/Services/api';
 
 const CharacterChatPage: React.FC = () => {
@@ -73,6 +74,20 @@ const CharacterChatPage: React.FC = () => {
     navigate(`/chat/${roomid}`);
   };
 
+  // 일괄 삭제 핸들러
+  const handleDeleteRooms = async (roomIds: string[]) => {
+    try {
+      for (const roomId of roomIds) {
+        await deleteCharacterChatRoom(roomId); // DELETE /rooms/character/{roomId}
+      }
+      // 삭제 후 목록 새로고침
+      const rooms = await fetchCharacterChatRooms();
+      setMyRooms(rooms);
+    } catch (e) {
+      alert('채팅방 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="flex flex-col items-center w-full h-full bg-[#1a1918]">
       <header className="flex justify-between items-center w-full h-[56px] px-5 bg-[#1a1918] border-b border-transparent relative">
@@ -96,6 +111,7 @@ const CharacterChatPage: React.FC = () => {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onSelectRoom={handleRoomClick}
+        onDeleteRooms={handleDeleteRooms} // 일괄 삭제 핸들러 전달
       />
       <div className="flex w-full max-w-[1280px] justify-center p-4">
         <div className="relative w-full h-full">

@@ -120,4 +120,3 @@ services:
       - ./mongo/data:/data/db
       - ./mongo/log:/var/log/mongodb
       - ./mongo/.env:/docker-entrypoint-initdb.d/.env
-      - ./chatbot-character-image-6b2ea50ecd70.json:/app/JSON_KEY.json  # 호스트에서 컨테이너로 파일 매핑
