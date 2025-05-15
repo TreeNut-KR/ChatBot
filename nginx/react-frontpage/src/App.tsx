@@ -79,6 +79,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Register />} />
           <Route path="/find-password" element={<PrivacyConsent />} />
+          <Route path="/privacy" element={<PrivacyConsent />} />
 
           {/* 로그인이 필요한 페이지들 */}
           <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
@@ -86,7 +87,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/chat/:uuid" element={<PrivateRoute><CharacterChatRoom /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path='/characterAdd' element={<PrivateRoute><CharacterAdd /></PrivateRoute>} />
-          <Route path="/privacy" element={<PrivateRoute><PrivacyConsent /></PrivateRoute>} />
+          
           {/* MainPage에서 로그인/회원가입을 오른쪽에 띄움 */}
           <Route path="/" element={<MainPage />}>
             <Route index element={<Login />} /> {/* / 경로에서 Login */}

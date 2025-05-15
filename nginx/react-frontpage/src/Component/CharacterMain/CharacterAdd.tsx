@@ -93,7 +93,7 @@ const CharacterAdd: React.FC = () => {
         formData.append('file', selectedFile);
 
         const uploadResponse = await axios.post(
-          '/server/character/upload_png_image',
+          '/server/character/pngimage',
           formData,
           {
             headers: {
@@ -112,7 +112,7 @@ const CharacterAdd: React.FC = () => {
         }
       }
 
-      const response = await axios.post('/server/character/add', {
+      const response = await axios.post('/server/character/', {
         ...characterData,
         image: imageUrl
       }, {
