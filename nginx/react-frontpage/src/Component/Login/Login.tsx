@@ -259,7 +259,7 @@ const Login: React.FC = () => {
             value={Id}
             onChange={(e) => setId(e.target.value)}
             required
-            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-0 focus:border-gray-300"
             placeholder="아이디"
           />
         </div>
@@ -270,7 +270,7 @@ const Login: React.FC = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-0 focus:border-gray-300"
             placeholder="비밀번호"
           />
         </div>

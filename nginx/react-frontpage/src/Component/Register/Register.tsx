@@ -2,26 +2,22 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const Resister: React.FC = () => {
+const Register: React.FC = () => {
   const navigate = useNavigate();
-  const [Id, setId] = useState<string>(''); 
+  const [Id, setId] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [username, setUsername] = useState<string>(''); 
-  const [email, setEmail] = useState<string>(''); 
-  const [idError, setIdError] = useState<string>(''); 
-  const [emailError, setEmailError] = useState<string>(''); 
-
-  // 약관 동의 체크박스 상태 추가
+  const [username, setUsername] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [idError, setIdError] = useState<string>('');
+  const [emailError, setEmailError] = useState<string>('');
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeAge, setAgreeAge] = useState(false);
-
-  // 약관 페이지 모달 상태
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // 50자 제한 검사
     if (username.length > 50) {
       window.alert('이름은 50글자 이상 들어갈 수 없습니다');
       return;
@@ -38,8 +34,6 @@ const Resister: React.FC = () => {
       window.alert('이메일은 50글자 이상 들어갈 수 없습니다');
       return;
     }
-
-    // 약관 동의 체크
     if (!agreePrivacy) {
       window.alert('개인정보 사용 동의에 체크해 주세요.');
       return;
@@ -48,37 +42,35 @@ const Resister: React.FC = () => {
       window.alert('14세 이상임에 체크해 주세요.');
       return;
     }
-
     if (!Id || !email || !password || !username || idError || emailError) {
       window.alert('입력된 값에 오류가 있습니다. 다시 확인해주세요.');
       return;
     }
 
+    setIsLoading(true);
     try {
       const response = await axios.post('/server/user/register', {
         id: Id,
         pw: password,
         name: username,
         email: email,
-        privacy_policy: agreePrivacy,      // 체크박스 값 반영
-        terms_of_service: agreeAge,        // 체크박스 값 반영
+        privacy_policy: agreePrivacy,
+        terms_of_service: agreeAge,
       });
 
       if (response.status === 200) {
         window.alert('회원가입 성공!');
-        console.log('회원가입 성공:', response.data);
-
         navigate('/home');
       }
     } catch (error) {
       window.alert('회원가입 실패. 다시 시도해 주세요.');
-      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-
     if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(value)) {
       setIdError('아이디에 한글을 입력할 수 없습니다.');
     } else {
@@ -89,7 +81,6 @@ const Resister: React.FC = () => {
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-
     if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(value)) {
       setEmailError('이메일에 한글을 입력할 수 없습니다.');
     } else {
@@ -108,12 +99,12 @@ const Resister: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-w-0 h-screen bg-[#1A1918]">
+    <div className="login-container">
       <form
+        className="bg-white py-14 px-10 rounded-lg text-left w-full max-w-xl md:max-w-2xl lg:max-w-3xl shadow-lg relative"
         onSubmit={handleSubmit}
-        className="relative bg-white p-8 rounded-lg text-left w-[352px] max-w-xl shadow-lg min-h-[100px] flex flex-col justify-center"
       >
-        {/* 우상단 X 버튼 */}
+        {/* X 버튼 */}
         <button
           type="button"
           onClick={() => navigate('/')}
@@ -122,71 +113,64 @@ const Resister: React.FC = () => {
         >
           ×
         </button>
-        <h2 className="text-black tracking-wide font-bold text-2xl text-center flex justify-center h-[8px] mb-9">
-          회원가입
+        <div className="flex justify-center items-center mb-1">
+          <h2 className="text-green-600 text-2xl whitespace-nowrap">회원가입</h2>
+        </div>
+        <h2 className="text-center text-sm mb-3 text-gray-600">
+          아래 정보를 입력하고 회원가입을 완료하세요
         </h2>
-
-        <div className="mb-4">
-          <label className="block text-sm text-gray-800 mb-1">이름</label>
+        <div className="mb-2 sm:mb-1">
           <input
             type="text"
             id="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            className="w-full p-2 border-b-2 border-gray-300 text-gray-700 focus:outline-none focus:border-blue-500"
+            className="w-full p-2 sm:px-4 border text-gray-700 border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300"
             autoComplete="off"
             aria-label="이름"
-            placeholder="이름을 입력하세요"
+            placeholder="이름"
           />
         </div>
-
-        <div className="mb-4">
-          <label className="block text-sm text-gray-800 mb-1">아이디</label>
+        <div className="mb-2 sm:mb-1">
           <input
             type="text"
             id="Id"
             value={Id}
             onChange={handleIdChange}
             required
-            placeholder="아이디를 입력하세요"
+            placeholder="아이디"
             aria-label="아이디"
-            className="w-full p-2 border-b-2 text-gray-700 border-gray-300 focus:outline-none focus:border-blue-500"
+            className="w-full p-2 sm:px-4 border text-gray-700 border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300"
           />
           {idError && <p className="text-red-600 text-sm mt-2">{idError}</p>}
         </div>
-
-        <div className="mb-4">
-          <label className="block text-sm text-gray-800 mb-1">비밀번호</label>
+        <div className="mb-2 sm:mb-1">
           <input
             type="password"
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            placeholder="비밀번호를 입력하세요"
+            placeholder="비밀번호"
             aria-label="비밀번호"
-            className="w-full p-2 border-b-2 border-gray-300 focus:outline-none text-gray-700 focus:border-blue-500"
+            className="w-full p-2 sm:px-4 border text-gray-700 border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300"
           />
         </div>
-
-        <div className="mb-4">
-          <label className="block text-sm text-gray-800 mb-1">이메일</label>
+        <div className="mb-2 sm:mb-1">
           <input
             type="email"
             id="email"
             value={email}
             onChange={handleEmailChange}
             required
-            placeholder="이메일을 입력하세요"
+            placeholder="이메일"
             aria-label="이메일"
-            className="w-full p-2 border-b-2 text-gray-700 border-gray-300 focus:outline-none focus:border-blue-500"
+            className="w-full p-2 sm:px-4 border text-gray-700 border-gray-300 rounded-md focus:outline-none focus:ring-0 focus:border-gray-300"
           />
           {emailError && <p className="text-red-600 text-sm mt-2">{emailError}</p>}
         </div>
-
-        {/* 약관 동의 체크박스 */}
-        <div className="mb-2 flex items-center">
+        <div className="mb-3 flex items-center">
           <input
             type="checkbox"
             id="agreePrivacy"
@@ -220,24 +204,23 @@ const Resister: React.FC = () => {
             14세 이상입니다
           </label>
         </div>
-
         <button
           type="submit"
-          className="w-full p-2 font-semibold bg-green-600 text-white rounded hover:bg-green-700 transition mt-4"
+          disabled={isLoading}
+          className="w-full font-semibold tracking-wider py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:bg-green-400"
         >
-          회원가입
+          {isLoading ? '가입 중...' : '회원가입'}
         </button>
       </form>
-
       {/* 약관 모달 */}
       {showPrivacyModal && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
-          style={{ overflow: 'hidden' }} // 외부 스크롤 방지
+          style={{ overflow: 'hidden' }}
         >
           <div
             className="bg-transparent p-0 w-[90vw] max-w-2xl relative shadow-none flex justify-center items-center"
-            style={{ boxShadow: 'none', background: 'none' }} // 테두리/배경 제거
+            style={{ boxShadow: 'none', background: 'none' }}
           >
             <div
               className="bg-white rounded-lg w-full h-[60vh] relative overflow-hidden"
@@ -269,4 +252,4 @@ const Resister: React.FC = () => {
   );
 };
 
-export default Resister;
+export default Register;
