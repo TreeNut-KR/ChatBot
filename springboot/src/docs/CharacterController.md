@@ -1,5 +1,5 @@
 ## 📢 개요
-- **API 이름**: CharactrerController
+- **API 이름**: CharacterController
 - **설명**: 채팅방 및 대화 관리 API
 
 이 API는 Character 모드의 캐릭터를 저장, 조회, 수정, 삭제하는 기능을 제공합니다.
