@@ -16,7 +16,8 @@
 | 👍 [임창묵 (dlackdanr777)](https://github.com/dlackdanr777) | 
 
 # 시스템 아키텍처 다이어그램
-![image](https://lh3.googleusercontent.com/d/1MGojuhD_O90ldOLZ5slQY1h_4f_Hkmiw)
+[![image](./ChatBot.png)](https://drive.google.com/file/d/1MGojuhD_O90ldOLZ5slQY1h_4f_Hkmiw/view?usp=sharing)
+
 
 # AI 서버 리포지토리
 [➡️ TreeNut-KR/ChatBot-AI](https://github.com/TreeNut-KR/ChatBot-AI)
