@@ -12,35 +12,6 @@ import PrivacyConsent from './Component/Register/PrivacyConsentProps';
 import MainPage from './Pages/MainPage';
 import { checkLoginStatus } from './Component/Chatting/Services/TokenUtils';
 
-// JWT 토큰 체크용 커스텀 훅
-const useAuthRedirect = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const redirected = useRef(false);
-
-  useEffect(() => {
-    // 인증이 필요 없는 경로
-    const publicPaths = ['/', '/login', '/register', '/privacy', '/loginMain'];
-    const isPublic = publicPaths.some(path => location.pathname === path || location.pathname.startsWith(path + '/'));
-
-    // 쿠키에서 jwt-token 확인
-    const getCookie = (name: string) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(';').shift();
-    };
-
-    const jwtToken = getCookie('jwt-token');
-
-    if (!jwtToken && !isPublic && !redirected.current) {
-      redirected.current = true;
-      alert('로그인 후 이용해주세요');
-      navigate('/', { replace: true });
-    } else if (jwtToken || isPublic) {
-      redirected.current = false;
-    }
-  }, [location, navigate]);
-};
 
 // 로그인이 필요한 페이지에 대한 가드 컴포넌트
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -60,7 +31,6 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 
 // Router 내부에서만 훅 사용
 const AppRoutes: React.FC = () => {
-  useAuthRedirect();
   const location = useLocation();
 
   // /chat/:uuid 경로에서는 SideBar를 숨김
@@ -79,6 +49,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Register />} />
           <Route path="/find-password" element={<PrivacyConsent />} />
+          <Route path="/privacy" element={<PrivacyConsent />} />
 
           {/* 로그인이 필요한 페이지들 */}
           <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
@@ -86,7 +57,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/chat/:uuid" element={<PrivateRoute><CharacterChatRoom /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path='/characterAdd' element={<PrivateRoute><CharacterAdd /></PrivateRoute>} />
-          <Route path="/privacy" element={<PrivateRoute><PrivacyConsent /></PrivateRoute>} />
+          
           {/* MainPage에서 로그인/회원가입을 오른쪽에 띄움 */}
           <Route path="/" element={<MainPage />}>
             <Route index element={<Login />} /> {/* / 경로에서 Login */}

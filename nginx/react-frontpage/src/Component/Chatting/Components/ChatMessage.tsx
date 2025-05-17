@@ -58,8 +58,28 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user }) => {
     return { borderLeftColor: colorMap[bgClass] || '#6366f1', borderRightColor: colorMap[bgClass] || '#6366f1' };
   };
 
+  if (isIntroMessage) {
+    // 환영 메시지는 별도 레이아웃으로 분리 (배경색 제거)
+    return (
+      <div className="w-full flex justify-center my-6">
+        <div className="text-white rounded-xl px-6 py-4 text-center text-[1rem] max-sm:text-[0.8rem] leading-relaxed shadow-none max-w-xl mx-auto bg-transparent">
+          {text}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div ref={messageRef} className={`relative p-3 rounded-lg max-w-[70%] break-words ${className} mb-6`}>
+    <div
+      ref={messageRef}
+      className={`
+        relative p-3 rounded-lg
+        max-w-[56%] max-sm:max-w-[40%]
+        break-words mb-6
+        text-[1rem] max-sm:text-[0.7rem]
+        ${className}
+      `}
+    >
       <ReactMarkdown 
         remarkPlugins={[remarkGfm, remarkBreaks]} 
         rehypePlugins={[rehypeRaw]}
@@ -76,7 +96,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user }) => {
           code: ({ node, children, className, ...props }) => {
             const isInline = !(className && className.includes("language-"));
             const codeString = String(children).trim();
-            const language = className?.replace("language-", "") || "javascript"; // 기본값 JavaScript
+            const language = className?.replace("language-", "") || "javascript";
 
             return isInline ? (
               <code style={{ backgroundColor: "#222", padding: "2px 5px", borderRadius: "4px" }} {...props}>
@@ -87,7 +107,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user }) => {
                 <SyntaxHighlighter language={language} style={atomDark} className="rounded-lg p-4">
                   {codeString}
                 </SyntaxHighlighter>
-                {/* 복사 버튼 */}
                 <button
                   onClick={() => copyToClipboard(codeString)}
                   className="absolute top-2 right-2 bg-gray-700 text-white px-2 py-1 text-xs rounded-md hover:bg-gray-600 transition"

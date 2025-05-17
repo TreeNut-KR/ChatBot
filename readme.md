@@ -14,8 +14,9 @@
 | 👍 [오동현 (zbezdac1f)](https://github.com/zbezdac1f) , [(odh1231)](https://github.com/odh1231) |  
 | 👍 [백성현 (Seonghyeon8983)](https://github.com/Seonghyeon8983) |
 | 👍 [임창묵 (dlackdanr777)](https://github.com/dlackdanr777) | 
-# 구성도
-![image](https://lh3.googleusercontent.com/d/1GOF-kI3FJTzV-aAYUfA2wkPPljodhquU)
+
+# 시스템 아키텍처 다이어그램
+![image](https://lh3.googleusercontent.com/d/1MGojuhD_O90ldOLZ5slQY1h_4f_Hkmiw)
 
 # AI 서버 리포지토리
 [➡️ TreeNut-KR/ChatBot-AI](https://github.com/TreeNut-KR/ChatBot-AI)
