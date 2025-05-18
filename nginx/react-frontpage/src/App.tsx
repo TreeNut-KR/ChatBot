@@ -11,7 +11,7 @@ import CharacterAdd from './Component/CharacterMain/CharacterAdd';
 import PrivacyConsent from './Component/Register/PrivacyConsentProps';
 import MainPage from './Pages/MainPage';
 import { checkLoginStatus } from './Component/Chatting/Services/TokenUtils';
-
+import KakaoCallback from './Component/Login/KakaoCallback';
 
 // 로그인이 필요한 페이지에 대한 가드 컴포넌트
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -62,6 +62,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/" element={<MainPage />}>
             <Route index element={<Login />} /> {/* / 경로에서 Login */}
             <Route path="loginMain" element={<Login />} />
+            <Route path="/server/user/oauth/callback/kakao" element={<KakaoCallback />} />
             <Route path="/register" element={<Register />} /> {/* 회원가입 단독 페이지 */}
           </Route>
         </Routes>
