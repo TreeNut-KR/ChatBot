@@ -169,7 +169,7 @@ class UserController(
         }
     }
 
-    @GetMapping("/oauth/callback/google")
+    @GetMapping("/social/google/redirect")
     fun googleCallback(
         @RequestParam code: String,
     ): ResponseEntity<Map<String, Any>> {
