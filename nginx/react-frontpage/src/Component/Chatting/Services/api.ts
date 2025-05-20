@@ -289,7 +289,7 @@ export const getCharacterResponse = async (roomId: string, inputText: string, mo
 // 캐릭터 상세 정보 가져오기
 export const getCharacterDetails = async (characterIdx: number) => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/character/details/idx/${characterIdx}`);
+    const response = await axios.get(`${API_BASE_URL}/character/idx/${characterIdx}/detail`);
     return response.data;
   } catch (error) {
     console.error('캐릭터 정보 가져오기 오류:', error);

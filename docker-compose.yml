@@ -99,9 +99,10 @@ services:
       "--skip-name-resolve"
       ]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 1s
-      retries: 10
+      test: ["CMD", "mysql", "-uroot", "-p${MYSQL_ROOT_PASSWORD}", "-e", "USE TEST; SHOW TABLES LIKE 'users';"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
   mongodb:
     restart: unless-stopped
@@ -119,4 +120,3 @@ services:
       - ./mongo/data:/data/db
       - ./mongo/log:/var/log/mongodb
       - ./mongo/.env:/docker-entrypoint-initdb.d/.env
-      - ./chatbot-character-image-6b2ea50ecd70.json:/app/JSON_KEY.json  # 호스트에서 컨테이너로 파일 매핑

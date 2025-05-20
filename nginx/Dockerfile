@@ -14,6 +14,7 @@ COPY ./react-frontpage/build /usr/share/nginx/html
 
 # SSL 인증서 복사 및 권한 설정
 COPY ./certificates/*.pem /etc/nginx/certs/
+
 # 파일이 존재하는 경우에만 권한 설정
 RUN chmod 644 /etc/nginx/certs/*.crt.pem || true && \
     chmod 600 /etc/nginx/certs/*.key.pem || true && \

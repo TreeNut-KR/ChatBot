@@ -1,7 +1,8 @@
 #!/bin/bash
-# filepath: ./mysql/flyway-migrate.sh
 
-# Flyway 실행 함수
+# healthcheck 통과 후 5초 대기
+sleep 5
+
 run_flyway() {
   local db_name=$1
   echo "Running Flyway migration for database: $db_name"
@@ -12,14 +13,12 @@ run_flyway() {
          migrate
 }
 
-# TEST DB 마이그레이션
 run_flyway "TEST"
 if [ $? -ne 0 ]; then
   echo "TEST database migration failed. Aborting chatbot migration."
   exit 1
 fi
 
-# 실제 DB 마이그레이션
 run_flyway ${MYSQL_DATABASE}
 if [ $? -ne 0 ]; then
   echo "chatbot database migration failed."
