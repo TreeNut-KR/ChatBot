@@ -572,8 +572,10 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         />
       )}
 
-      {/* Toast 컨테이너 - 중앙 상단으로 위치 변경 */}
-      <div className="fixed top-4 right-4 flex flex-col space-y-2 z-50">
+      {/* Toast 컨테이너 - 모바일: 하단 중앙, 데스크탑: 우상단 */}
+      <div className="fixed z-50 flex flex-col space-y-2
+        bottom-6 left-1/2 -translate-x-1/2 w-[90vw] max-w-xs
+        sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto sm:translate-x-0">
         {toasts.map(toast => (
           <div key={toast.id} className="animate-fadeInOut">
             <Toast
