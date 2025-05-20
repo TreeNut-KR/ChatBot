@@ -76,6 +76,18 @@ const App: React.FC = () => {
     checkLoginStatus();
   }, []);
 
+  useEffect(() => {
+    const preventPinch = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('touchmove', preventPinch, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', preventPinch);
+    };
+  }, []);
+
   return (
     <Router>
       <AppRoutes />
