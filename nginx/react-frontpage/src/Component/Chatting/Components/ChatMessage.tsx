@@ -74,7 +74,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user }) => {
       ref={messageRef}
       className={`
         relative p-3 rounded-lg
-        max-w-[56%] max-sm:max-w-[40%]
+        max-w-[70%] max-sm:max-w-[60%]
         break-words mb-6
         text-[1rem] max-sm:text-[0.7rem]
         ${className}

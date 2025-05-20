@@ -16,7 +16,7 @@ const ChatFooter: React.FC<ChatFooterProps> = ({ userInput, setUserInput, handle
       onChange={(e) => setUserInput(e.target.value)}
       placeholder="메시지를 입력하세요..."
       autoComplete="off"
-      className="flex-1 p-2 rounded-lg bg-gray-800 text-white outline-none"
+      className="flex-1 p-2 rounded-lg bg-gray-800 text-white outline-none select-text touch-manipulation caret-white"
     />
     <button
       type="submit"
