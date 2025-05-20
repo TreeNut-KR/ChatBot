@@ -125,12 +125,12 @@ class UserService(
         }
     }
 
-    fun kakaoLogin(code: String): Map<String, Any> {
+    fun kakaoLogin(code: String, redirectUri: String): Map<String, Any> {
         val formData = LinkedMultiValueMap<String, String>().apply {
             add("grant_type", kakaoGrantType)
             add("client_id", kakaoClientId)
             add("client_secret", kakaoClientSecret)
-            add("redirect_uri", kakaoRedirectUri)
+            add("redirect_uri", redirectUri)
             add("code", code)
             add("scope", kakaoScope)
         }

@@ -30,7 +30,8 @@ class UserController(
     @Value("\${spring.security.oauth2.client.provider.google.token-uri}") private val googleTokenUrl: String,
     @Value("\${spring.security.oauth2.client.provider.google.user-info-uri}") private val googleUserInfoUrl: String,
     @Value("\${spring.security.oauth2.client.registration.google.authorization-grant-type}") private val googleGrantType: String,
-    @Value("\${spring.security.oauth2.client.registration.google.scope}") private val googleScope: String
+    @Value("\${spring.security.oauth2.client.registration.google.scope}") private val googleScope: String,
+    @Value("\${spring.security.oauth2.client.registration.kakao.redirect-uri}") private val kakaoRedirectUri: String
 ) {
     // logger 추가
     private val logger = LoggerFactory.getLogger(UserController::class.java)
@@ -84,18 +85,19 @@ class UserController(
     }
 
     @PostMapping("/social/kakao/login")
-    fun kakaoLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
-        val code = body["code"]
-        if (code.isNullOrEmpty()) {
-            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 없음"))
-        }
+fun kakaoLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
+    val code = body["code"]
+    val redirectUri = body["redirect_uri"] ?: kakaoRedirectUri // 프론트에서 전달받은 값 우선 사용
+    if (code.isNullOrEmpty()) {
+        return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 없음"))
+    }
 
-        return try {
-            val response = userService.kakaoLogin(code)
-            ResponseEntity.ok(response)
-        } catch (e: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
+    return try {
+        val response = userService.kakaoLogin(code, redirectUri)
+        ResponseEntity.ok(response)
+    } catch (e: Exception) {
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
         }
     }
 
@@ -103,7 +105,7 @@ class UserController(
     fun kakaoCallback(
         @RequestParam code: String,
     ): ResponseEntity<Map<String, Any>> {
-        return kakaoLogin(mapOf("code" to code))
+        return kakaoLogin(mapOf("code" to code, "redirect_uri" to kakaoRedirectUri))
     }
 
     @PostMapping("/social/google/login")

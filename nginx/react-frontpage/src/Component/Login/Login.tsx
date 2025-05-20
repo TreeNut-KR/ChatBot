@@ -220,9 +220,9 @@ const Login: React.FC = () => {
       (window as any).Kakao.init(KAKAO_JS_KEY);
     }
 
-    (window as any).Kakao.Auth.authorize({
-      redirectUri: KAKAO_REDIRECT_URI, // env에서 불러온 값 사용
-    });
+  (window as any).Kakao.Auth.authorize({
+    redirectUri: KAKAO_REDIRECT_URI,
+  });
   };
 
   // 일반 로그인
