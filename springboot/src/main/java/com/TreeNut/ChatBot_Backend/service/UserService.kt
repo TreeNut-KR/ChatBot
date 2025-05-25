@@ -159,8 +159,9 @@ class UserService(
         val profile = kakaoAccount["profile"] as Map<*, *>
         val nickname = profile["nickname"] as String
         val kakaoId = userInfoResponse["id"].toString()
+        val email = kakaoAccount["email"] as String?
 
-        val user = registerKakaoUser(kakaoId, nickname, null)
+        val user = registerKakaoUser(kakaoId, nickname, email)
         val token = tokenAuth.generateToken(user.userid)
 
         return mapOf(

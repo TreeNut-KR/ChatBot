@@ -62,7 +62,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/" element={<MainPage />}>
             <Route index element={<Login />} /> {/* / 경로에서 Login */}
             <Route path="loginMain" element={<Login />} />
-            <Route path="/server/user/oauth/callback/kakao" element={<KakaoCallback />} />
+            <Route path="/social/kakao/redirect" element={<KakaoCallback />} />
             <Route path="/register" element={<Register />} /> {/* 회원가입 단독 페이지 */}
           </Route>
         </Routes>

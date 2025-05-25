@@ -85,7 +85,7 @@ class UserController(
     }
 
     @PostMapping("/social/kakao/login")
-fun kakaoLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
+    fun kakaoLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
     val code = body["code"]
     val redirectUri = body["redirect_uri"] ?: kakaoRedirectUri // 프론트에서 전달받은 값 우선 사용
     if (code.isNullOrEmpty()) {
@@ -101,7 +101,7 @@ fun kakaoLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<Strin
         }
     }
 
-    @GetMapping("/oauth/callback/kakao")
+    @GetMapping("/social/kakao/redirect")
     fun kakaoCallback(
         @RequestParam code: String,
     ): ResponseEntity<Map<String, Any>> {
