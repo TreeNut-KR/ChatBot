@@ -3,6 +3,7 @@ package com.TreeNut.ChatBot_Backend.controller
 import com.TreeNut.ChatBot_Backend.model.User
 import com.TreeNut.ChatBot_Backend.service.UserService
 import com.TreeNut.ChatBot_Backend.middleware.TokenAuth
+import com.TreeNut.ChatBot_Backend.service.GoogleDriveService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,6 +18,8 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.slf4j.LoggerFactory
+import org.springframework.web.multipart.MultipartFile
+import java.nio.file.Files
 
 @RestController
 @RequestMapping("/server/user")
@@ -24,6 +27,7 @@ class UserController(
     private val userService: UserService,
     private val tokenAuth: TokenAuth,
     private val webClientBuilder: WebClient.Builder,
+    private val googleDriveService: GoogleDriveService,
     @Value("\${spring.security.oauth2.client.registration.google.client-id}") private val googleClientId: String,
     @Value("\${spring.security.oauth2.client.registration.google.client-secret}") private val googleClientSecret: String,
     @Value("\${spring.security.oauth2.client.registration.google.redirect-uri}") private val googleRedirectUri: String,
@@ -227,5 +231,32 @@ class UserController(
         val code = body["code"] ?: return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "Code is required"))
         val result = userService.verifyEmailCode(userid, email, code)
         return ResponseEntity.ok(result)
+    }
+
+    @PostMapping("/profile/image")
+    fun uploadProfileImage(
+        @RequestParam("file") file: MultipartFile,
+        @RequestHeader("Authorization") userToken: String
+    ): ResponseEntity<Map<String, Any>> {
+        return try {
+            // JWT에서 사용자 ID 추출
+            val userid = tokenAuth.authGuard(userToken)
+                ?: return ResponseEntity.status(401).body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
+
+            // 임시 파일로 저장
+            val tempFile = Files.createTempFile("profile_", ".png").toFile()
+            file.transferTo(tempFile)
+
+            // 구글 드라이브 업로드
+            val imageUrl = googleDriveService.uploadImageAndGetLink(tempFile.absolutePath)
+            tempFile.delete() // 임시 파일 삭제
+
+            // DB에 프로필 이미지 URL 저장
+            userService.updateProfileImage(userid, imageUrl)
+
+            ResponseEntity.ok(mapOf("status" to "success", "url" to imageUrl))
+        } catch (e: Exception) {
+            ResponseEntity.status(500).body(mapOf("status" to "fail", "message" to (e.message ?: "프로필 이미지 업로드 실패")))
+        }
     }
 }

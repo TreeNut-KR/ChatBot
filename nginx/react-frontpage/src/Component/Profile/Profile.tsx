@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // 쿠키에서 값을 읽어오는 함수
 const getCookieValue = (name: string): string => {
@@ -26,6 +26,10 @@ const Profile: React.FC = () => {
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [emailVerifyStatus, setEmailVerifyStatus] = useState<'idle' | 'success' | 'error' | 'expired' | 'notfound'>('idle');
   const [emailVerifyMessage, setEmailVerifyMessage] = useState('');
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // 사용자 정보와 멤버십 정보 모두 가져오기
@@ -83,6 +87,9 @@ const Profile: React.FC = () => {
       console.log('User Info Fetched:', data);
       setUserInfo(data);
       setEditedInfo({ ...data, pw: '' }); // data에 userid 포함
+      // 프로필 이미지 URL 세팅 (백엔드에서 image 또는 profileImage 필드로 내려줘야 함)
+      setProfileImageUrl(data.profileImage || data.image || null);
+      setProfileImagePreview(null); // 새로고침 시 미리보기 초기화
       
       // DB의 users 테이블에 membership 필드가 있으므로 이 정보를 사용
       if (data.membership) {
@@ -93,6 +100,57 @@ const Profile: React.FC = () => {
     } catch (error) {
       console.error('Error fetching user info:', error);
       throw error;
+    }
+  };
+
+  
+  const handleProfileImageClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
+  // 파일 선택 시 미리보기 및 업로드
+  const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    // 파일 크기 제한 (예: 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('파일 크기가 5MB를 초과할 수 없습니다.');
+      return;
+    }
+    
+    // 미리보기
+    const reader = new FileReader();
+    reader.onloadend = () => setProfileImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    // 업로드
+    try {
+      setUploading(true);
+      const jwtToken = getCookieValue('jwt-token');
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/server/user/profile/image', {
+        method: 'POST',
+        headers: {
+          'Authorization': jwtToken || ''
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setProfileImageUrl(data.url);
+        setProfileImagePreview(null); // 업로드 성공 시 미리보기 초기화
+        alert('프로필 이미지가 성공적으로 업로드되었습니다.');
+      } else {
+        alert(data.message || '프로필 이미지 업로드에 실패했습니다.');
+      }
+    } catch (err) {
+      alert('프로필 이미지 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -244,9 +302,41 @@ const Profile: React.FC = () => {
       <div className="bg-[#2a2928] rounded-lg p-8 shadow-lg">
         {/* 프로필 상단 영역: 이미지와 멤버십 배지 */}
         <div className="flex flex-col items-center mb-8">
-          {/* 프로필 이미지 */}
-          <div className="w-32 h-32 bg-[#3f3f3f] rounded-full flex items-center justify-center shadow-md mb-4 border-2 border-[#3b7cc9]">
-            <span className="text-6xl">👤</span>
+          <div
+            className="w-32 h-32 bg-[#3f3f3f] rounded-full flex items-center justify-center shadow-md mb-4 border-2 border-[#3b7cc9] cursor-pointer relative overflow-hidden"
+            title="프로필 이미지 업로드"
+            onClick={handleProfileImageClick}
+            style={{ position: 'relative' }}
+          >
+            {profileImagePreview ? (
+              <img
+                src={profileImagePreview}
+                alt="프로필 미리보기"
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : profileImageUrl ? (
+              <img
+                src={profileImageUrl}
+                alt="프로필"
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <span className="text-6xl">👤</span>
+            )}
+            {uploading && (
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#3b7cc9]"></div>
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/png,image/jpeg"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleProfileImageChange}
+              aria-label="프로필 이미지 업로드"
+            />
+            <span className="absolute bottom-2 right-2 bg-[#3b7cc9] text-white text-xs px-2 py-1 rounded shadow">변경</span>
           </div>
           
           {/* 멤버십 배지 */}
