@@ -1,8 +1,10 @@
 package com.TreeNut.ChatBot_Backend.service
 
 import com.TreeNut.ChatBot_Backend.model.Character
+import com.TreeNut.ChatBot_Backend.model.CharacterLike
 import com.TreeNut.ChatBot_Backend.repository.CharacterRepository
 import com.TreeNut.ChatBot_Backend.repository.ChatroomRepository
+import com.TreeNut.ChatBot_Backend.repository.CharacterLikeRepository
 import com.TreeNut.ChatBot_Backend.model.Chatroom
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -34,6 +36,7 @@ import org.springframework.beans.factory.annotation.Value
 class CharacterService(
     private val characterRepository: CharacterRepository,
     private val chatroomRepository: ChatroomRepository,
+    private val characterLikeRepository: CharacterLikeRepository,
     private val tokenAuth: TokenAuth,
     private val roomService: RoomService
 ) {
@@ -183,34 +186,38 @@ class CharacterService(
         // 주어진 이름과 일치하는 첫 번째 캐릭터 찾기
         val character = characters.firstOrNull() ?: return "Character not found"
 
-        // 이미 좋아요를 누른 유저인지 확인
-        val likedUsers = like_character.liked_users?.split(",")?.toMutableList() ?: mutableListOf()
+        // 캐릭터의 PK(idx)를 id로 사용
+        val characterId = character.idx ?: return "Character id not found"
 
-        if (likedUsers.contains(userid)) {
+        // 이미 좋아요를 누른 유저인지 확인
+        if (characterLikeRepository.existsByCharacterIdAndUserid(characterId, userid)) {
             return "You have already liked this character"
         }
 
-        // like_count 증가
-        character.like_count = (character.like_count ?: 0) + 1
+        // 좋아요 추가
+        characterLikeRepository.save(CharacterLike(characterId = characterId, userid = userid))
 
-        likedUsers.add(userid)
-        // 쉼표로 구분하여 문자열로 변환
-        character.liked_users = likedUsers.joinToString(",")
+        // like_count 증가 및 저장
+        val newLikeCount = (character.like_count ?: 0) + 1
+        val updatedCharacter = character.copy(like_count = newLikeCount)
+        characterRepository.save(updatedCharacter)
+        return "Like count updated successfully for character: ${character.characterName}"
+    }
 
-        // 변경된 캐릭터 정보를 DB에 저장
-        characterRepository.save(character)
-
-        return "Like count updated successfully for character: $characterName"
+    fun getLikeCount(character: Character): Int {
+        val characterId = character.idx ?: return 0
+        return characterLikeRepository.countByCharacterId(characterId)
     }
 
     fun getCharacterDetailsByName(name: String): Map<String, Any>? {
         val character = characterRepository.findByCharacterName(name).firstOrNull() ?: return null
-        return mapOf<String, Any>(
-            "character_name" to (character.characterName ?: "Unknown"), // null 처리
-            "description" to (character.description ?: "No description available"), // null 처리
-            "image" to (character.image ?: "default_image.png"), // null 처리
-            "userid" to (character.userid ?: "Unknown"), // null 처리
-            "like_count" to (character.like_count ?: 0) // null 처리
+        val likeCount = getLikeCount(character)
+        return mapOf(
+            "character_name" to (character.characterName ?: "Unknown"),
+            "description" to (character.description ?: "No description available"),
+            "image" to (character.image ?: "default_image.png"),
+            "userid" to (character.userid ?: "Unknown"),
+            "like_count" to likeCount
         )
     }
 

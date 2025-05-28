@@ -62,7 +62,7 @@
       "greeting" : "hello",
       "image" : "https://drive.google.com/thumbnail?id=1a2mPrSRXoPpUCblTO55UXaWsfHlFZK7_",
       "character_setting" : "test setting",
-        "access_level" : true
+      "access_level" : true
       }
     ```
       | 필드명 | 타입 | 필수 | 설명 |
@@ -159,7 +159,8 @@
     ```json
     {
     "status": 200,
-    "message": "Like count updated successfully for character: test"
+    "message": "Like count updated successfully for character: test",
+    "like_count": 1
     }
     ```
 #### 📌 Character 검색

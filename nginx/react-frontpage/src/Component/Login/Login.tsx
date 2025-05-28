@@ -78,6 +78,56 @@ const handleGoogleSocialLogin = async (code: string, setError: (msg: string) => 
   }
 };
 
+const KAKAO_JS_KEY = process.env.REACT_APP_KAKAO_JS_KEY;
+const KAKAO_REDIRECT_URI = process.env.REACT_APP_KAKAO_REDIRECT_URI;
+
+export const handleKakaoSocialLogin = async (code: string, setError: (msg: string) => void) => {
+  if (usedCodes.has(code)) {
+    setError('카카오 인가코드는 한 번만 사용할 수 있습니다. 다시 로그인 해주세요.');
+    return false;
+  }
+  usedCodes.add(code);
+
+  try {
+    // 인가코드 콘솔 출력
+    console.log('카카오 인가코드:', code);
+
+    // redirect_uri를 명시적으로 전달
+    const serverResponse = await fetch(
+      '/server/user/social/kakao/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code,
+          redirect_uri: KAKAO_REDIRECT_URI, // env에서 불러온 값 사용
+        }),
+      }
+    );
+    const data = await serverResponse.json();
+    const { token } = data;
+
+    setCookie('jwt-token', token);
+
+    // 토큰에서 사용자 ID 추출
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      if (payload && payload.sub) {
+        setCookie('user_id', payload.sub);
+      }
+    } catch (e) {
+      console.error('JWT 토큰 디코딩 오류:', e);
+    }
+
+    return true;
+  } catch (error: any) {
+    setError('카카오 소셜로그인 서버 처리 실패: ' + (error.response?.data?.message || '알 수 없는 오류'));
+    return false;
+  }
+};
+
 const Login: React.FC = () => {
   const [Id, setId] = useState('');
   const [password, setPassword] = useState('');
@@ -150,12 +200,29 @@ const Login: React.FC = () => {
     }
     alert('네이버 로그인은 아직 준비 중입니다.');
   };
+
   const handleKakaoLogin = () => {
     if (isInAppBrowser()) {
-      alert('외부 브라우저에서 로그인해주세요.');
+      const currentUrl = window.location.href;
+      setCookie('redirectAfterLogin', currentUrl);
+      if (/android/i.test(navigator.userAgent)) {
+        window.location.href = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=${window.location.protocol.slice(0,  -1)};package=com.android.chrome;end`;
+      } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+        window.location.href = currentUrl;
+      } else {
+        window.open(currentUrl, '_system');
+      }
       return;
     }
-    alert('카카오 로그인은 아직 준비 중입니다.');
+
+    // Kakao SDK 초기화 (한 번만)
+    if (!(window as any).Kakao?.isInitialized()) {
+      (window as any).Kakao.init(KAKAO_JS_KEY);
+    }
+
+  (window as any).Kakao.Auth.authorize({
+    redirectUri: KAKAO_REDIRECT_URI,
+  });
   };
 
   // 일반 로그인
