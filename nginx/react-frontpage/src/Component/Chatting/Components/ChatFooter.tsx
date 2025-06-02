@@ -1,11 +1,22 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { ChatFooterProps } from '../Types';
 
 interface ChatFooterWithModelProps extends ChatFooterProps {
   model: string;
   setModel: (model: string) => void;
-  membership?: string; // 멤버십 정보 추가
 }
+
+// 쿠키에서 값을 읽어오는 함수
+const getCookieValue = (name: string): string => {
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=');
+    if (cookieName === name) {
+      return decodeURIComponent(cookieValue);
+    }
+  }
+  return '';
+};
 
 const ChatFooter: React.FC<ChatFooterWithModelProps> = ({
   userInput,
@@ -15,15 +26,41 @@ const ChatFooter: React.FC<ChatFooterWithModelProps> = ({
   scrollToBottom,
   model,
   setModel,
-  membership = 'BASIC', // 기본값 BASIC
 }) => {
   const selectRef = useRef<HTMLSelectElement>(null);
+  const [membership, setMembership] = useState<'BASIC' | 'VIP'>('BASIC');
+
+  // 멤버십 정보 가져오기
+  useEffect(() => {
+    const fetchMembership = async () => {
+      try {
+        const jwtToken = getCookieValue('jwt-token');
+        const res = await fetch('/server/user/membership', {
+          method: 'GET',
+          headers: {
+            'Authorization': jwtToken || ''
+          },
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.membership) {
+            setMembership(data.membership);
+          }
+        }
+      } catch (e) {
+        // 실패 시 기본 BASIC 유지
+      }
+    };
+    fetchMembership();
+  }, []);
 
   // BASIC 사용자가 리스트박스 클릭 시 안내
   const handleSelectClick = (e: React.MouseEvent<HTMLSelectElement>) => {
     if (membership === 'BASIC') {
       alert('이메일 인증을 완료해야 다양한 모델을 사용할 수 있습니다.');
     }
+    // VIP일 때는 아무 동작 없음 (alert 없음)
   };
 
   return (
@@ -58,9 +95,9 @@ const ChatFooter: React.FC<ChatFooterWithModelProps> = ({
           aria-label="모델 선택"
         >
           <option value="Llama">Llama</option>
-          <option value="gpt4o_mini" disabled={membership === 'BASIC'}>gpt4o_mini</option>
-          <option value="gpt4.1" disabled={membership === 'BASIC'}>gpt4.1</option>
-          <option value="gpt4.1_mini" disabled={membership === 'BASIC'}>gpt4.1_mini</option>
+          <option value="gpt4o_mini" disabled={membership !== 'VIP'}>gpt4o_mini</option>
+          <option value="gpt4.1" disabled={membership !== 'VIP'}>gpt4.1</option>
+          <option value="gpt4.1_mini" disabled={membership !== 'VIP'}>gpt4.1_mini</option>
         </select>
         <input
           type="text"

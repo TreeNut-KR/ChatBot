@@ -105,6 +105,8 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (userInput.trim() === '') return;
+
+    // 1. 유저 메시지 추가
     appendMessage({
       user: '나',
       text: userInput,
@@ -112,9 +114,26 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
       type: '',
       retry: false,
     });
+
     setUserInput('');
     setIsLoading(true);
-    // postToServer(model, userInput); // 실제 서버 전송 필요시 추가
+
+    // 2. 서버에 메시지 전송 및 AI 응답 추가
+    const roomId = getCookie('mongo_chatroomid') || '';
+    try {
+      const aiResponse = await getChatResponse(roomId, userInput, model, googleAccess);
+      const aiText = aiResponse?.text || aiResponse?.data?.text || aiResponse?.message;
+      if (aiText) {
+        appendMessage({
+          user: 'AI',
+          text: aiText,
+          className: 'bg-gray-600 text-white',
+          type: '',
+        });
+      }
+    } catch (e) {
+      showToast('메시지 전송 중 오류가 발생했습니다.', 'error');
+    }
     setIsLoading(false);
   };
 
