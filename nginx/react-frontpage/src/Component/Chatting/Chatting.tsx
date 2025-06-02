@@ -554,8 +554,21 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     }
   };
 
+  const isIOS = () => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+    return (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.userAgent.includes('Macintosh') && 'ontouchend' in document)
+    );
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center h-[100vh] bg-gray-900 relative">
+    <div
+      className={[
+        "flex flex-col items-center justify-center bg-gray-900 relative",
+        isIOS() ? "ios-fix-viewport" : "h-[100vh]"
+      ].join(" ")}
+    >
       {/* 사이드바 추가 */}
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setIsSidebarOpen(false)}></div>
@@ -587,13 +600,19 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         ))}
       </div>
       
-      <div className="flex flex-col text-white w-full h-full max-w-3xl bg-gray-900">
+      <div
+        className={[
+          "flex flex-col text-white w-full max-w-3xl bg-gray-900",
+          isIOS() ? "h-full" : "h-full"
+        ].join(" ")}
+        style={isIOS() ? { minHeight: "100dvh", maxHeight: "100dvh" } : {}}
+      >
         <ChatHeader 
           model={model} 
           setModel={setModel} 
           googleAccess={googleAccess} 
           setGoogleAccess={setGoogleAccess}
-          onMenuClick={handleMenuClick} // 햄버거 버튼 클릭 핸들러 추가
+          onMenuClick={handleMenuClick}
         />
         <main className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
           <ChatContainer messages={messages} isLoading={isLoading} chatContainerRef={chatContainerRef} />
