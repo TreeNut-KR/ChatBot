@@ -154,10 +154,11 @@ const Sidebar: React.FC = () => {
       {!isDefaultPage && isMobileSidebarOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-40 z-40 sm:hidden"
+            className="fixed inset-0 bg-black bg-opacity-40 z-[110] sm:hidden"
             onClick={() => setIsMobileSidebarOpen(false)}
           />
-          <aside className="fixed top-0 left-0 h-full w-[80px] bg-[#161514] z-50 flex flex-col justify-between items-center px-0 py-5 sm:hidden animate-slideIn transition-all duration-300">
+          <aside className="fixed top-0 left-0 h-full w-[80px] bg-[#161514] z-[120] flex flex-col justify-between items-center px-0 py-5 sm:hidden animate-slideIn transition-all duration-300"
+          >
             {/* 상단: 로고 및 메뉴 */}
             <div className="flex flex-col items-center w-full">
               <div className="mb-8 cursor-pointer flex justify-center w-full" onClick={() => handleNavigation('/home')}>
@@ -165,17 +166,19 @@ const Sidebar: React.FC = () => {
               </div>
               <button
                 onClick={() => handleNavigation('/home')}
-                className="flex flex-col items-center text-white py-2 w-full"
+                className="flex flex-col items-center text-white py-2 w-full h-16 active:bg-[#2A2927] rounded-md transition"
+                style={{ minHeight: 56 }}
               >
-                <span className="p-2 hover:bg-[#2A2927] hover:rounded-md hover:text-[#FFA500] flex justify-center items-center w-12 h-12">
+                <span className="p-3 hover:bg-[#2A2927] hover:rounded-md hover:text-[#FFA500] flex justify-center items-center w-full h-full">
                   <i className="fas fa-search fa-xl"></i>
                 </span>
               </button>
               <button
                 onClick={() => handleNavigation('/CharacterChat')}
-                className="flex flex-col items-center text-white py-2 w-full"
+                className="flex flex-col items-center text-white py-2 w-full h-16 active:bg-[#2A2927] rounded-md transition"
+                style={{ minHeight: 56 }}
               >
-                <span className="p-2 hover:bg-[#2A2927] hover:rounded-md hover:text-[#FFA500] flex justify-center items-center w-12 h-12">
+                <span className="p-3 hover:bg-[#2A2927] hover:rounded-md hover:text-[#FFA500] flex justify-center items-center w-full h-full">
                   <i className="fas fa-comments fa-xl"></i>
                 </span>
               </button>
@@ -183,33 +186,29 @@ const Sidebar: React.FC = () => {
             {/* 하단: 프로필 */}
             <div className="mb-2 w-full flex justify-center relative">
               <button
-                className="flex flex-col items-center text-white py-2 w-full"
-                // 모바일: 터치 시 바로 옵션이 뜨도록 onClick만 사용
+                className="flex flex-col items-center text-white py-2 w-full h-16 active:bg-[#2A2927] rounded-md transition"
                 onClick={() => setShowAuthOptions((prev) => !prev)}
-                // onMouseEnter/Leave는 데스크탑에서만 동작하도록 분기
                 onMouseEnter={(e) => {
                   if (window.innerWidth >= 640) handleMouseEnter();
                 }}
                 onMouseLeave={(e) => {
                   if (window.innerWidth >= 640) handleMouseLeave();
                 }}
+                style={{ minHeight: 56 }}
               >
-                <span className="p-2 hover:bg-[#2A2927] hover:rounded-md hover:text-[#FFA500] flex justify-center items-center w-12 h-12">
+                <span className="p-3 hover:bg-[#2A2927] hover:rounded-md hover:text-[#FFA500] flex justify-center items-center w-full h-full">
                   <i className="fas fa-user-shield fa-xl"></i>
                 </span>
               </button>
-              {/* 프로필/로그아웃 옵션: 모바일/PC 모두 동일하게 표시, 모바일은 가로 배치 */}
               {showAuthOptions && isAuthenticated && (
                 <div
-                  className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-[#161514] p-3 rounded-md shadow-lg z-50 border border-[#2A2927] flex flex-row gap-2"
-                  // 데스크탑에서만 마우스 오버 유지
+                  className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 bg-[#161514] p-3 rounded-md shadow-lg z-[130] border border-[#2A2927] flex flex-row gap-2"
                   onMouseEnter={(e) => {
                     if (window.innerWidth >= 640) handleMouseEnter();
                   }}
                   onMouseLeave={(e) => {
                     if (window.innerWidth >= 640) handleMouseLeave();
                   }}
-                  // 모바일에서 바깥 클릭 시 닫기 방지
                   onTouchStart={(e) => e.stopPropagation()}
                 >
                   <button

@@ -39,3 +39,19 @@ body {
 .chat-container {
   font-size: 1rem !important; /* ChatContainer의 폰트 크기를 고정 */
 }
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: #6366f1;
+  border-radius: 6px;
+}
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: #23232b;
+  border-radius: 6px;
+}
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 #23232b;
+}
