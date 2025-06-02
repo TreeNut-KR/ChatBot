@@ -18,10 +18,11 @@ import { setCookie, getCookie, removeCookie } from '../../Cookies';
 
 interface ChattingProps {
   messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   onSend: (message: Message) => void;
 }
 
-const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
+const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) => {
   const [userInput, setUserInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [model, setModel] = useState<string>('Llama');
@@ -32,33 +33,90 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
   const [isLoadingRooms, setIsLoadingRooms] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
+  // Toast 관련 함수
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
   };
-
   const removeToast = (id: number) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
-
-  // 사용자 상호작용 시 모든 토스트 제거
   useEffect(() => {
     if (toasts.length === 0) return;
-
-    const handleUserInteraction = () => {
-      setToasts([]);
-    };
-
+    const handleUserInteraction = () => setToasts([]);
     window.addEventListener('mousedown', handleUserInteraction);
     window.addEventListener('keydown', handleUserInteraction);
     window.addEventListener('touchstart', handleUserInteraction);
-
     return () => {
       window.removeEventListener('mousedown', handleUserInteraction);
       window.removeEventListener('keydown', handleUserInteraction);
       window.removeEventListener('touchstart', handleUserInteraction);
     };
   }, [toasts.length]);
+
+  // 메시지 추가
+  const appendMessage = (message: Message) => {
+    if (typeof message.className === 'undefined') message.className = '';
+    if (message.type === undefined) message.type = '';
+    setMessages(prev => [...prev, message]);
+  };
+
+  // 재전송 함수
+  const handleRetrySend = async (message: Message) => {
+  // 1. 기존 메시지(유저+AI) 삭제
+  setMessages((prev) => {
+    const idx = prev.findIndex(
+      (m) => m.user === message.user && m.text === message.text && m.className === message.className
+    );
+    if (idx === -1) return prev;
+    let newMessages = [...prev];
+    newMessages.splice(idx, 1);
+    if (newMessages[idx] && newMessages[idx].user !== message.user) {
+      newMessages.splice(idx, 1);
+    }
+    return newMessages;
+  });
+
+  setIsLoading(true);
+
+  // 2. 유저 메시지 추가
+  appendMessage({ ...message, retry: false });
+
+  // 3. AI 응답 받아서 추가
+  const roomId = getCookie('mongo_chatroomid') || '';
+  try {
+    const aiResponse = await getChatResponse(roomId, message.text, model, googleAccess);
+    const aiText = aiResponse?.text || aiResponse?.data?.text || aiResponse?.message;
+    if (aiText) {
+      appendMessage({
+        user: 'AI',
+        text: aiText,
+        className: 'bg-gray-600 text-white',
+        type: '',
+      });
+    }
+  } catch (e) {
+    showToast('메시지 재전송 중 오류가 발생했습니다.', 'error');
+  }
+  setIsLoading(false);
+};
+
+  // 메시지 전송
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (userInput.trim() === '') return;
+    appendMessage({
+      user: '나',
+      text: userInput,
+      className: 'bg-indigo-500 text-black',
+      type: '',
+      retry: false,
+    });
+    setUserInput('');
+    setIsLoading(true);
+    // postToServer(model, userInput); // 실제 서버 전송 필요시 추가
+    setIsLoading(false);
+  };
 
   // handleDeleteChatRoom 함수 수정 - 자동 방생성 제거
   const handleDeleteChatRoom = async (roomId: string, title?: string) => {
@@ -248,7 +306,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
           setCookie('mongo_chatroomid', urlRoomId);
           
           // 채팅 로그 로드 - URL에 방 ID가 있을 때도 로드 추가
-          await loadChatLogs(urlRoomId);
+          await loadChatLogs(urlRoomId, true); // 최초 진입
         } 
         // URL에 roomId가 없고 쿠키에 있는 경우
         else if (cookieRoomId) {
@@ -273,7 +331,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
                 window.history.replaceState({}, document.title, newUrl.toString());
                 
                 // 채팅 로그 로드
-                await loadChatLogs(latestRoomId);
+                await loadChatLogs(latestRoomId, true); // 최초 진입만 true
                 return; // 함수 종료
               }
             }
@@ -287,7 +345,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
             window.history.replaceState({}, document.title, newUrl.toString());
             
             // 기존 채팅방의 로그 로드 - 이 부분이 누락되어 있었음
-            await loadChatLogs(cookieRoomId);
+            await loadChatLogs(cookieRoomId, true); // 최초 진입만 true
           } catch (error) {
             console.error('💬 채팅방 목록 불러오기 오류:', error);
             showToast('채팅방 목록을 불러올 수 없습니다.', 'error');
@@ -301,7 +359,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
               newUrl.searchParams.set('roomId', cookieRoomId);
               window.history.replaceState({}, document.title, newUrl.toString());
               
-              await loadChatLogs(cookieRoomId);
+              await loadChatLogs(cookieRoomId, true); // 최초 진입만 true
             }
           }
         } else {
@@ -311,7 +369,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
           // 안내 메시지 표시
           appendMessage({
             user: '시스템',
-            text: '채팅을 시작하려면 좌측 상단의 메뉴를 열고 "새 채팅 시작" 버튼을 클릭하세요.',
+            text: '채팅을 시작하려면 좌측 상단의 메뉴를 열고 "새 채팅방 시작" 버튼을 클릭하세요.',
             className: 'bg-indigo-600 text-white',
             type: 'info',
           } as Message);
@@ -326,7 +384,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
         // 세션 초기화 실패 시 사용자에게 오류 메시지 표시
         appendMessage({
           user: '시스템',
-          text: '채팅 연결에 실패했습니다. 페이지를 새로고침하거나 나중에 다시 시도해주세요.',
+          text: '채팅 연결에 실패했습니다. 페이지를 새로고치거나 나중에 다시 시도해주세요.',
           className: 'bg-red-600 text-white',
           type: 'error',
         } as Message);
@@ -364,137 +422,20 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
     if (savedGoogleAccess) setGoogleAccess(savedGoogleAccess);
   }, []);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (userInput.trim() === '') return;
-
-    appendMessage({
-      user: '나',
-      text: userInput,
-      className: 'bg-indigo-500 text-black',
-      type: '',
-    } as Message);
-    setUserInput('');
-    setIsLoading(true);
-
-    await postToServer(model, userInput);
-    setIsLoading(false);
-  };
-
-  const appendMessage = (message: Message) => {
-    // 사용자 메시지일 경우 쿠키에서 사용자 이름을 가져와 표시
-    if (message.user === '나') {
-      const username = getCookie('username');
-      if (username) {
-        message.user = username; // 쿠키에서 이름 가져오기
-      }
-    }
-    
-    // type이 없으면 빈 문자열 할당
-    if (message.type === undefined) {
-      message.type = '';
-    }
-    
-    // 이제 안전하게 onSend 호출
-    onSend(message as Message);
-  };
-
-  // getFromServer 함수 수정 - localStorage 대신 쿠키 사용
-  const getFromServer = async (model: string, inputText?: string) => {
-    try {
-      const responseData = await createNewChatRoom();
-      
-      const aiMessage = responseData.message.replace(/\\n/g, '\n').replace(/\\(?!n)/g, '');
-      const roomId = responseData.mysql_officeroom.mongo_chatroomid;
-
-      setCookie('mongo_chatroomid', roomId);
-
-      appendMessage({
-        user: 'AI',
-        text: aiMessage,
-        className: 'bg-gray-600 text-white self-start',
-        type: '',
-      } as Message);
-    } catch (error) {
-      console.error('에러 발생:', error);
-      appendMessage({
-        user: '시스템',
-        text: '서버와의 연결 중 문제가 발생했습니다.',
-        className: 'bg-gray-600 text-white self-start',
-        type: 'client',
-      } as Message);
-      showToast('서버와의 연결 중 문제가 발생했습니다.', 'error');
-    }
-  };
-
-  const postToServer = async (model: string, inputText: string) => {
-    try {
-      // 항상 string 타입으로 보장
-      let roomId = getCookie('mongo_chatroomid') || '';
-      const urlParams = new URLSearchParams(window.location.search);
-      let urlRoomId = urlParams.get('roomId') || '';
-
-      // roomId가 없거나, URL에 roomId 파라미터가 없으면 자동으로 채팅방 생성
-      if (!roomId || !urlRoomId) {
-        showToast('채팅방이 없어 자동으로 새 채팅방을 생성합니다.', 'info');
-        const responseData = await createNewChatRoom();
-        roomId = responseData.mysql_officeroom.mongo_chatroomid || '';
-        setCookie('mongo_chatroomid', roomId);
-
-        // URL에 채팅방 ID 추가 (roomId가 undefined/null일 수 있으니 빈 문자열 방지)
-        const pageUrl = new URL(window.location.href);
-        pageUrl.searchParams.set('roomId', roomId);
-        window.history.replaceState({}, document.title, pageUrl.toString());
-      }
-
-      // 요청 body 콘솔에 출력
-      console.log('서버로 전송하는 데이터:', {
-        input_data_set: inputText,
-        route_set: model,
-        google_access_set: googleAccess
-      });
-
-      // roomId가 string임을 보장
-      const responseData = await getChatResponse(
-        roomId,
-        inputText,
-        model,
-        googleAccess
-      );
-      
-      const aiMessage = responseData.message.replace(/\\n/g, '\n').replace(/\\(?!n)/g, '');
-      appendMessage({ user: 'AI', text: aiMessage, className: 'bg-gray-600 text-white', type: '' } as Message);
-    } catch (error) {
-      console.error('에러 발생:', error);
-      appendMessage({ 
-        user: '시스템', 
-        text: '응답을 받는 중 오류가 발생했습니다. 다시 시도해주세요.', 
-        className: 'bg-red-600 text-white', 
-        type: 'error' 
-      } as Message);
-      showToast('응답을 받는 중 오류가 발생했습니다. 다시 시도해주세요.', 'error');
-    }
-  };
-
   const scrollToBottom = () => {
     chatContainerRef.current?.scrollTo({ top: chatContainerRef.current.scrollHeight, behavior: 'smooth' });
   };
 
   // 채팅 로그 로드 함수
-  const loadChatLogs = async (roomId: string) => {
+  const loadChatLogs = async (roomId: string, showToastOnLoad = false) => {
     try {
       setIsLoading(true);
-      
       const data = await apiLoadChatLogs(roomId);
-  
-      // 메시지 초기화 
-      onSend({ type: 'clear_messages', user: '', text: '', className: '' } as Message);
-      
-      // 로그 데이터 확인 및 처리
+
+      appendMessage({ type: 'clear_messages', user: '', text: '', className: '' } as Message);
+
       if (data && data.status === 200 && data.logs) {
-        // 로그 배열 처리 (형식에 따라 다르게 처리)
         const logsArray = data.logs.value || [];
-        
         if (Array.isArray(logsArray) && logsArray.length > 0) {
           console.log(`💬 ${logsArray.length}개의 메시지 로드됨`);
           
@@ -520,17 +461,12 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
               appendMessage(aiMessage as Message);
             }
           });
-          
-          showToast(`${logsArray.length}개의 메시지를 불러왔습니다.`, 'success');
         } else {
-          console.log('💬 이전 대화 내역 없음 또는 빈 배열');
-          showToast('이전 대화 내역이 없습니다.', 'info');
-          
           // 빈 채팅방인 경우 환영 메시지 표시 (선택적)
           appendMessage({
             user: 'AI',
             text: '안녕하세요! 이 채팅방에서 새로운 대화를 시작해보세요.',
-            className: 'bg-gray-600 text-white',
+            className: 'bg-gray-600 text-white', // 항상 string
             type: '',
           } as Message);
         }
@@ -543,11 +479,11 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       showToast('채팅 내역을 불러올 수 없습니다.', 'error');
       
       // 오류 메시지 표시
-      appendMessage({ 
-        user: '시스템', 
+      appendMessage({
+        user: '시스템',
         text: '채팅 내역을 불러오는데 실패했습니다. 다시 시도해주세요.',
-        className: 'bg-red-600 text-white', 
-        type: 'error' 
+        className: 'bg-red-600 text-white', // 항상 string
+        type: 'error',
       } as Message);
     } finally {
       setIsLoading(false);
@@ -586,15 +522,17 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
       )}
 
       {/* Toast 컨테이너 - 모바일: 하단 중앙, 데스크탑: 우상단 */}
-      <div className="fixed z-50 flex flex-col space-y-2
+      <div className="fixed z-50 flex flex-col
         bottom-6 left-1/2 -translate-x-1/2 w-[90vw] max-w-xs
         sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto sm:translate-x-0">
-        {toasts.map(toast => (
-          <div key={toast.id} className="animate-fadeInOut">
+        {toasts.map((toast, i) => (
+          <div key={toast.id} className="animate-fadeInOut mb-2">
             <Toast
               message={toast.message}
               type={toast.type}
               onClose={() => removeToast(toast.id)}
+              index={i}
+              show={true}
             />
           </div>
         ))}
@@ -615,8 +553,21 @@ const Chatting: React.FC<ChattingProps> = ({ messages, onSend }) => {
           onMenuClick={handleMenuClick}
         />
         <main className="flex-1 flex flex-col bg-gray-900 overflow-hidden">
-          <ChatContainer messages={messages} isLoading={isLoading} chatContainerRef={chatContainerRef} />
-          <ChatFooter userInput={userInput} setUserInput={setUserInput} handleSubmit={handleSubmit} isLoading={isLoading} scrollToBottom={scrollToBottom} />
+          <ChatContainer
+            messages={messages}
+            isLoading={isLoading}
+            chatContainerRef={chatContainerRef}
+            handleRetrySend={handleRetrySend} // 추가
+          />
+          <ChatFooter
+            userInput={userInput}
+            setUserInput={setUserInput}
+            handleSubmit={handleSubmit}
+            isLoading={isLoading}
+            scrollToBottom={scrollToBottom}
+            model={model}           // 추가
+            setModel={setModel}     // 추가
+          />
         </main>
       </div>
     </div>
