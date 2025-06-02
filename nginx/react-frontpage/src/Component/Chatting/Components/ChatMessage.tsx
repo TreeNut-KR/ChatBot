@@ -87,7 +87,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user, retry,
       {/* 유저 메시지면 메시지 외부 좌측에 재전송 버튼 항상 표시 */}
       {user === "나" && onRetry && (
         <button
-          className="absolute top-2 -left-8 px-2 py-1 rounded transition text-lg z-10"
+          className="absolute top-2 -left-8 px-2 py-1 rounded transition text-lg z-10 text-white"
           title="다시 전송"
           onClick={() => onRetry({ text, className, user, retry, type })}
         >
