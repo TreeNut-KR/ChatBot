@@ -23,7 +23,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!isAuthenticated) {
     // 로그인 페이지로 리디렉션하고 원래 가려던 경로를 state로 전달
-    return <Navigate to={`/login?redirect=${encodeURIComponent(currentPath)}&expired=true`} />;
+    return <Navigate to={`/?redirect=${encodeURIComponent(currentPath)}&expired=true`} />;
   }
 
   return <>{children}</>;
@@ -78,14 +78,48 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const preventPinch = (e: TouchEvent) => {
+    // meta viewport 강제 삽입 (user-scalable=no)
+    let meta = document.querySelector('meta[name=viewport]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'viewport');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute(
+      'content',
+      'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+    );
+
+    // 멀티터치(핀치) 차단
+    const preventMultiTouch = (e: TouchEvent) => {
       if (e.touches.length > 1) {
         e.preventDefault();
       }
     };
-    document.addEventListener('touchmove', preventPinch, { passive: false });
+    // 더블탭 확대 차단
+    let lastTouchEnd = 0;
+    const preventDoubleTapZoom = (e: TouchEvent) => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    };
+    // iOS 사파리용 gesturestart 차단
+    const preventGesture = (e: Event) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('touchstart', preventMultiTouch, { passive: false });
+    document.addEventListener('touchmove', preventMultiTouch, { passive: false });
+    document.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
+    document.addEventListener('gesturestart', preventGesture, { passive: false });
+
     return () => {
-      document.removeEventListener('touchmove', preventPinch);
+      document.removeEventListener('touchstart', preventMultiTouch);
+      document.removeEventListener('touchmove', preventMultiTouch);
+      document.removeEventListener('touchend', preventDoubleTapZoom);
+      document.removeEventListener('gesturestart', preventGesture);
     };
   }, []);
 

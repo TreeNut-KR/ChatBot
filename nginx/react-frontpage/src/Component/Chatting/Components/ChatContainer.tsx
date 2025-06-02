@@ -16,12 +16,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading, chat
   return (
     <div
       ref={chatContainerRef}
-      className="flex-1 flex flex-col p-3 overflow-y-auto bg-gray-900 relative scrollbar-hide"
+      className="flex-1 flex flex-col min-h-0 p-3 overflow-y-auto bg-gray-900 relative scrollbar-hide"
       style={{
-        fontSize: '1rem', // 기본 폰트 크기 유지
-        padding: '1rem', // 기본 패딩 유지
-        width: `${100 + (scale - 1) * 50}%`, // 가로 비율만 배율에 따라 조정
-        maxWidth: `${100 + (scale - 1) * 50}%`, // 최대 가로 크기 제한
+        fontSize: '1rem',
+        padding: '1rem',
+        width: `${100 + (scale - 1) * 50}%`,
+        maxWidth: `${100 + (scale - 1) * 50}%`,
       }}
     >
       {messages.map((msg, index) => (

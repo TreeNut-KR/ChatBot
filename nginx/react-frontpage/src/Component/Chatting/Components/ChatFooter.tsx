@@ -2,7 +2,7 @@ import React from 'react';
 import { ChatFooterProps } from '../Types';
 
 const ChatFooter: React.FC<ChatFooterProps> = ({ userInput, setUserInput, handleSubmit, isLoading, scrollToBottom }) => (
-  <form onSubmit={handleSubmit} className="bg-gray-900 p-2 flex gap-3 w-full relative">
+  <form onSubmit={handleSubmit} className="bg-gray-900 p-2 flex gap-3 w-full relative shrink-0">
     <button
       onClick={scrollToBottom}
       type="button"

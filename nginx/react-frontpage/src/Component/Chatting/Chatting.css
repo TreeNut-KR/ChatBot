@@ -58,3 +58,12 @@ code {
   }
 }
 
+/* iOS Safari 100vh 문제 대응 */
+.ios-fix-viewport {
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  width: 100vw;
+  overflow: hidden;
+}
+

@@ -215,6 +215,8 @@ const Login: React.FC = () => {
       return;
     }
 
+    setIsLoading(true); // 로딩 시작
+
     // Kakao SDK 초기화 (한 번만)
     if (!(window as any).Kakao?.isInitialized()) {
       (window as any).Kakao.init(KAKAO_JS_KEY);
@@ -303,7 +305,7 @@ const Login: React.FC = () => {
           <img
             src={logo_kakao_kr}
             alt="Kakao Logo"
-            className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
+            className={`w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
             onClick={handleKakaoLogin}
           />
           <img
