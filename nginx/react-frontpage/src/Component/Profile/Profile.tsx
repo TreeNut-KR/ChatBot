@@ -16,7 +16,7 @@ const getCookieValue = (name: string): string => {
 type MembershipType = 'BASIC' | 'VIP';
 
 const Profile: React.FC = () => {
-  const [userInfo, setUserInfo] = useState({ name: '', email: '', userid: '' });
+  const [userInfo, setUserInfo] = useState({ name: '', email: '', userid: '', profileImage: '' });
   const [editedInfo, setEditedInfo] = useState({ name: '', email: '', userid: '', pw: '' });
   const [membership, setMembership] = useState<MembershipType>('BASIC');
   const [isLoading, setIsLoading] = useState(true);
@@ -85,7 +85,7 @@ const Profile: React.FC = () => {
       
       const data = await response.json();
       console.log('User Info Fetched:', data);
-      setUserInfo(data);
+      setUserInfo({ ...data, profileImage: data.profileImage || data.image || '' });
       setEditedInfo({ ...data, pw: '' }); // data에 userid 포함
       // 프로필 이미지 URL 세팅 (백엔드에서 image 또는 profileImage 필드로 내려줘야 함)
       setProfileImageUrl(data.profileImage || data.image || null);
@@ -142,7 +142,9 @@ const Profile: React.FC = () => {
       const data = await res.json();
       if (res.ok && data.url) {
         setProfileImageUrl(data.url);
-        setProfileImagePreview(null); // 업로드 성공 시 미리보기 초기화
+        setProfileImagePreview(null);
+        // userInfo에도 반영
+        setUserInfo(prev => ({ ...prev, profileImage: data.url }));
         alert('프로필 이미지가 성공적으로 업로드되었습니다.');
       } else {
         alert(data.message || '프로필 이미지 업로드에 실패했습니다.');
@@ -314,9 +316,9 @@ const Profile: React.FC = () => {
                 alt="프로필 미리보기"
                 className="w-full h-full object-cover rounded-full"
               />
-            ) : profileImageUrl ? (
+            ) : userInfo.profileImage ? (
               <img
-                src={profileImageUrl}
+                src={userInfo.profileImage}
                 alt="프로필"
                 className="w-full h-full object-cover rounded-full"
               />

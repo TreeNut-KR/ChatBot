@@ -185,9 +185,16 @@ class UserController(
     @GetMapping("/findmyinfo")
     fun findUserNameandEmail(@RequestHeader("Authorization") userToken:String): ResponseEntity<Map<String, Any>> {
         val userid = userService.getUserid(userToken)
-        val name = userService.getUsername(userid)
-        val email = userService.getUseremail(userid)
-        return ResponseEntity.ok(mapOf("name" to name, "userid" to userid,"email" to email))
+        val user = userService.findUserByUserid(userid)
+            ?: return ResponseEntity.status(404).body(mapOf("status" to 404, "message" to "User not found"))
+        return ResponseEntity.ok(
+            mapOf(
+                "name" to user.username,
+                "userid" to user.userid,
+                "email" to user.email,
+                "profileImage" to (user.profileImage ?: "")
+            )
+        )
     }
 
     @PostMapping("/changeUsername")
