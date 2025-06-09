@@ -87,8 +87,8 @@ const Profile: React.FC = () => {
       console.log('User Info Fetched:', data);
       setUserInfo({ ...data, profileImage: data.profileImage || data.image || '' });
       setEditedInfo({ ...data, pw: '' }); // data에 userid 포함
-      // 프로필 이미지 URL 세팅 (백엔드에서 image 또는 profileImage 필드로 내려줘야 함)
-      setProfileImageUrl(data.profileImage || data.image || null);
+      // 프로필 이미지 URL 세팅 (백엔드에서 profileImage 필드로 내려줘야 함)
+      setProfileImageUrl(data.profileImage || null);
       setProfileImagePreview(null); // 새로고침 시 미리보기 초기화
       
       // DB의 users 테이블에 membership 필드가 있으므로 이 정보를 사용

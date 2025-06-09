@@ -357,7 +357,6 @@ class UserService(
         val user = userRepository.findByUserid(userid)
             ?: throw RuntimeException("User not found")
         val updatedUser = user.copy(
-            // User 엔티티에 profileImage: String? 필드가 있다고 가정
             profileImage = imageUrl
         )
         return userRepository.save(updatedUser)
