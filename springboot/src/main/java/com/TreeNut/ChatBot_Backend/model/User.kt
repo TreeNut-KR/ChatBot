@@ -45,6 +45,9 @@ data class User(
     // @Column(name = "user_setting_agree", nullable = false)
     // val user_setting_agree: Boolean = true,
 
+    @Column(name = "profile_image", columnDefinition = "TEXT")
+    val profileImage: String? = null,
+
     @Column(name = "created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),
 
@@ -52,7 +55,7 @@ data class User(
     var updatedAt: LocalDateTime = LocalDateTime.now()
 ) {
     // constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, MembershipType.BASIC, true, true, LocalDateTime.now(), LocalDateTime.now())
-    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, MembershipType.BASIC, LocalDateTime.now(), LocalDateTime.now())
+    constructor() : this(null, "", "", "", null, null, null, LoginType.LOCAL, false, MembershipType.BASIC, null, LocalDateTime.now(), LocalDateTime.now())
     @PreUpdate
     fun onUpdate() {
         updatedAt = LocalDateTime.now()

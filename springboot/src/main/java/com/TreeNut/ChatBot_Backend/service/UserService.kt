@@ -351,4 +351,14 @@ class UserService(
             mapOf("status" to "exception", "message" to "FastAPI 연동 오류: ${e.message}")
         }
     }
+
+    @Transactional
+    fun updateProfileImage(userid: String, imageUrl: String): User {
+        val user = userRepository.findByUserid(userid)
+            ?: throw RuntimeException("User not found")
+        val updatedUser = user.copy(
+            profileImage = imageUrl
+        )
+        return userRepository.save(updatedUser)
+    }
 }
