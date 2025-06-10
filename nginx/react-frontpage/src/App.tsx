@@ -12,6 +12,7 @@ import PrivacyConsent from './Component/Register/PrivacyConsentProps';
 import MainPage from './Pages/MainPage';
 import { checkLoginStatus } from './Component/Chatting/Services/TokenUtils';
 import KakaoCallback from './Component/Login/KakaoCallback';
+import MyCharacter from './Component/CharacterMain/MyCharacter';
 
 // 로그인이 필요한 페이지에 대한 가드 컴포넌트
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -57,6 +58,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/chat/:uuid" element={<PrivateRoute><CharacterChatRoom /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path='/characterAdd' element={<PrivateRoute><CharacterAdd /></PrivateRoute>} />
+          <Route path='/myCharacter' element={<PrivateRoute><MyCharacter /></PrivateRoute>} />
           
           {/* MainPage에서 로그인/회원가입을 오른쪽에 띄움 */}
           <Route path="/" element={<MainPage />}>

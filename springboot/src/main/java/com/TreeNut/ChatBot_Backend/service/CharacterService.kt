@@ -4,6 +4,7 @@ import com.TreeNut.ChatBot_Backend.model.Character
 import com.TreeNut.ChatBot_Backend.model.CharacterLike
 import com.TreeNut.ChatBot_Backend.repository.CharacterRepository
 import com.TreeNut.ChatBot_Backend.repository.ChatroomRepository
+import com.TreeNut.ChatBot_Backend.repository.UserRepository
 import com.TreeNut.ChatBot_Backend.repository.CharacterLikeRepository
 import com.TreeNut.ChatBot_Backend.model.Chatroom
 import org.springframework.stereotype.Service
@@ -36,6 +37,7 @@ import org.springframework.beans.factory.annotation.Value
 class CharacterService(
     private val characterRepository: CharacterRepository,
     private val chatroomRepository: ChatroomRepository,
+    private val userRepository: UserRepository,
     private val characterLikeRepository: CharacterLikeRepository,
     private val tokenAuth: TokenAuth,
     private val roomService: RoomService
@@ -149,17 +151,17 @@ class CharacterService(
     }
 
     fun myCharacterList(tokenUserId: String): List<Map<String, Any>> {
-        // 모든 캐릭터를 가져온 후, AccessLevel이 True인 캐릭터의 characterName만 필터링
         return characterRepository.findAll()
             .filter { it.userid == tokenUserId }
             .map {
+                val username = userRepository.findByUserid(it.userid ?: "")?.username ?: ""
                 mapOf(
                     "character_name" to (it.characterName ?: ""),
-                    "userid" to (it.userid ?: ""),
+                    "username" to username,
                     "description" to (it.description ?: ""),
                     "image" to (it.image ?: "")
                 )
-            } // characterName, userid, description만 선택하여 반환
+            }
     }
 
     fun searchCharacterByName(characterName: String): List<Map<String, Any>> {
