@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Request, Query, Depends
 from fastapi.responses import JSONResponse
 
-from .. import ChatError
-from ...dependencies import MongoDBHandler, get_mongo_handler
+from core import dependencies
+from services import mongodb_client
+from utils import error_tools
 
 from . import office_controller as OfficeController
 from . import character_controller as CharacterController
@@ -12,7 +13,7 @@ mongo_router = APIRouter()
 @mongo_router.get("/db", summary="데이터베이스 목록 가져오기")
 async def list_databases(
     req: Request,
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     데이터베이스 서버에 있는 모든 데이터베이스의 목록을 반환합니다.
@@ -51,13 +52,13 @@ async def list_databases(
         return JSONResponse(response_data)             
         
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
 
 @mongo_router.get("/collections", summary="데이터베이스 컬렉션 목록 가져오기")
 async def list_collections(
     req: Request,
     db_name: str = Query(..., description="데이터베이스 이름"),
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     현재 선택된 데이터베이스 내의 모든 컬렉션 이름을 반환합니다.
@@ -91,7 +92,15 @@ async def list_collections(
         }
         return JSONResponse(response_data)
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
     
-mongo_router.include_router(OfficeController.office_router, prefix="/offices", tags=["MongoDB / Offices"])
-mongo_router.include_router(CharacterController.character_router, prefix="/characters", tags=["MongoDB / Characters"])
+mongo_router.include_router(
+    OfficeController.office_router,
+    prefix="/offices",
+    tags=["MongoDB / Offices"]
+)
+mongo_router.include_router(
+    CharacterController.character_router,
+    prefix="/characters",
+    tags=["MongoDB / Characters"]
+)

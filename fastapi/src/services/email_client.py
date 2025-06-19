@@ -3,10 +3,13 @@ import smtplib
 import ssl
 import random
 import string
+import traceback
+
+from pathlib import Path
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import traceback
+
 
 class SMTPHandler:
     """
@@ -17,8 +20,7 @@ class SMTPHandler:
         """
         SMTP 핸들러 초기화. 환경 변수에서 SMTP 설정을 가져옵니다.
         """
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-        env_file_path = os.path.join(current_directory, '../../.env')
+        env_file_path = Path(__file__).resolve().parents[1] / ".env"
         load_dotenv(env_file_path)
         
         self.server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
