@@ -144,7 +144,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./fastapi
-          file: src/server/Dockerfile  # Dockerfile 경로 명시
+          file: src/server/Dockerfile
           push: true
           tags: |
             ghcr.io/treenut-kr/fastapi:latest
