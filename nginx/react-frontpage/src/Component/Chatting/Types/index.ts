@@ -1,9 +1,16 @@
 export interface Message {
   user: string;
   text: string;
-  className: string;
-  type: string; // undefined 허용하지 않음
-  id?: string | number;
+  className?: string;
+  type?: string;
+  retry?: boolean;
+}
+
+export interface ChatContainerProps {
+  messages: Message[];
+  isLoading: boolean;
+  chatContainerRef: React.RefObject<HTMLDivElement>;
+  handleRetrySend: (message: Message) => void;
 }
 
 export interface ChatHeaderProps {
@@ -14,16 +21,8 @@ export interface ChatHeaderProps {
   onMenuClick: () => void;
 }
 
-export interface ChatMessageProps {
-  user: string;
-  text: string;
-  className: string;
-}
-
-export interface ChatContainerProps {
-  messages: Message[];
-  isLoading: boolean;
-  chatContainerRef: React.RefObject<HTMLDivElement>;
+export interface ChatMessageProps extends Message {
+  onRetry?: (message: Message) => void;
 }
 
 export interface ChatFooterProps {

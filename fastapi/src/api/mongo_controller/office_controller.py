@@ -2,8 +2,10 @@ from fastapi import APIRouter, Request, Depends, Path
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from .. import ChatModel, ChatError
-from ...dependencies import MongoDBHandler, get_mongo_handler
+from core import dependencies
+from schemas import schema
+from services import mongodb_client
+from utils import error_tools
 
 office_router = APIRouter()
 
@@ -11,7 +13,7 @@ office_router = APIRouter()
 async def create_chat(
     req: Request,
     user_id: str = Path(..., description="유저 ID"),
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     새로운 유저 채팅 문서(채팅 로그)를 MongoDB에 생성합니다.
@@ -22,7 +24,7 @@ async def create_chat(
             router="office"
         )
         if not document_id:
-            raise ChatError.InternalServerErrorException(detail="채팅방을 생성할 수 없습니다.")
+            raise error_tools.InternalServerErrorException(detail="채팅방을 생성할 수 없습니다.")
         
         response_data = {
             "Document ID": document_id,
@@ -70,14 +72,14 @@ async def create_chat(
         
         return JSONResponse(response_data)
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
 
 @office_router.get("/users/{user_id}/documents/{document_id}", summary="유저 채팅 불러오기")
 async def load_chat_log(
     req: Request,
     user_id: str = Path(..., description="유저 ID"),
     document_id: str = Path(..., description="채팅방 ID"),
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     생성된 채팅 문서의 채팅 로그를 MongoDB에서 불러옵니다.
@@ -136,19 +138,19 @@ async def load_chat_log(
         
         return JSONResponse(response_data)
     except ValidationError as e:
-        raise ChatError.BadRequestException(detail=str(e))
-    except ChatError.NotFoundException as e:
-        raise ChatError.NotFoundException(detail=str(e))
+        raise error_tools.BadRequestException(detail=str(e))
+    except error_tools.NotFoundException as e:
+        raise error_tools.NotFoundException(detail=str(e))
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
 
 @office_router.put("/users/{user_id}/documents/{document_id}", summary="유저 채팅 저장")
 async def save_chat_log(
     req: Request,
-    request: ChatModel.Office_Create_Request,
+    request: schema.Office_Create_Request,
     user_id: str = Path(..., description="유저 ID"),
     document_id: str = Path(..., description="채팅방 ID"),
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     생성된 채팅 문서에 유저의 채팅 데이터를 저장합니다.
@@ -212,19 +214,19 @@ async def save_chat_log(
         
         return JSONResponse(response_data)
     except ValidationError as e:
-        raise ChatError.BadRequestException(detail=str(e))
-    except ChatError.NotFoundException as e:
-        raise ChatError.NotFoundException(detail=str(e))
+        raise error_tools.BadRequestException(detail=str(e))
+    except error_tools.NotFoundException as e:
+        raise error_tools.NotFoundException(detail=str(e))
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
     
 @office_router.patch("/users/{user_id}/documents/{document_id}", summary="유저 최근 채팅 업데이트")
 async def update_chat_log(
     req: Request,
-    request: ChatModel.Office_Update_Request,
+    request: schema.Office_Update_Request,
     user_id: str = Path(..., description="유저 ID"),
     document_id: str = Path(..., description="채팅방 ID"),
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     기존 채팅 문서에 유저의 채팅 데이터를 수정합니다.
@@ -288,18 +290,18 @@ async def update_chat_log(
         
         return JSONResponse(response_data)
     except ValidationError as e:
-        raise ChatError.BadRequestException(detail=str(e))
-    except ChatError.NotFoundException as e:
-        raise ChatError.NotFoundException(detail=str(e))
+        raise error_tools.BadRequestException(detail=str(e))
+    except error_tools.NotFoundException as e:
+        raise error_tools.NotFoundException(detail=str(e))
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
 
 @office_router.delete("/users/{user_id}/documents/{document_id}", summary="유저 채팅방 지우기")
 async def delete_chat_room(
     req: Request,
     user_id: str = Path(..., description="유저 ID"),
     document_id: str = Path(..., description="채팅방 ID"),
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     유저의 채팅방을 삭제합니다.
@@ -362,11 +364,11 @@ async def delete_chat_room(
         
         return JSONResponse(response_data)
     except ValidationError as e:
-        raise ChatError.BadRequestException(detail=str(e))
-    except ChatError.NotFoundException as e:
-        raise ChatError.NotFoundException(detail=str(e))
+        raise error_tools.BadRequestException(detail=str(e))
+    except error_tools.NotFoundException as e:
+        raise error_tools.NotFoundException(detail=str(e))
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
 
 @office_router.delete("/users/{user_id}/documents/{document_id}/idx/{index}", summary="유저 index까지의 채팅 일부 지우기")
 async def delete_chat_log(
@@ -374,7 +376,7 @@ async def delete_chat_log(
     user_id: str = Path(..., description="유저 ID"),
     document_id: str = Path(..., description="채팅방 ID"),
     index: int = Path(..., description="삭제를 시작할할 채팅 로그의 인덱스"),
-    mongo_handler: MongoDBHandler = Depends(get_mongo_handler)
+    mongo_handler: mongodb_client.MongoDBHandler = Depends(dependencies.get_mongo_handler)
 ):
     '''
     최신 대화 ~ 선택된 채팅을 로그에서 삭제합니다.
@@ -432,8 +434,8 @@ async def delete_chat_log(
         
         return JSONResponse(response_data)
     except ValidationError as e:
-        raise ChatError.BadRequestException(detail=str(e))
-    except ChatError.NotFoundException as e:
-        raise ChatError.NotFoundException(detail=str(e))
+        raise error_tools.BadRequestException(detail=str(e))
+    except error_tools.NotFoundException as e:
+        raise error_tools.NotFoundException(detail=str(e))
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))

@@ -467,8 +467,8 @@ const CharacterChatRoom: React.FC = () => {
           onSelectRoom={handleRoomClick}
         />
         {/* 채팅 메인 영역 */}
-        <div className="flex-1 w-0">
-          <div className="w-full h-[calc(100vh-120px)] flex flex-col">
+        <div className="flex-1 w-0 relative">
+          <div className="w-full h-[calc(100vh-120px)] flex flex-col pb-[90px]"> {/* 하단 입력창 높이만큼 패딩 */}
             <div className="flex items-center mb-6 p-4 bg-[#2a2928] rounded-lg">
               <img
                 src={character.image || '/images/default-character.png'}
@@ -599,69 +599,77 @@ const CharacterChatRoom: React.FC = () => {
               )}
               <div ref={messagesEndRef} />
             </div>
+          </div>
+          {/* 하단 입력창: 고정 레이어 */}
+          <div
+            className="fixed bottom-0 left-0 w-full z-50 bg-[#232323] border-t border-[#353535] px-2 py-3"
+            style={{
+              maxWidth: 1280,
+              left: '50%',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <div className="flex items-center w-full gap-2">
+              {/* 모델 선택 드롭다운 */}
+              <select
+                aria-label="Select AI model"
+                className="w-[80px] p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none flex-shrink-0"
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                disabled={editMode || isSending}
+              >
+                <option value="Llama">Free</option>
+                <option value="gpt4.1_mini">Pro</option>
+                <option value="gpt4.1">Pro+</option>
+              </select>
 
-            <div className="p-4 bg-[#2a2928] rounded-lg">
-              <div className="flex items-center w-full gap-2">
-                {/* 모델 선택 드롭다운 */}
-                <select
-                  aria-label="Select AI model"
-                  className="w-[80px] p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none flex-shrink-0"
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  disabled={editMode}
-                >
-                  <option value="Llama">Free</option>
-                  <option value="gpt4.1_mini">Pro</option>
-                  <option value="gpt4.1">Pro+</option>
-                </select>
+              {/* 입력창: 수정모드면 editMessage, 아니면 newMessage */}
+              <textarea
+                value={editMode ? editMessage : newMessage}
+                onChange={(e) =>
+                  editMode
+                    ? setEditMessage(e.target.value)
+                    : setNewMessage(e.target.value)
+                }
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                }}
+                placeholder=""
+                className="flex-1 p-3 bg-[#3f3f3f] text-white border-none focus:outline-none rounded-lg resize-none overflow-y-auto"
+                rows={1}
+                style={{ maxHeight: '120px', minWidth: editMode ? '0' : '120px' }}
+                disabled={isSending}
+              ></textarea>
 
-                {/* 입력창: 수정모드면 editMessage, 아니면 newMessage */}
-                <textarea
-                  value={editMode ? editMessage : newMessage}
-                  onChange={(e) =>
-                    editMode
-                      ? setEditMessage(e.target.value)
-                      : setNewMessage(e.target.value)
-                  }
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
-                  }}
-                  placeholder=""
-                  className="flex-1 p-3 bg-[#3f3f3f] text-white border-none focus:outline-none rounded-lg resize-none overflow-y-auto"
-                  rows={1}
-                  style={{ maxHeight: '120px', minWidth: editMode ? '0' : '120px' }}
-                  disabled={isSending}
-                ></textarea>
-
-                {/* 취소 버튼: 수정모드일 때만 노출 */}
-                {editMode && (
-                  <button
-                    onClick={handleCancelEdit}
-                    className="w-11 h-11 flex items-center justify-center bg-red-600 text-white rounded-lg hover:bg-red-700 flex-shrink-0 transition-colors"
-                    style={{ fontSize: '22px', fontWeight: 'bold' }}
-                    aria-label="수정 취소"
-                  >
-                    ⨉
-                  </button>
-                )}
-
-                {/* 전송 버튼 */}
+              {/* 취소 버튼: 수정모드일 때만 노출 */}
+              {editMode && (
                 <button
-                  onClick={editMode ? handleEditSubmit : handleSendMessage}
-                  className={`w-11 h-11 flex items-center justify-center rounded-lg flex-shrink-0 transition-colors ${
-                    editMode
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-[#3b7cc9] text-white hover:bg-[#2d62a0]'
-                  }`}
-                  disabled={isSending}
+                  onClick={handleCancelEdit}
+                  className="w-11 h-11 flex items-center justify-center bg-red-600 text-white rounded-lg hover:bg-red-700 flex-shrink-0 transition-colors"
                   style={{ fontSize: '22px', fontWeight: 'bold' }}
-                  aria-label="전송"
+                  aria-label="수정 취소"
+                  disabled={isSending}
                 >
-                  ▶
+                  ⨉
                 </button>
-              </div>
+              )}
+
+              {/* 전송 버튼 */}
+              <button
+                onClick={editMode ? handleEditSubmit : handleSendMessage}
+                className={`w-11 h-11 flex items-center justify-center rounded-lg flex-shrink-0 transition-colors ${
+                  editMode
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-[#3b7cc9] text-white hover:bg-[#2d62a0]'
+                }`}
+                disabled={isSending}
+                style={{ fontSize: '22px', fontWeight: 'bold' }}
+                aria-label="전송"
+              >
+                ▶
+              </button>
             </div>
           </div>
         </div>

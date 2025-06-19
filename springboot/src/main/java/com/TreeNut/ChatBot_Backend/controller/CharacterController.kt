@@ -231,9 +231,9 @@ class CharacterController(
             val tokenUserId = tokenAuth.authGuard(token)
                 ?: return ResponseEntity.badRequest().body(mapOf("status" to 401, "message" to "유효한 토큰이 필요합니다."))
 
-            // 캐릭터 좋아요 추가 수행 수행
-            // characterService.add_like_count(character, tokenUserId)
-            ResponseEntity.ok(mapOf("status" to 200, "message" to characterService.add_like_count(character, tokenUserId)))
+            val result = characterService.add_like_count(character, tokenUserId)
+            val likeCount = characterService.getLikeCount(character)
+            ResponseEntity.ok(mapOf("status" to 200, "message" to result, "like_count" to likeCount))
         } catch (e: Exception) {
             e.printStackTrace()
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("status" to 401, "message" to "Authorization error: ${e.message}"))

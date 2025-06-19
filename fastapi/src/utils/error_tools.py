@@ -4,7 +4,9 @@ FastAPI 애플리케이션에서 발생하는 예외를 처리하는 모듈입�
 import uuid
 import os
 import logging
+import logging.handlers  # 이 줄을 추가
 import traceback
+from pathlib import Path
 from datetime import datetime
 from typing import Callable, Dict, Optional, Type, Any
 
@@ -18,13 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 # ==========================
 # 1. 로그 디렉토리 및 설정
 # ==========================
-BASE_DIR = os.path.dirname(
-    os.path.dirname(
-        os.path.dirname(
-            os.path.abspath(__file__)
-            )
-        )
-    )
+BASE_DIR = Path(__file__).resolve().parents[2]
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -48,7 +44,6 @@ class DailyRotatingFileHandler(logging.handlers.BaseRotatingHandler):
         if self.stream:
             self.stream.close()
             self.stream = self._open()
-
 
 # ==========================
 # 2. Logger 구성
@@ -117,7 +112,6 @@ class RouteNotFoundException(BaseCustomException):
     def __init__(self, detail="Route not found"):
         super().__init__(404, detail)
 
-
 # ==========================
 # 4. 핸들러 함수
 # ==========================
@@ -139,21 +133,20 @@ def log_error(
         pass
     client_ip = request.client.host if request.client else "Unknown"
     query_params = dict(request.query_params)
-    # 포맷터에 맡기고, 메시지는 본문만 작성
+    # traceback을 detail에 추가
+    tb = traceback.format_exc()
     log_msg = (
         f"{'='*80}\n"
         f"Error Type: {type(exc).__name__}\n"
         f"Status: {status_code}\n"
         f"Detail: {detail}\n"
+        f"Traceback: {tb}\n"
         f"URL: {request.url}\n"
         f"Method: {request.method}\n"
         f"Client IP: {client_ip}\n"
         f"Body: {body}\n"
         f"Query: {query_params}\n"
     )
-    # traceback이 extra에 있으면 별도로 추가
-    if extra and "traceback" in extra:
-        log_msg += f"Traceback:\n{extra['traceback']}\n"
     if extra:
         log_msg += f"Extra: {extra}\n"
     log_msg += f"{'='*80}"
@@ -212,7 +205,6 @@ class ExceptionHandlerFactory:
         )
         return JSONResponse(status_code=503, content={"detail": "데이터베이스 오류", "message": "관리자에게 문의하세요."})
 
-
 # ==========================
 # 5. 미들웨어
 # ==========================
@@ -232,7 +224,6 @@ class RouteLoggingMiddleware(BaseHTTPMiddleware):
             )
         return response
 
-
 # ==========================
 # 6. 예외 핸들러 등록기
 # ==========================
@@ -245,6 +236,6 @@ class ExceptionManager:
         app.add_exception_handler(RequestValidationError, ExceptionHandlerFactory.validation_handler)
         app.add_exception_handler(SQLAlchemyError, ExceptionHandlerFactory.database_handler)
         app.add_exception_handler(RouteNotFoundException, ExceptionHandlerFactory.generic_handler)
-
         app.add_middleware(ErrorLoggingMiddleware)
+        app.add_middleware(RouteLoggingMiddleware)
         app.add_middleware(RouteLoggingMiddleware)

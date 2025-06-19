@@ -1,16 +1,18 @@
 from fastapi import APIRouter, Depends
 from starlette.responses import JSONResponse
 
-from . import ChatError, ChatModel, SMTPHandler
-from ..dependencies import MySQLDBHandler, get_mysql_handler
+from core import dependencies
+from schemas import schema
+from services import mysql_client, email_client
+from utils import error_tools
 
-smtp_handler = SMTPHandler()
+smtp_handler = email_client.SMTPHandler()
 smtp_router = APIRouter()
 
 @smtp_router.post("/verification/send", summary="이메일 인증 코드 전송")
 async def send_verification_email(
-    request: ChatModel.Email_Request,
-    mysql_handler: MySQLDBHandler = Depends(get_mysql_handler)
+    request: schema.Email_Request,
+    mysql_handler: mysql_client.MySQLDBHandler = Depends(dependencies.get_mysql_handler)
 ):
     '''
     사용자 이메일로 인증 코드를 전송합니다.
@@ -26,14 +28,14 @@ async def send_verification_email(
         if success:
             return {"status": "success", "message": "인증 코드가 전송되었습니다. 이메일을 확인해주세요."}
         else:
-            raise ChatError.InternalServerErrorException(detail="이메일 전송에 실패했습니다.")
+            raise error_tools.InternalServerErrorException(detail="이메일 전송에 실패했습니다.")
     except Exception as e:
-        raise ChatError.InternalServerErrorException(detail=str(e))
+        raise error_tools.InternalServerErrorException(detail=str(e))
 
 @smtp_router.post("/verification/verify", summary="이메일 인증 코드 확인")
 async def verify_email_code(
-    request: ChatModel.Verification_Request,
-    mysql_handler: MySQLDBHandler = Depends(get_mysql_handler)
+    request: schema.Verification_Request,
+    mysql_handler: mysql_client.MySQLDBHandler = Depends(dependencies.get_mysql_handler)
 ):
     '''
     사용자로부터 받은 인증 코드를 검증합니다.

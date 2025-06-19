@@ -125,12 +125,12 @@ class UserService(
         }
     }
 
-    fun kakaoLogin(code: String): Map<String, Any> {
+    fun kakaoLogin(code: String, redirectUri: String): Map<String, Any> {
         val formData = LinkedMultiValueMap<String, String>().apply {
             add("grant_type", kakaoGrantType)
             add("client_id", kakaoClientId)
             add("client_secret", kakaoClientSecret)
-            add("redirect_uri", kakaoRedirectUri)
+            add("redirect_uri", redirectUri)
             add("code", code)
             add("scope", kakaoScope)
         }
@@ -159,8 +159,9 @@ class UserService(
         val profile = kakaoAccount["profile"] as Map<*, *>
         val nickname = profile["nickname"] as String
         val kakaoId = userInfoResponse["id"].toString()
+        val email = kakaoAccount["email"] as String?
 
-        val user = registerKakaoUser(kakaoId, nickname, null)
+        val user = registerKakaoUser(kakaoId, nickname, email)
         val token = tokenAuth.generateToken(user.userid)
 
         return mapOf(
@@ -349,5 +350,15 @@ class UserService(
         } catch (e: Exception) {
             mapOf("status" to "exception", "message" to "FastAPI 연동 오류: ${e.message}")
         }
+    }
+
+    @Transactional
+    fun updateProfileImage(userid: String, imageUrl: String): User {
+        val user = userRepository.findByUserid(userid)
+            ?: throw RuntimeException("User not found")
+        val updatedUser = user.copy(
+            profileImage = imageUrl
+        )
+        return userRepository.save(updatedUser)
     }
 }

@@ -5,9 +5,13 @@ import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { ChatMessageProps } from '../Types';
+import { Message } from '../Types';
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user }) => {
+interface ChatMessageProps extends Message {
+  onRetry?: (message: Message) => void;
+}
+
+const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user, retry, type, onRetry }) => {
   const isIntroMessage =
     text.includes("안녕하세요, 반갑습니다.") && text.includes("TreeNut 챗봇");
 
@@ -62,7 +66,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user }) => {
     // 환영 메시지는 별도 레이아웃으로 분리 (배경색 제거)
     return (
       <div className="w-full flex justify-center my-6">
-        <div className="text-white rounded-xl px-6 py-4 text-center text-[1rem] max-sm:text-[0.8rem] leading-relaxed shadow-none max-w-xl mx-auto bg-transparent">
+        <div className="text-white rounded-xl px-6 py-4 text-center text-[1rem] max-sm:text-[0.9rem] leading-relaxed shadow-none max-w-xl mx-auto bg-transparent">
           {text}
         </div>
       </div>
@@ -74,48 +78,102 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ text, className, user }) => {
       ref={messageRef}
       className={`
         relative p-3 rounded-lg
-        max-w-[56%] max-sm:max-w-[40%]
+        max-w-[70%] max-sm:max-w-[80%]
         break-words mb-6
-        text-[1rem] max-sm:text-[0.7rem]
+        text-[1rem] max-sm:text-[0.95rem]
         ${className}
       `}
     >
-      <ReactMarkdown 
-        remarkPlugins={[remarkGfm, remarkBreaks]} 
+      {/* 유저 메시지면 메시지 외부 좌측에 재전송 버튼 항상 표시 */}
+      {user === "나" && onRetry && (
+        <button
+          className="absolute top-2 -left-8 px-2 py-1 rounded transition text-lg z-10 text-white"
+          title="다시 전송"
+          onClick={() => onRetry({ text, className, user, retry, type })}
+        >
+          ↻
+        </button>
+      )}
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeRaw]}
         components={{
-          a: ({ node, ...props }) => (
-            <a 
-              style={{ color: "lightblue" }} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              {...props} 
-            />
-          ), 
-          img: ({ node, ...props }) => <img style={{ maxWidth: "100%", borderRadius: "8px" }} {...props} />, 
+          // 모바일에서 마크다운 요소들의 텍스트 크기를 더 작게
+          p: ({ node, ...props }) => <p className="text-[1.05rem] max-sm:text-[0.8rem]" {...props} />,
+          h1: ({ node, ...props }) => <h1 className="text-[1.5rem] max-sm:text-[1.05rem] font-bold my-2" {...props} />,
+          h2: ({ node, ...props }) => <h2 className="text-[1.3rem] max-sm:text-[1rem] font-bold my-2" {...props} />,
+          h3: ({ node, ...props }) => <h3 className="text-[1.1rem] max-sm:text-[0.95rem] font-bold my-1" {...props} />,
+          h4: ({ node, ...props }) => <h4 className="text-[1rem] max-sm:text-[0.9rem] font-bold my-1" {...props} />,
+          ul: ({ node, ...props }) => <ul className="pl-5 max-sm:text-[0.8rem] list-disc my-2" {...props} />,
+          ol: ({ node, ...props }) => <ol className="pl-5 max-sm:text-[0.8rem] list-decimal my-2" {...props} />,
+          li: ({ node, ...props }) => <li className="my-1 max-sm:my-[0.15rem]" {...props} />,
+          blockquote: ({ node, ...props }) => <blockquote className="border-l-4 pl-3 italic border-gray-400 max-sm:text-[0.8rem]" {...props} />,
           code: ({ node, children, className, ...props }) => {
             const isInline = !(className && className.includes("language-"));
             const codeString = String(children).trim();
             const language = className?.replace("language-", "") || "javascript";
-
-            return isInline ? (
-              <code style={{ backgroundColor: "#222", padding: "2px 5px", borderRadius: "4px" }} {...props}>
-                {children}
-              </code>
-            ) : (
-              <div className="relative">
-                <SyntaxHighlighter language={language} style={atomDark} className="rounded-lg p-4">
-                  {codeString}
-                </SyntaxHighlighter>
+            if (isInline) {
+              return (
+                <code className="bg-[#222] px-1 py-[0.5px] rounded-sm max-sm:text-[0.7rem]" {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <div className="relative my-2">
+                <div
+                  className="rounded-lg"
+                  style={{
+                    overflowX: 'auto',
+                    width: '100%',
+                    maxWidth: '100%',
+                  }}
+                >
+                  <SyntaxHighlighter
+                    language={language}
+                    style={atomDark}
+                    customStyle={{
+                      borderRadius: 8,
+                      fontSize: window.innerWidth <= 640 ? '0.92rem' : '0.98rem',
+                      padding: window.innerWidth <= 640 ? '0.8em 0.7em' : '0.7em 0.8em',
+                      margin: 0,
+                      background: window.innerWidth <= 640 ? '#23232b' : '#18181b',
+                      overflowX: 'auto',
+                      minWidth: 600, // 코드블럭이 컨테이너보다 넓게
+                      width: 'fit-content', // 코드 길이에 따라 넓이 결정
+                      maxWidth: 'none',     // 최대 넓이 제한 해제
+                    }}
+                    className="whitespace-pre break-normal"
+                    wrapLongLines={false}
+                    showLineNumbers={window.innerWidth <= 640}
+                  >
+                    {codeString}
+                  </SyntaxHighlighter>
+                </div>
                 <button
+                  type="button"
                   onClick={() => copyToClipboard(codeString)}
                   className="absolute top-2 right-2 bg-gray-700 text-white px-2 py-1 text-xs rounded-md hover:bg-gray-600 transition"
+                  style={{
+                    fontSize: window.innerWidth <= 640 ? '0.7rem' : '0.8rem',
+                    padding: window.innerWidth <= 640 ? '2px 6px' : undefined,
+                  }}
                 >
-                  {copied ? "✅ Copied!" : "📋 Copy"}
+                  {copied ? "✅ 복사됨" : "📋 복사"}
                 </button>
               </div>
             );
           },
+          a: ({ node, ...props }) => (
+            <a
+              style={{ color: "lightblue" }}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="max-sm:text-[0.8rem]"
+              {...props}
+            />
+          ),
+          img: ({ node, ...props }) => <img style={{ maxWidth: "100%", borderRadius: "8px" }} {...props} />,
         }}
       >
         {String(text)}
