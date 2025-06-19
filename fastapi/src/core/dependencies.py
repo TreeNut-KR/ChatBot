@@ -1,20 +1,12 @@
 from fastapi import HTTPException, status
+
 from . import app_state
-from .handlers.mongodb_handler import MongoDBHandler
-from .handlers.mysql_handler import MySQLDBHandler
+from services import (
+    mongodb_client,
+    mysql_client
+)
 
-# (re-export)
-__all__ = [
-    # Types
-    'MongoDBHandler',
-    'MySQLDBHandler',
-
-    # Dependencies
-    'get_mongo_handler',
-    'get_mysql_handler',
-]
-
-async def get_mongo_handler() -> MongoDBHandler:
+async def get_mongo_handler() -> mongodb_client.MongoDBHandler:
     """MongoDB 핸들러 의존성"""
     handler = app_state.get_mongo_handler()
     if handler is None:
@@ -24,7 +16,7 @@ async def get_mongo_handler() -> MongoDBHandler:
         )
     return handler
 
-async def get_mysql_handler() -> MySQLDBHandler:
+async def get_mysql_handler() -> mysql_client.MySQLDBHandler:
     """MySQL 핸들러 의존성"""
     handler = app_state.get_mysql_handler()
     if handler is None:

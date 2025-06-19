@@ -3,7 +3,7 @@
 | 구성원 | 업무 | 사용 기술 |  
 |--------|--------|------------|  
 | [김준건 (jgkim14)](https://github.com/jgkim14) | 백엔드 | Spring Boot, Node.js |  
-| [서정훈 (CutTheWire)](https://github.com/CutTheWire) | 백엔드 |  FastAPI |  
+| [서정훈 (CutTheWire)](https://github.com/CutTheWire) | 백엔드 | Spring Boot, FastAPI |  
 | [이준호 (qwer9679)](https://github.com/qwer9679) | 백엔드 | Spring Boot, FastAPI |  
 | [모현준 (Flattt12)](https://github.com/Flattt12) | 백엔드 | Spring Boot |  
 | [권재현 (donismoney)](https://github.com/donismoney) | 백엔드 | Spring Boot |  
@@ -34,10 +34,3 @@ source ./rebuild.sh
 ```bash
  & ./rebuild.bat
 ```
-
-#### - FastAPI 작업영역
-`./fastapi/sources`
-#### - 프론트 작업영역
-`./nginx/frontpage-react`
-#### - 프론트 빌드파일 경로
-`./frontpage-react/build`
