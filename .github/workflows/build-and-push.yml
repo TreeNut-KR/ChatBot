@@ -176,3 +176,29 @@ jobs:
           tags: |
             ghcr.io/treenut-kr/springboot:latest
             ghcr.io/treenut-kr/springboot:${{ github.ref_name }}
+      
+      - name: Create custom Flyway Dockerfile
+        run: |
+          cat > flyway.Dockerfile << 'EOF'
+          FROM flyway/flyway:7.15.0
+          
+          # 마이그레이션 파일과 스크립트 복사
+          COPY ./mysql/migrations /flyway/sql
+          COPY ./mysql/flyway-migrate.sh /flyway/flyway-migrate.sh
+          
+          # 실행 권한 부여
+          RUN chmod +x /flyway/flyway-migrate.sh
+          
+          # 엔트리포인트 설정
+          ENTRYPOINT ["/bin/bash", "/flyway/flyway-migrate.sh"]
+          EOF
+      
+      - name: Build and push Flyway image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./flyway.Dockerfile
+          push: true
+          tags: |
+            ghcr.io/treenut-kr/flyway:latest
+            ghcr.io/treenut-kr/flyway:${{ github.ref_name }}
