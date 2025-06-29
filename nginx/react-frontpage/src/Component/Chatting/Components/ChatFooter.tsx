@@ -99,17 +99,31 @@ const ChatFooter: React.FC<ChatFooterWithModelProps> = ({
           <option value="gpt4.1" disabled={membership !== 'VIP'}>gpt4.1</option>
           <option value="gpt4.1_mini" disabled={membership !== 'VIP'}>gpt4.1_mini</option>
         </select>
-        <input
-          type="text"
+        <textarea
           value={userInput}
           onChange={(e) => setUserInput(e.target.value)}
           placeholder="메시지를 입력하세요..."
           autoComplete="off"
           className="
-            flex-1 px-3 py-1 rounded-lg bg-gray-900 text-white outline-none caret-white h-9 border border-gray-700 focus:border-indigo-500 transition text-base
-            sm:px-4 sm:py-1 sm:h-9
+            flex-1 px-3 py-1 rounded-lg bg-gray-900 text-white outline-none caret-white border border-gray-700 focus:border-indigo-500 transition text-base
+            sm:px-4 sm:py-1 resize-none sm:h-auto
           "
-          style={{ minWidth: 0 }}
+          style={{ minWidth: 0, minHeight: 36, maxHeight: 120, height: 'auto', overflowY: 'auto' }}
+          rows={1}
+          onInput={e => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = `${target.scrollHeight}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.altKey && !e.shiftKey) {
+              e.preventDefault();
+              if (!isLoading && userInput.trim()) {
+                handleSubmit(e as any);
+              }
+            }
+            // Alt+Enter 또는 Shift+Enter는 줄바꿈 허용
+          }}
         />
         <button
           type="submit"
