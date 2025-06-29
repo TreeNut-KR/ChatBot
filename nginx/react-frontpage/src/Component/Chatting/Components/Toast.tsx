@@ -7,9 +7,9 @@ interface ToastWithIndexProps extends ToastProps {
 }
 
 const MOBILE_BASE_BOTTOM = 80; // 모바일에서 첫 토스트의 bottom 위치(더 위로)
-const MOBILE_GAP = 64; // px, 토스트 간 간격
+const MOBILE_GAP = 80; // px, 토스트 간 간격 (64 → 80으로 증가)
 const PC_BASE_TOP = 32; // px, PC에서 첫 토스트의 top 위치(우측상단)
-const PC_GAP = 64; // px, 토스트 간 간격
+const PC_GAP = 80; // px, 토스트 간 간격 (64 → 80으로 증가)
 
 const Toast: React.FC<ToastWithIndexProps> = ({ 
   message, 
@@ -49,7 +49,7 @@ const Toast: React.FC<ToastWithIndexProps> = ({
     <div
       className={`
         ${getBackgroundColor()} text-white px-4 py-3 rounded-md shadow-lg flex items-center justify-between
-        transition-opacity duration-500 max-w-xs
+        transition-opacity duration-500 max-w-xs min-w-[320px] min-h-[56px]
         fixed z-50
         ${isMobile
           ? 'left-1/2 -translate-x-1/2'
