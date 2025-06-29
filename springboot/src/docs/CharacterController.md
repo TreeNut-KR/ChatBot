@@ -236,6 +236,24 @@
         "updatedAt": "2025-05-16T14:37:20"
     }
     ```
+#### 📌 Character 이미지 업로드
+- **`GET /server/character/pngimage`**
+  - **설명**: Character 이미지 업로드
+  - **헤더**
+    | 필드명 | 타입 | 필수 | 설명 |
+    |-------|------|------|------|
+    | Authorization | string | 필수 | 사용자 인증 토큰 |
+  - **Body (form-data)**
+    | 필드명 | 타입 | 필수 | 설명 |
+    |--------|------|------|------|
+    | file | file | 필수 | 업로드할 png 이미지 파일 |
+  - **응답 예시**
+    ```json
+    {
+      "status": "success",
+      "url": "https://lh3.googleusercontent.com/d/1AEE4WJ1oPe4OIma-I7CFTYeatTCoFDCi=s220?authuser=0"
+    }
+    ```
 #### 📌 Character 공개여부 관리(관리자)
 - **`GET /server/character/{character_name}/manage/{access_level}`**
   - **설명**: Character 공개여부를 관리합니다(관리자 전용).

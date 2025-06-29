@@ -1,18 +1,18 @@
 import os
-import asyncio
-from datetime import datetime, timedelta
+
+from pathlib import Path
 from dotenv import load_dotenv
 from typing import NoReturn, List
+from datetime import datetime, timedelta
 from databases import Database
-from sqlalchemy import text
+
 
 class MySQLDBHandler:
     def __init__(self) -> NoReturn:
         '''
         MySQL 데이터베이스 초기 설정 및 연결 URL 구성
         '''
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-        env_file_path = os.path.join(current_directory, '../../.env')
+        env_file_path = Path(__file__).resolve().parents[1] / ".env"
         load_dotenv(env_file_path)
 
         self.database = Database(

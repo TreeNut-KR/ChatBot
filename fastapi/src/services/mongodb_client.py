@@ -1,12 +1,15 @@
 import os
 import uuid
-import datetime  # 날짜 시간 모듈 추가
-from typing import Dict, List
+import datetime
+
+from pathlib import Path
 from dotenv import load_dotenv
+from typing import Dict, List
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import PyMongoError
 
-from .error_handler import InternalServerErrorException, NotFoundException
+
+from utils import error_tools
 
 class MongoDBHandler:
     def __init__(self) -> None:
@@ -15,9 +18,7 @@ class MongoDBHandler:
         MongoDB에 연결하고 필요한 환경 변수를 로드합니다.
         """
         try:
-            # 환경 변수 파일 경로 설정
-            current_directory = os.path.dirname(os.path.abspath(__file__))
-            env_file_path = os.path.join(current_directory, '../../.env')
+            env_file_path = Path(__file__).resolve().parents[1] / ".env"
             load_dotenv(env_file_path)
             
             # 환경 변수에서 MongoDB 연결 URI 가져오기
@@ -41,23 +42,23 @@ class MongoDBHandler:
             self.client = AsyncIOMotorClient(self.mongo_uri)
             self.db = self.client[mongo_db]
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"MongoDB connection error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"MongoDB connection error: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Error initializing MongoDBHandler: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error initializing MongoDBHandler: {str(e)}")
 
     async def get_db(self) -> List[str]:
         """
         데이터베이스 이름 목록을 반환합니다.
         
         :return: 데이터베이스 이름 리스트
-        :raises InternalServerErrorException: 데이터베이스 이름을 가져오는 도중 문제가 발생할 경우
+        :raises error_tools.InternalServerErrorException: 데이터베이스 이름을 가져오는 도중 문제가 발생할 경우
         """
         try:
             return await self.client.list_database_names()
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error retrieving database names: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error retrieving database names: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
     async def get_collection(self, database_name: str) -> List[str]:
         """
@@ -65,18 +66,18 @@ class MongoDBHandler:
         
         :param database_name: 데이터베이스 이름
         :return: 컬렉션 이름 리스트
-        :raises NotFoundException: 데이터베이스가 존재하지 않을 경우
-        :raises InternalServerErrorException: 컬렉션 이름을 가져오는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 데이터베이스가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 컬렉션 이름을 가져오는 도중 문제가 발생할 경우
         """
         db_names = await self.get_db()
         if (database_name not in db_names):
-            raise NotFoundException(f"Database '{database_name}' not found.")
+            raise error_tools.NotFoundException(f"Database '{database_name}' not found.")
         try:
             return await self.client[database_name].list_collection_names()
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error retrieving collection names: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error retrieving collection names: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
     async def remove_log(self, user_id: str, document_id: str, selected_count: int, router: str) -> str:
         """
@@ -86,21 +87,21 @@ class MongoDBHandler:
         :param document_id: 문서의 ID
         :param selected_count: 선택한 대화의 인덱스
         :return: 성공 메시지
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 제거하는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 제거하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'{router}_log_{user_id}']
             document = await collection.find_one({"id": document_id})
 
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
 
             # 'value' 필드에서 삭제할 항목 필터링 (selected_count 이상)
             value_to_remove = [item for item in document.get("value", []) if item.get("index") >= selected_count]
 
             if not value_to_remove:
-                raise NotFoundException(f"No data found to remove starting from index: {selected_count}")
+                raise error_tools.NotFoundException(f"No data found to remove starting from index: {selected_count}")
 
             # 해당 index부터 마지막 데이터까지 삭제
             result = await collection.update_one(
@@ -111,11 +112,11 @@ class MongoDBHandler:
             if result.modified_count > 0:
                 return f"Successfully removed data from index: {selected_count} to the end in document with ID: {document_id}"
             else:
-                raise NotFoundException(f"No data removed for document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No data removed for document with ID: {document_id}")
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error removing chatlog value: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error removing chatlog value: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
     async def remove_collection(self, user_id: str, document_id: str, router: str) -> str:
         """
@@ -124,26 +125,26 @@ class MongoDBHandler:
         :param user_id: 사용자 ID
         :param document_id: 문서의 ID
         :return: 성공 메시지
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 제거하는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 제거하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'{router}_log_{user_id}']
             document = await collection.find_one({"id": document_id})
 
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
 
             remove_collection = await collection.delete_one({"id": document_id})  # 수정: 조건으로 ID 사용
 
             if remove_collection.deleted_count == 0:
-                raise NotFoundException(f"No data found to remove document: {document_id}")
+                raise error_tools.NotFoundException(f"No data found to remove document: {document_id}")
             elif remove_collection.deleted_count > 0:
                 return f"Successfully deleted document with ID: {document_id}"
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error deleting document: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error deleting document: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
         
 # Office Collection---------------------------------------------------------------------------------------------------
     async def create_office_collection(self, user_id: str, router: str) -> str:
@@ -152,7 +153,7 @@ class MongoDBHandler:
         
         :param user_id: 사용자 ID
         :return: 생성된 문서의 UUID
-        :raises InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
+        :raises error_tools.InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
         """
         try:
             collection_name = f'{router}_log_{user_id}'
@@ -165,9 +166,9 @@ class MongoDBHandler:
             await collection.insert_one(document)
             return document_id
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error creating chatlog collection: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error creating chatlog collection: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
         
 
     async def add_office_log(self, user_id: str, document_id: str, new_data: Dict) -> str:
@@ -178,14 +179,14 @@ class MongoDBHandler:
         :param document_id: 문서의 ID
         :param new_data: 추가할 JSON 데이터
         :return: 성공 메시지
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 추가하는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 추가하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'office_log_{user_id}']
             document = await collection.find_one({"id": document_id})
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
             
             # 'id', 'user_id' 필드를 제외한 나머지 필드만 사용
             new_data_filtered = {
@@ -209,11 +210,11 @@ class MongoDBHandler:
             if result.modified_count > 0:
                 return f"Successfully added data to document with ID: {document_id}"
             else:
-                raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id} or no data added.")
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
     async def update_office_log(self, user_id: str, document_id: str, new_Data: Dict):
         """
@@ -223,20 +224,20 @@ class MongoDBHandler:
         :param document_id: 문서의 ID
         :param new_Data: 업데이트할 데이터
         :return: 성공 메시지
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 수정하는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 수정하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'office_log_{user_id}']
             document = await collection.find_one({"id": document_id})
             
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
                 
             value_list = document.get("value", [])
             
             if not value_list:
-                raise NotFoundException(f"No conversations found in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No conversations found in document with ID: {document_id}")
                 
             # None 값을 안전하게 처리하는 정렬 키 함수
             def safe_get_index(item):
@@ -247,13 +248,13 @@ class MongoDBHandler:
             # 가장 큰 인덱스(최신 대화) 찾기
             sorted_value_list = sorted(value_list, key=safe_get_index)
             if not sorted_value_list:
-                raise NotFoundException(f"No valid conversations found in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No valid conversations found in document with ID: {document_id}")
                 
             latest_item = sorted_value_list[-1]  # 가장 큰 인덱스를 가진 항목
             latest_index = latest_item.get("index")
             
             if latest_index is None:
-                raise NotFoundException(f"Latest conversation has no valid index in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"Latest conversation has no valid index in document with ID: {document_id}")
 
             # 'id', 'user_id' 필드를 제외한 나머지 필드만 사용
             update_data_filtered = {
@@ -284,12 +285,12 @@ class MongoDBHandler:
             if result_pull.modified_count > 0 or result_push.modified_count > 0:
                 return f"Successfully updated latest conversation (index: {latest_index}) in document with ID: {document_id}"
             else:
-                raise NotFoundException(f"Failed to update data in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"Failed to update data in document with ID: {document_id}")
                 
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error updating chatlog value: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error updating chatlog value: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
         
     async def get_offic_log(self, user_id: str, document_id: str, router: str) -> List[Dict]:
         """
@@ -298,15 +299,15 @@ class MongoDBHandler:
         :param user_id: 사용자 ID
         :param document_id: 문서의 ID
         :return: 해당 문서의 'value' 필드 데이터 또는 빈 배열
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'{router}_log_{user_id}']
             document = await collection.find_one({"id": document_id})
 
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
 
             value_list = document.get("value", [])
 
@@ -315,9 +316,9 @@ class MongoDBHandler:
             # document에서 value를 반환
             return sorted_value_list
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
     
 # ChatBot Collection---------------------------------------------------------------------------------------------------
@@ -329,7 +330,7 @@ class MongoDBHandler:
         :param character: 캐릭터 인덱스
         :param router: 라우터 타입
         :return: 생성된 문서의 UUID
-        :raises InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
+        :raises error_tools.InternalServerErrorException: 채팅 로그 컬렉션을 생성하는 도중 문제가 발생할 경우
         """
         try:
             collection_name = f'{router}_log_{user_id}'
@@ -345,13 +346,13 @@ class MongoDBHandler:
         
             result = await collection.insert_one(document)
             if not result.inserted_id:
-                raise InternalServerErrorException("문서 생성 실패")
+                raise error_tools.InternalServerErrorException("문서 생성 실패")
                 
             return document_id
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"MongoDB 에러: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"MongoDB 에러: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"예상치 못한 에러: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"예상치 못한 에러: {str(e)}")
         
     async def add_chatbot_log(self, user_id: str, document_id: str, new_data: Dict) -> str:
         """
@@ -361,14 +362,14 @@ class MongoDBHandler:
         :param document_id: 문서의 ID
         :param new_data: 추가할 JSON 데이터
         :return: 성공 메시지
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 추가하는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 추가하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'chatbot_log_{user_id}']
             document = await collection.find_one({"id": document_id})
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
             
             # 'id', 'user_id' 필드를 제외한 나머지 필드만 사용
             new_data_filtered = {
@@ -392,11 +393,11 @@ class MongoDBHandler:
             if result.modified_count > 0:
                 return f"Successfully added data to document with ID: {document_id}"
             else:
-                raise NotFoundException(f"No document found with ID: {document_id} or no data added.")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id} or no data added.")
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error adding chatlog value: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
 
     async def update_chatbot_log(self, user_id: str, document_id: str, new_Data: Dict):
         """
@@ -406,20 +407,20 @@ class MongoDBHandler:
         :param document_id: 문서의 ID
         :param new_Data: 업데이트할 데이터
         :return: 성공 메시지
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 수정하는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 수정하는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'chatbot_log_{user_id}']
             document = await collection.find_one({"id": document_id})
             
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
                 
             value_list = document.get("value", [])
             
             if not value_list:
-                raise NotFoundException(f"No conversations found in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No conversations found in document with ID: {document_id}")
                 
             # None 값을 안전하게 처리하는 정렬 키 함수
             def safe_get_index(item):
@@ -430,13 +431,13 @@ class MongoDBHandler:
             # 가장 큰 인덱스(최신 대화) 찾기
             sorted_value_list = sorted(value_list, key=safe_get_index)
             if not sorted_value_list:
-                raise NotFoundException(f"No valid conversations found in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No valid conversations found in document with ID: {document_id}")
                 
             latest_item = sorted_value_list[-1]  # 가장 큰 인덱스를 가진 항목
             latest_index = latest_item.get("index")
             
             if latest_index is None:
-                raise NotFoundException(f"Latest conversation has no valid index in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"Latest conversation has no valid index in document with ID: {document_id}")
 
             # 'id', 'user_id' 필드를 제외한 나머지 필드만 사용
             update_data_filtered = {
@@ -467,12 +468,12 @@ class MongoDBHandler:
             if result_pull.modified_count > 0 or result_push.modified_count > 0:
                 return f"Successfully updated latest conversation (index: {latest_index}) in document with ID: {document_id}"
             else:
-                raise NotFoundException(f"Failed to update data in document with ID: {document_id}")
+                raise error_tools.NotFoundException(f"Failed to update data in document with ID: {document_id}")
                 
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error updating chatlog value: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error updating chatlog value: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
         
     async def get_chatbot_log(self, user_id: str, document_id: str, router: str):
         """
@@ -481,15 +482,15 @@ class MongoDBHandler:
         :param user_id: 사용자 ID
         :param document_id: 문서의 ID
         :return: 해당 문서의 'value' 필드 데이터와 'character_idx'
-        :raises NotFoundException: 문서가 존재하지 않을 경우
-        :raises InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
+        :raises error_tools.NotFoundException: 문서가 존재하지 않을 경우
+        :raises error_tools.InternalServerErrorException: 데이터를 가져오는 도중 문제가 발생할 경우
         """
         try:
             collection = self.db[f'{router}_log_{user_id}']
             document = await collection.find_one({"id": document_id})
 
             if document is None:
-                raise NotFoundException(f"No document found with ID: {document_id}")
+                raise error_tools.NotFoundException(f"No document found with ID: {document_id}")
 
             value_list = document.get("value", [])
             character_idx = document.get("character_idx", 0)  # character_idx가 없으면 0을 반환
@@ -499,6 +500,6 @@ class MongoDBHandler:
             # document에서 value와 character_idx를 함께 반환
             return sorted_value_list, character_idx
         except PyMongoError as e:
-            raise InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Error retrieving chatlog value: {str(e)}")
         except Exception as e:
-            raise InternalServerErrorException(detail=f"Unexpected error: {str(e)}")
+            raise error_tools.InternalServerErrorException(detail=f"Unexpected error: {str(e)}")

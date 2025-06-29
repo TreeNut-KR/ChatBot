@@ -1,16 +1,13 @@
 import os
-from pydantic import ValidationError
-from contextlib import asynccontextmanager
-
-from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
+from fastapi import  FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.responses import JSONResponse
+from contextlib import asynccontextmanager
 
-from utils  import ChatError, app_state, MongoController, SmtpController
+from api import mongo_controller, smtp_controller
+from core import app_state
+from utils import error_tools
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,7 +42,7 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
-ChatError.ExceptionManager.register(app)
+error_tools.ExceptionManager.register(app)
 
 app.add_middleware(
     SessionMiddleware,
@@ -62,7 +59,7 @@ app.openapi = custom_openapi
 
 # FastAPI 애플리케이션에 mongo_router를 추가
 app.include_router(
-    MongoController.mongo_router,
+    mongo_controller.mongo_router,
     prefix="/mongo",
     tags=["MongoDB Router"],
     responses={500: {"description": "Internal Server Error"}}
@@ -70,7 +67,7 @@ app.include_router(
 
 # FastAPI 애플리케이션에 smtp_router를 추가
 app.include_router(
-    SmtpController.smtp_router,
+    smtp_controller.smtp_router,
     prefix="/auth",
     tags=["Authentication"],
     responses={500: {"description": "Internal Server Error"}}

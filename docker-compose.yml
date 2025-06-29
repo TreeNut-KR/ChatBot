@@ -21,6 +21,7 @@ services:
     restart: always
     build:
       context: ./fastapi
+      dockerfile: src/server/Dockerfile
     ports:
       - "8000:8000"
     volumes:
@@ -34,7 +35,7 @@ services:
     command: [
       "/usr/local/bin/wait-for-it",
       "mysql:3306", "--",
-      "uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"
+      "uvicorn", "server.server:app", "--host", "0.0.0.0", "--port", "8000"
       ]
 
   springboot:
