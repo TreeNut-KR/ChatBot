@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1
+
+# 캐시 최적화를 위한 제외
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.git
+**/.gitignore
+**/*.md
+**/logs/
+**/temp/
+**/node_modules/
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
