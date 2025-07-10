@@ -26,6 +26,10 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
   const [userInput, setUserInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [model, setModel] = useState<string>('Llama');
+  const modelRef = useRef(model);
+  useEffect(() => {
+    modelRef.current = model;
+  }, [model]);
   const [googleAccess, setGoogleAccess] = useState<string>("false");
   const chatContainerRef = useRef<HTMLDivElement>(null!);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
@@ -85,7 +89,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
   // 3. AI 응답 받아서 추가
   const roomId = getCookie('mongo_chatroomid') || '';
   try {
-    const aiResponse = await getChatResponse(roomId, message.text, model, googleAccess);
+    const aiResponse = await getChatResponse(roomId, message.text, modelRef.current, googleAccess);
     const aiText = aiResponse?.text || aiResponse?.data?.text || aiResponse?.message;
     if (aiText) {
       appendMessage({
@@ -104,9 +108,32 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
   // 메시지 전송
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // 중복 전송 방지
     if (userInput.trim() === '') return;
 
-    // 1. 유저 메시지 추가
+    setIsLoading(true); // 가장 먼저 설정
+
+    // 1. roomId 확인 및 자동 생성
+    let roomId = getCookie('mongo_chatroomid') || '';
+    const urlParams = new URLSearchParams(window.location.search);
+    let urlRoomId = urlParams.get('roomId');
+
+    if (!roomId || !urlRoomId) {
+      try {
+        const responseData = await createNewChatRoom();
+        roomId = responseData.mysql_officeroom.mongo_chatroomid;
+        setCookie('mongo_chatroomid', roomId);
+
+        const pageUrl = new URL(window.location.href);
+        pageUrl.searchParams.set('roomId', roomId);
+        window.history.replaceState({}, document.title, pageUrl.toString());
+      } catch (error) {
+        showToast('채팅방을 생성할 수 없습니다.', 'error');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     appendMessage({
       user: '나',
       text: userInput,
@@ -116,10 +143,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
     });
 
     setUserInput('');
-    setIsLoading(true);
 
-    // 2. 서버에 메시지 전송 및 AI 응답 추가
-    const roomId = getCookie('mongo_chatroomid') || '';
     try {
       const aiResponse = await getChatResponse(roomId, userInput, model, googleAccess);
       const aiText = aiResponse?.text || aiResponse?.data?.text || aiResponse?.message;
@@ -144,55 +168,47 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
       showToast('채팅방 ID가 없어 삭제할 수 없습니다', 'error');
       return;
     }
-  
+
     try {
-      // 디버깅 로그 추가
-      console.log(`채팅방 삭제 시도: ID=${roomId}, 제목="${title || '제목 없음'}", 타입=${typeof roomId}`);
-      
-      // 삭제 전에 먼저 UI 변경 - 사용자에게 피드백 제공
       showToast(`채팅방 "${title || '제목 없음'}" 삭제 중...`, 'info');
-  
-      // 삭제 요청 전에 UI에서 먼저 제거
       setChatRooms(prev => prev.filter(room => {
-        // 모든 가능한 ID 필드를 확인하여 비교
         const roomIdToCompare = room.mongo_chatroomid || room.roomid || room.id || room.chatroom_id;
         return roomIdToCompare !== roomId;
       }));
-  
-      // API 호출로 채팅방 삭제 - URL 인코딩 추가
+
       await apiDeleteChatRoom(roomId);
-      console.log(`채팅방 삭제 성공: ${roomId}`);
-  
-      // 현재 보고 있는 채팅방을 삭제한 경우
+
       const currentRoomId = getCookie('mongo_chatroomid');
       if (currentRoomId === roomId) {
-        console.log('현재 보고 있는 채팅방 삭제됨, 쿠키 제거');
-        // 쿠키에서 채팅방 ID 제거
         removeCookie('mongo_chatroomid');
-        
-        // 새 채팅방 생성 대신 안내 메시지
-        showToast('현재 채팅방이 삭제되었습니다. 새 채팅방을 생성해주세요.', 'info');
-        
-        // 페이지 새로고침
-        setTimeout(() => {
-          window.location.reload();
-        }, 300);
+
+        // 최신 채팅방 목록을 다시 불러옴
+        const rooms = await fetchChatRooms();
+        if (rooms && rooms.length > 0) {
+          // 가장 아래(오래된) 방으로 이동
+          const lastRoom = rooms[rooms.length - 1];
+          const lastRoomId = lastRoom.mongo_chatroomid || lastRoom.roomid || lastRoom.id || lastRoom.chatroom_id || '';
+          setCookie('mongo_chatroomid', lastRoomId);
+
+          // URL에 roomId 갱신 및 새로고침
+          const pageUrl = new URL(window.location.href);
+          pageUrl.searchParams.set('roomId', lastRoomId);
+          window.location.href = pageUrl.toString();
+        } else {
+          // 방이 하나도 없으면 roomId 파라미터 제거
+          const pageUrl = new URL(window.location.href);
+          pageUrl.searchParams.delete('roomId');
+          window.location.href = pageUrl.toString();
+        }
       } else {
-        // 다른 채팅방을 삭제한 경우 채팅방 목록만 갱신
-        console.log('다른 채팅방 삭제됨, 목록 갱신');
-        
-        // 약간의 지연 후 API에서 최신 목록 다시 가져오기
         setTimeout(async () => {
           await fetchChatRoomList();
         }, 300);
-        
         showToast(`채팅방 "${title || '제목 없음'}"이 삭제되었습니다.`, 'success');
       }
     } catch (error) {
       console.error('채팅방 삭제 오류:', error);
       showToast('채팅방을 삭제하는 데 실패했습니다.', 'error');
-      
-      // 삭제 실패 시 목록 다시 가져오기
       await fetchChatRoomList();
     }
   };
@@ -411,8 +427,9 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
     };
     
     initializeChatSession();
-  }, [model]);
+  }, []);
 
+  // 모델 변경 시에는 토스트만 출력
   useEffect(() => {
     if (model && messages.length > 0) {
       // 서버 메시지 대신 토스트 메시지만 표시
@@ -420,7 +437,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
       // 선택한 모델 쿠키로 저장 (선택 사항)
       setCookie('selected_model', model);
     }
-  }, [model]); // model이 변경될 때만 실행
+  }, [model]); // appendMessage 제거
 
   // // Google 접근 설정 변경 시 알림 추가
   // useEffect(() => {
