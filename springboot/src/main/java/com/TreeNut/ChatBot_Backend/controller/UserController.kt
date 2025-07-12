@@ -35,7 +35,8 @@ class UserController(
     @Value("\${spring.security.oauth2.client.provider.google.user-info-uri}") private val googleUserInfoUrl: String,
     @Value("\${spring.security.oauth2.client.registration.google.authorization-grant-type}") private val googleGrantType: String,
     @Value("\${spring.security.oauth2.client.registration.google.scope}") private val googleScope: String,
-    @Value("\${spring.security.oauth2.client.registration.kakao.redirect-uri}") private val kakaoRedirectUri: String
+    @Value("\${spring.security.oauth2.client.registration.kakao.redirect-uri}") private val kakaoRedirectUri: String,
+    @Value("\${spring.security.oauth2.client.registration.naver.redirect-uri}") private val naverRedirectUri: String,
 ) {
     // logger 추가
     private val logger = LoggerFactory.getLogger(UserController::class.java)
@@ -180,6 +181,31 @@ class UserController(
         @RequestParam code: String,
     ): ResponseEntity<Map<String, Any>> {
         return googleLogin(mapOf("code" to code))
+    }
+
+    @PostMapping("/social/naver/login")
+    fun naverLogin(@RequestBody body: Map<String, String>): ResponseEntity<Map<String, Any>> {
+        val code = body["code"]
+        val state = body["state"]
+        val redirectUri = body["redirect_uri"] ?: naverRedirectUri
+        if (code.isNullOrEmpty() || state.isNullOrEmpty()) {
+            return ResponseEntity.badRequest().body(mapOf("status" to 400, "message" to "인가 코드 또는 state 없음"))
+        }
+        return try {
+            val response = userService.naverLogin(code, state, redirectUri)
+            ResponseEntity.ok(response)
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("status" to 500, "message" to "서버 오류: ${e.message}"))
+        }
+    }
+
+    @GetMapping("/social/naver/redirect")
+    fun naverCallback(
+        @RequestParam code: String,
+        @RequestParam state: String
+    ): ResponseEntity<Map<String, Any>> {
+        return naverLogin(mapOf("code" to code, "state" to state, "redirect_uri" to naverRedirectUri))
     }
     
     @GetMapping("/findmyinfo")

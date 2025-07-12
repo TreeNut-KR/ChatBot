@@ -237,7 +237,7 @@
     }
     ```
 #### 📌 Character 이미지 업로드
-- **`GET /server/character/pngimage`**
+- **`POST /server/character/pngimage`**
   - **설명**: Character 이미지 업로드
   - **헤더**
     | 필드명 | 타입 | 필수 | 설명 |

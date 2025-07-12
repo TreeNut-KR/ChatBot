@@ -576,7 +576,7 @@ const Chatting: React.FC<ChattingProps> = ({ messages, setMessages, onSend }) =>
       
       <div
         className={[
-          "flex flex-col text-white w-full max-w-3xl bg-gray-900",
+          "flex flex-col text-white w-full max-w-5xl bg-gray-900",
           isIOS() ? "h-full" : "h-full"
         ].join(" ")}
         style={isIOS() ? { minHeight: "100dvh", maxHeight: "100dvh" } : {}}

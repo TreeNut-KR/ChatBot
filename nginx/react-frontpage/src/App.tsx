@@ -65,6 +65,7 @@ const AppRoutes: React.FC = () => {
             <Route index element={<Login />} /> {/* / 경로에서 Login */}
             <Route path="loginMain" element={<Login />} />
             <Route path="/social/kakao/redirect" element={<KakaoCallback />} />
+            <Route path="/social/naver/redirect" element={<Login />} /> 
             <Route path="/register" element={<Register />} /> {/* 회원가입 단독 페이지 */}
           </Route>
         </Routes>
