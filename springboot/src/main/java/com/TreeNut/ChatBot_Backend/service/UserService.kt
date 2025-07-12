@@ -37,13 +37,13 @@ class UserService(
     @Value("\${spring.security.oauth2.client.provider.kakao.user-info-uri}") private val kakaoUserInfoUrl: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.authorization-grant-type}") private val kakaoGrantType: String,
     @Value("\${spring.security.oauth2.client.registration.kakao.scope}") private val kakaoScope: String,
-    /* @Value("\${spring.security.oauth2.client.registration.naver.client-id}") private val naverClientId: String,
+    @Value("\${spring.security.oauth2.client.registration.naver.client-id}") private val naverClientId: String,
     @Value("\${spring.security.oauth2.client.registration.naver.client-secret}") private val naverClientSecret: String,
     @Value("\${spring.security.oauth2.client.registration.naver.redirect-uri}") private val naverRedirectUri: String,
     @Value("\${spring.security.oauth2.client.provider.naver.token-uri}") private val naverTokenUrl: String,
     @Value("\${spring.security.oauth2.client.provider.naver.user-info-uri}") private val naverUserInfoUrl: String,
     @Value("\${spring.security.oauth2.client.registration.naver.authorization-grant-type}") private val naverGrantType: String,
-    @Value("\${spring.security.oauth2.client.registration.naver.scope}") private val naverScope: String */
+    @Value("\${spring.security.oauth2.client.registration.naver.scope}") private val naverScope: String
 ) {
     // logger 추가
     private val logger = LoggerFactory.getLogger(UserService::class.java)
@@ -171,27 +171,48 @@ class UserService(
         )
     }
 
-    /* fun naverLogin(code: String, state: String): Map<String, Any> {
-        val formData = LinkedMultiValueMap<String, String>().apply {
-            add("grant_type", naverGrantType)
-            add("client_id", naverClientId)
-            add("client_secret", naverClientSecret)
-            add("redirect_uri", naverRedirectUri)
-            add("code", code)
-            add("state", state)
-        }
+    @Transactional
+    fun registerNaverUser(naverId: String, username: String, email: String?): User {
+        val existingUser = userRepository.findByUserid("NAVER_$naverId")
+        return existingUser ?: userRepository.save(
+            User(
+                userid = "NAVER_$naverId",
+                username = username,
+                email = email ?: "",
+                loginType = LoginType.NAVER,
+                password = null
+            )
+        )
+    }
 
-        val tokenResponse = webClientBuilder.build()
+    fun naverLogin(code: String, state: String, redirectUri: String): Map<String, Any> {
+    val formData = LinkedMultiValueMap<String, String>().apply {
+        add("grant_type", "authorization_code")
+        add("client_id", naverClientId)
+        add("client_secret", naverClientSecret)
+        add("redirect_uri", redirectUri)
+        add("code", code)
+        add("state", state)
+    }
+
+    val tokenResponse = try {
+        webClientBuilder.build()
             .post()
             .uri(naverTokenUrl)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
             .body(BodyInserters.fromFormData(formData))
             .retrieve()
             .bodyToMono(Map::class.java)
-            .block() ?: throw RuntimeException("토큰 응답이 null입니다")
+            .block()
+    } catch (e: Exception) {
+        throw RuntimeException("네이버 토큰 요청 실패: ${e.message}")
+    }
+    if (tokenResponse == null || tokenResponse["access_token"] == null) {
+        throw RuntimeException("네이버 access_token 발급 실패: $tokenResponse")
+    }
 
         val accessToken = tokenResponse["access_token"] as String
-        
+
         val userInfoResponse = webClientBuilder.build()
             .get()
             .uri(naverUserInfoUrl)
@@ -201,11 +222,12 @@ class UserService(
             .block() ?: throw RuntimeException("사용자 정보 응답이 null입니다")
 
         val response = userInfoResponse["response"] as Map<*, *>
-        val nickname = response["nickname"] as String
+        val nickname = response["nickname"] as? String ?: response["name"] as? String ?: "NaverUser"
         val naverId = response["id"].toString()
+        val email = response["email"] as? String
 
-        val user = registerNaverUser(naverId, nickname, null)
-        val token = generateToken(user)
+        val user = registerNaverUser(naverId, nickname, email)
+        val token = tokenAuth.generateToken(user.userid)
 
         return mapOf(
             "status" to 200,
@@ -213,18 +235,6 @@ class UserService(
             "message" to "네이버 로그인 성공"
         )
     }
-
-    @Transactional
-    fun registerNaverUser(naverId: String, username: String, email: String?): User {
-        val existingUser = userRepository.findByUserid("NAVER_$naverId")
-        return existingUser ?: userRepository.save(User(
-            userid = "NAVER_$naverId",
-            username = username,
-            email = email ?: "",
-            loginType = LoginType.NAVER,
-            password = null
-        ))
-    } */
 
     fun getUserid(token: String): String {
         return tokenAuth.authGuard(token) ?: throw RuntimeException("Invalid token")

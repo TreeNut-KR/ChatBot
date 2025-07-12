@@ -65,7 +65,8 @@ data class User(
 enum class LoginType {
     LOCAL,
     KAKAO,
-    GOOGLE
+    GOOGLE,
+    NAVER,
 }
 
 enum class MembershipType {
