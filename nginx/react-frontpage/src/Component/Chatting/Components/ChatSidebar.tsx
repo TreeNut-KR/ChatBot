@@ -16,6 +16,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   
   // 제목 텍스트를 최대 15자로 제한하는 함수
   const truncateTitle = (title: string | undefined): string => {
+    
     if (!title) return '제목 없음';
     return title.length > 15 ? `${title.substring(0, 15)}...` : title;
   };
@@ -91,6 +92,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   }, [rooms]);
 
   return (
+    // 오버레이는 Chatting.tsx에서 처리하므로 제거
     <div className="fixed top-0 right-0 h-full w-72 bg-gray-800 shadow-lg z-50 transform transition-all duration-300 ease-in-out overflow-y-auto">
       <div className="flex items-center justify-between p-4 border-b border-gray-700">
         <h2 className="text-lg font-semibold text-white">내 채팅방</h2>

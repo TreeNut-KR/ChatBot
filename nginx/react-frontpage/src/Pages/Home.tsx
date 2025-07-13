@@ -3,10 +3,12 @@ import Chatting from '../Component/Chatting/Chatting';
 import { Message } from '../Component/Chatting/Types';
 
 const WELCOME_MESSAGE: Message = {
+  id: 'welcome_0', // 항상 가장 앞에 오도록 고정
   user: '',
   className: 'self-start',
   text: '안녕하세요, 반갑습니다. 저희 TreeNut 챗봇은 LLAMA Ai 모델을 기반으로 사용자에게 정답에 최대한 가까운 답변을 제공해드리는 Ai챗봇 사이트입니다.',
   type: 'client',
+  isIntroMessage: true,
 };
 
 const Home: React.FC = () => {
@@ -16,7 +18,7 @@ const Home: React.FC = () => {
     if (message.type === 'clear_messages') {
       setMessages([WELCOME_MESSAGE]);
     } else {
-      setMessages((prevMessages) => [...prevMessages, message]);
+      setMessages((prevMessages: Message[]) => [...prevMessages, message]);
     }
   };
 

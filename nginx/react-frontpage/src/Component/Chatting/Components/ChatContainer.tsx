@@ -22,7 +22,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ messages, isLoading, chat
         <div key={index} className={`flex ${msg.user === '나' ? 'justify-end' : 'justify-start'}`}>
           <ChatMessage
             {...msg}
-            onRetry={msg.user === '나' ? handleRetrySend : undefined}
+            retry={msg.user === '나' ? () => handleRetrySend(msg) : undefined}
           />
         </div>
       ))}

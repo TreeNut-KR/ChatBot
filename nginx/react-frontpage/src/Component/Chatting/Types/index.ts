@@ -1,9 +1,16 @@
 export interface Message {
+  id?: string;
   user: string;
   text: string;
   className?: string;
+  retry?: (() => void) | undefined; // 함수 타입으로 통일
   type?: string;
-  retry?: boolean;
+  isIntroMessage?: boolean;
+  isRetroactive?: boolean;
+  animationDelay?: number;
+  timestamp?: string;
+  // 아래 줄 추가
+  originalUserQuestion?: boolean;
 }
 
 export interface ChatContainerProps {
@@ -21,20 +28,25 @@ export interface ChatHeaderProps {
   onMenuClick: () => void;
 }
 
+
 export interface ChatMessageProps extends Message {
-  onRetry?: (message: Message) => void;
+  retry?: () => void;
+  onRetrySend?: (msg: Message) => void;
 }
 
 export interface ChatFooterProps {
   userInput: string;
-  setUserInput: React.Dispatch<React.SetStateAction<string>>;
+  setUserInput: (input: string) => void;
   handleSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
   scrollToBottom: () => void;
+  model: string; // 추가
+  setModel: (model: string) => void; // 추가
 }
 
 export interface ChattingProps {
   messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   onSend: (message: Message) => void;
 }
 
@@ -84,4 +96,11 @@ export interface ToastProps {
   message: string;
   type: string;
   onClose: () => void;
+}
+
+export interface VirtualizedChatContainerProps {
+  messages: Message[];
+  isLoading: boolean;
+  handleRetrySend: (message: Message) => void;
+  layoutRefreshKey?: number; // 추가
 }

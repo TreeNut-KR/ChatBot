@@ -2,22 +2,25 @@
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html",
   ],
   theme: {
     extend: {
-      screens: {
-        qhd: '2560px',
-        uhd: '3840px',
+      animation: {
+        'slide-in': 'slideIn 0.3s ease-out',
       },
-      maxHeight: {
-        '112': '28rem',
-        '128': '32rem',
-        '144': '36rem',
-        '160': '40rem',
+      keyframes: {
+        slideIn: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        }
+      },
+      spacing: {
+        '15': '60px',
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-scrollbar'),
+  ],
 };
 
