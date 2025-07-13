@@ -128,6 +128,73 @@ export const handleKakaoSocialLogin = async (code: string, setError: (msg: strin
   }
 };
 
+const NAVER_CLIENT_ID = process.env.REACT_APP_NAVER_CLIENT_ID;
+const NAVER_REDIRECT_URI = process.env.REACT_APP_NAVER_REDIRECT_URI;
+
+// 네이버 소셜 로그인 성공 후 인가코드를 서버로 전달
+const handleNaverSocialLogin = async (code: string, state: string, setError: (msg: string) => void) => {
+  if (usedCodes.has(code)) {
+    setError('네이버 인가코드는 한 번만 사용할 수 있습니다. 다시 로그인 해주세요.');
+    return false;
+  }
+  usedCodes.add(code);
+
+  try {
+    const serverResponse = await fetch(
+      '/server/user/social/naver/login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code,
+          state: state,
+          redirect_uri: NAVER_REDIRECT_URI,
+        }),
+      }
+    );
+
+  let data;
+    try {
+      data = await serverResponse.json();
+    } catch (e) {
+      setError('서버 응답 파싱 실패');
+      return false;
+    }
+
+    const { token } = data;
+
+    if (!serverResponse.ok) {
+      setError(data.message || '네이버 로그인 서버 오류');
+      return false;
+    }
+
+    if (!token) {
+      setError(data.message || '네이버 로그인 실패');
+      return false;
+    }
+
+    setCookie('jwt-token', token);
+
+    try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    if (payload && payload.sub) {
+      setCookie('user_id', payload.sub);
+    }
+  } catch (e) {
+    // JWT 파싱 실패 시 전체 함수 중단 방지 (로그만 남김)
+    // 실제 서비스라면 Sentry 등 외부 로깅 연동 가능
+    // console.warn('JWT 토큰 파싱 실패', e);
+  }
+
+    return true;
+  } catch (error: any) {
+    setError('네이버 소셜로그인 서버 처리 실패: ' + (error.message || '알 수 없는 오류'));
+    return false;
+  }
+};
+
 const Login: React.FC = () => {
   const [Id, setId] = useState('');
   const [password, setPassword] = useState('');
@@ -192,14 +259,49 @@ const Login: React.FC = () => {
     }
   };
 
-  // 네이버/카카오 로그인 핸들러(임시)
-  const handleNaverLogin = () => {
-    if (isInAppBrowser()) {
-      alert('외부 브라우저에서 로그인해주세요.');
-      return;
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if (
+    code &&
+    state &&
+    window.location.pathname.startsWith('/social/naver/redirect')
+  ) {
+    (async () => {
+      setIsLoading(true);
+      try {
+        const loginSuccess = await handleNaverSocialLogin(code, state, setError);
+        setIsLoading(false);
+        if (loginSuccess) {
+          window.location.href = '/';
+        }
+      } catch (e) {
+        setIsLoading(false);
+        }
+      })();
     }
-    alert('네이버 로그인은 아직 준비 중입니다.');
-  };
+  }, [location]);
+
+  const handleNaverLogin = () => {
+  if (isInAppBrowser()) {
+    const currentUrl = window.location.href;
+    setCookie('redirectAfterLogin', currentUrl);
+    if (/android/i.test(navigator.userAgent)) {
+      window.location.href = `intent://${window.location.host}${window.location.pathname}#Intent;scheme=${window.location.protocol.slice(0,  -1)};package=com.android.chrome;end`;
+    } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+      window.location.href = currentUrl;
+    } else {
+      window.open(currentUrl, '_system');
+    }
+    return;
+  }
+
+  // 네이버 인증 페이지로 이동
+  const state = Math.random().toString(36).substring(2, 15);
+  const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=${NAVER_CLIENT_ID}&redirect_uri=${encodeURIComponent(NAVER_REDIRECT_URI ?? '')}&state=${state}`;
+  window.location.href = naverAuthUrl;
+};
 
   const handleKakaoLogin = () => {
     if (isInAppBrowser()) {

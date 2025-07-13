@@ -20,7 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 # ==========================
 # 1. 로그 디렉토리 및 설정
 # ==========================
-BASE_DIR = Path(__file__).resolve().parents[2]
+BASE_DIR = Path(__file__).resolve().parents[3]
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
