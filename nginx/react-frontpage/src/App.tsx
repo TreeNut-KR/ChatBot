@@ -44,7 +44,7 @@ const AppRoutes: React.FC = () => {
           <SideBar />
         </div>
       )}
-      <div className="flex-1 h-screen overflow-y-auto flex flex-col items-center bg-[#1a1918]">
+      <div className="flex-1 min-h-screen bg-[#1a1918]">
         <Routes>
           {/* 로그인 없이 접근 가능한 페이지들 */}
           <Route path="/login" element={<Login />} />

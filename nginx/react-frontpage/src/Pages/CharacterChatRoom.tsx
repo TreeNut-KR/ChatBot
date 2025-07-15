@@ -472,8 +472,11 @@ const CharacterChatRoom: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center w-full h-full bg-[#1a1918]">
-      <header className="flex justify-between items-center w-full h-[56px] px-5 bg-[#1a1918] border-b border-transparent relative">
+    <div className="w-full min-h-screen bg-[#1a1918]"> {/* flex 제거, items-center 제거 */}
+      {/* 상단 여유공간 추가 */}
+      <div className="w-full h-4 bg-[#1a1918]"></div>
+      
+      <header className="flex justify-between items-center w-full h-[56px] px-5 border-b border-transparent relative sticky top-4 z-40">
         <button
           type="button"
           className="text-lg font-bold text-white px-4 py-2 rounded transition duration-200 flex items-center justify-center"
@@ -482,7 +485,6 @@ const CharacterChatRoom: React.FC = () => {
         >
           <i className="fas fa-home fa-lg"></i>
         </button>
-        {/* 햄버거 버튼 */}
         <button
           className="absolute top-1/2 right-6 -translate-y-1/2 z-50 text-white hover:bg-[#353535] p-2 rounded-md"
           onClick={() => setSidebarOpen((v) => !v)}
@@ -495,221 +497,227 @@ const CharacterChatRoom: React.FC = () => {
           </svg>
         </button>
       </header>
-      <div className="flex w-full max-w-[1280px] justify-center p-4 gap-6">
-        {/* 사이드바 */}
-        <CharacterChatSidebar
-          rooms={myRooms}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          onSelectRoom={handleRoomClick}
-        />
-        {/* 채팅 메인 영역 */}
-        <div className="flex-1 w-0 relative">
-          <div className="w-full h-[calc(100vh-120px)] flex flex-col pb-[90px]"> {/* 하단 입력창 높이만큼 패딩 */}
-            <div className="flex items-center mb-6 p-4 bg-[#2a2928] rounded-lg">
-              <img
-                src={character.image || '/images/default-character.png'}
-                alt={character.characterName}
-                className="w-12 h-12 rounded-full object-cover mr-4"
-              />
-              <div>
-                <h2 className="text-xl font-bold text-white">{character.characterName}</h2>
-                <p
-                  className="text-gray-400 text-sm"
-                  style={{
-                    display: '-webkit-box',
-                    WebkitLineClamp: 1,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {character.description}
-                </p>
+      
+      <div className="w-full max-w-[1280px] mx-auto p-4"> {/* justify-center 제거하고 mx-auto 사용 */}
+        <div className="flex gap-6">
+          <CharacterChatSidebar
+            rooms={myRooms}
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            onSelectRoom={handleRoomClick}
+          />
+          <div className="flex-1 w-0 relative">
+            <div className="w-full flex flex-col pb-[120px]"> {/* 하단 입력창 높이만큼 패딩 증가 */}
+              <div className="flex items-center mb-6 p-4 bg-[#2a2928] rounded-lg">
+                <img
+                  src={character.image || '/images/default-character.png'}
+                  alt={character.characterName}
+                  className="w-12 h-12 rounded-full object-cover mr-4"
+                />
+                <div>
+                  <h2 className="text-xl font-bold text-white">{character.characterName}</h2>
+                  <p
+                    className="text-gray-400 text-sm"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {character.description}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-4 bg-[#2a2928] rounded-lg mb-4">
-              {messages.map((message, idx) => {
-                // 인사말 메시지는 항상 최상단에 character로 표시
-                if (idx === 0 && message.id === -1 && message.sender === 'character') {
+              <div className="space-y-4">
+                {messages.map((message, idx) => {
+                  // 인사말 메시지는 항상 최상단에 character로 표시
+                  if (idx === 0 && message.id === -1 && message.sender === 'character') {
+                    return (
+                      <div
+                        key="greeting"
+                        className="mb-6 flex justify-start"
+                      >
+                        <img
+                          src={character.image || '/images/default-character.png'}
+                          alt={character.characterName}
+                          className="w-8 h-8 rounded-full object-cover mr-2"
+                        />
+                        <div className="p-3 rounded-lg max-w-[70%] bg-[#3f3f3f] text-white border-l-4 border-blue-400">
+                          <MarkdownRenderer content={message.content} />
+                          {/* 인사말은 시간 표시 없음 */}
+                        </div>
+                      </div>
+                    );
+                  }
+                  // 일반 메시지
+                  const isLatestUser =
+                    message.sender === 'user' &&
+                    message.index === latestIndex;
+                  
+                  // 수정 모드일 때 최신 index의 character 메시지는 "수정 중..." 표시
+                  const isLatestCharacterInEdit =
+                    editMode &&
+                    message.sender === 'character' &&
+                    message.index === latestIndex;
+
                   return (
                     <div
-                      key="greeting"
-                      className="mb-6 flex justify-start"
+                      key={message.id}
+                      className={`relative mb-4 flex ${
+                        message.sender === 'user' ? 'justify-end' : 'justify-start'
+                      } group`}
                     >
-                      <img
-                        src={character.image || '/images/default-character.png'}
-                        alt={character.characterName}
-                        className="w-8 h-8 rounded-full object-cover mr-2"
-                      />
-                      <div className="p-3 rounded-lg max-w-[70%] bg-[#3f3f3f] text-white border-l-4 border-blue-400">
-                        <MarkdownRenderer content={message.content} />
-                        {/* 인사말은 시간 표시 없음 */}
-                      </div>
-                    </div>
-                  );
-                }
-                // 일반 메시지
-                const isLatestUser =
-                  message.sender === 'user' &&
-                  message.index === latestIndex;
-                return (
-                  <div
-                    key={message.id}
-                    className={`relative mb-4 flex ${
-                      message.sender === 'user' ? 'justify-end' : 'justify-start'
-                    } group`}
-                  >
-                    {message.sender === 'character' && (
-                      <img
-                        src={character.image || '/images/default-character.png'}
-                        alt={character.characterName}
-                        className="w-8 h-8 rounded-full object-cover mr-2"
-                      />
-                    )}
-                    <div
-                      className={`relative p-4 rounded-lg bg-[#2e2d2c] text-white group-hover:bg-[#3a3938] transition max-w-[70%] ${
-                        message.sender === 'user'
-                          ? 'bg-[#3b7cc9] text-white'
-                          : 'bg-[#2e2d2c] text-white'
-                      }`}
-                    >
-                      {/* 수정 모드일 때 최신 user input만 점멸 효과 */}
-                      {isLatestUser && editMode ? (
-                        <div className="animate-pulse">
-                          <MarkdownRenderer content={editMessage} />
-                        </div>
-                      ) : (
-                        <MarkdownRenderer content={message.content} />
+                      {message.sender === 'character' && (
+                        <img
+                          src={character.image || '/images/default-character.png'}
+                          alt={character.characterName}
+                          className="w-8 h-8 rounded-full object-cover mr-2"
+                        />
                       )}
                       <div
-                        className={`flex items-center text-xs mt-1 ${
-                          message.sender === 'user' ? 'text-blue-200' : 'text-gray-400'
+                        className={`relative p-4 rounded-lg bg-[#2e2d2c] text-white group-hover:bg-[#3a3938] transition max-w-[70%] ${
+                          message.sender === 'user'
+                            ? 'bg-[#3b7cc9] text-white'
+                            : 'bg-[#2e2d2c] text-white'
                         }`}
                       >
-                        {/* 시간 */}
-                        <span>
-                          {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
-                        </span>
-                        {/* index가 있고 character 메시지일 때만 삭제 버튼 표시 */}
-                        {message.sender === 'character' && message.index !== undefined && (
-                          <button
-                            className="ml-2 text-xs text-gray-400 hover:text-red-500 active:text-red-600 bg-transparent flex items-center gap-1 transition-colors"
-                            title={`${message.index}번 index부터 최신까지 삭제`}
-                            onClick={() => handleDeleteChatFromIndex(message.index)}
-                            tabIndex={0}
-                          >
-                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M3 6h8M6 9h2M5 3h4l1 1h2v2H2V4h2l1-1z" />
-                            </svg>
-                            여기서부터 최신까지 삭제
-                          </button>
+                        {/* 수정 모드일 때 최신 user input만 점멸 효과 */}
+                        {isLatestUser && editMode ? (
+                          <div className="animate-pulse">
+                            <MarkdownRenderer content={editMessage} />
+                          </div>
+                        ) : isLatestCharacterInEdit ? (
+                          // 수정 모드일 때 최신 character 응답은 "수정 중..." 표시
+                          <div className="animate-pulse text-gray-400 italic">
+                            수정 중...
+                          </div>
+                        ) : (
+                          <MarkdownRenderer content={message.content} />
                         )}
-                        {/* 최신 user input에만 수정 버튼 */}
-                        {isLatestUser && !editMode && (
-                          <button
-                            className="ml-2 text-xs text-gray-400 hover:text-blue-500 active:text-blue-600 bg-transparent flex items-center gap-1 transition-colors"
-                            title="최신 입력 수정"
-                            onClick={handleEditClick}
-                            tabIndex={0}
-                          >
-                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M2 12.5V17h4.5l9.1-9.1-4.5-4.5L2 12.5zM17.7 6.3a1 1 0 0 0 0-1.4l-2.6-2.6a1 1 0 0 0-1.4 0l-1.1 1.1 4.5 4.5 1.1-1.1z"/>
-                            </svg>
-                            수정
-                          </button>
-                        )}
+                        <div
+                          className={`flex items-center text-xs mt-1 ${
+                            message.sender === 'user' ? 'text-blue-200' : 'text-gray-400'
+                          }`}
+                        >
+                          {/* 시간 */}
+                          <span>
+                            {message.timestamp && new Date(message.timestamp).toLocaleTimeString()}
+                          </span>
+                          {/* index가 있고 character 메시지일 때만 삭제 버튼 표시 */}
+                          {message.sender === 'character' && message.index !== undefined && (
+                            <button
+                              className="ml-2 text-xs text-gray-400 hover:text-red-500 active:text-red-600 bg-transparent flex items-center gap-1 transition-colors"
+                              title={`${message.index}번 index부터 최신까지 삭제`}
+                              onClick={() => handleDeleteChatFromIndex(message.index)}
+                              tabIndex={0}
+                            >
+                              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 6h8M6 9h2M5 3h4l1 1h2v2H2V4h2l1-1z" />
+                              </svg>
+                              여기서부터 최신까지 삭제
+                            </button>
+                          )}
+                          {/* 최신 user input에만 수정 버튼 */}
+                          {isLatestUser && !editMode && (
+                            <button
+                              className="ml-2 text-xs text-gray-400 hover:text-blue-500 active:text-blue-600 bg-transparent flex items-center gap-1 transition-colors"
+                              title="최신 입력 수정"
+                              onClick={handleEditClick}
+                              tabIndex={0}
+                            >
+                              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M2 12.5V17h4.5l9.1-9.1-4.5-4.5L2 12.5zM17.7 6.3a1 1 0 0 0 0-1.4l-2.6-2.6a1 1 0 0 0-1.4 0l-1.1 1.1 4.5 4.5 1.1-1.1z"/>
+                              </svg>
+                              수정
+                            </button>
+                          )}
+                        </div>
                       </div>
+                      {message.sender === 'user'}
                     </div>
-                    {message.sender === 'user'}
+                  );
+                })}
+                {/* 로딩 중 표시 */}
+                {isSending && (
+                  <div className="mb-4 flex justify-start">
+                    <div className="p-3 rounded-lg max-w-[70%] bg-[#3f3f3f] text-white opacity-80">
+                      <span className="animate-pulse">답변 생성 중...</span>
+                    </div>
                   </div>
-                );
-              })}
-              {/* 로딩 중 표시 */}
-              {isSending && (
-                <div className="mb-4 flex justify-start">
-                  <div className="p-3 rounded-lg max-w-[70%] bg-[#3f3f3f] text-white opacity-80">
-                    <span className="animate-pulse">답변 생성 중...</span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                )}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
-          </div>
-          {/* 하단 입력창: 고정 레이어 */}
-          <div
-            className="fixed bottom-0 left-0 w-full z-50 bg-[#232323] border-t border-[#353535] px-2 py-3"
-            style={{
-              maxWidth: 1280,
-              left: '50%',
-              transform: 'translateX(-50%)',
-            }}
-          >
-            <div className="flex items-center w-full gap-2">
-              {/* 모델 선택 드롭다운 - 너비를 120px로 변경 */}
-              <select
-                aria-label="Select AI model"
-                className="w-[120px] p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none flex-shrink-0"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                disabled={editMode || isSending}
-              >
-                <option value="Llama">Free</option>
-                <option value="gpt4.1_mini">GPT</option>
-                <option value="gpt4.1">GPT+</option>
-                <option value="Venice/venice_mistral">Venice</option>
-                <option value="Venice/venice_uncensored">Venice+</option>
-              </select>
-
-              {/* 입력창: 수정모드면 editMessage, 아니면 newMessage - onKeyDown 추가 */}
-              <textarea
-                value={editMode ? editMessage : newMessage}
-                onChange={(e) =>
-                  editMode
-                    ? setEditMessage(e.target.value)
-                    : setNewMessage(e.target.value)
-                }
-                onKeyDown={handleKeyDown} // 키보드 이벤트 핸들러 추가
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
-                }}
-                placeholder={isMobile ? "메시지를 입력하세요..." : "메시지 입력 (Shift+Enter: 줄바꿈, Enter: 전송)"}
-                className="flex-1 p-3 bg-[#3f3f3f] text-white border-none focus:outline-none rounded-lg resize-none overflow-y-auto"
-                rows={1}
-                style={{ maxHeight: '120px', minWidth: editMode ? '0' : '120px' }}
-                disabled={isSending}
-              ></textarea>
-
-              {/* 취소 버튼: 수정모드일 때만 노출 */}
-              {editMode && (
-                <button
-                  onClick={handleCancelEdit}
-                  className="w-11 h-11 flex items-center justify-center bg-red-600 text-white rounded-lg hover:bg-red-700 flex-shrink-0 transition-colors"
-                  style={{ fontSize: '22px', fontWeight: 'bold' }}
-                  aria-label="수정 취소"
+            {/* 하단 입력창: 고정 레이어 */}
+            <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[1280px] z-50 bg-[#232323] border-t border-[#353535] px-6 py-4">
+              <div className="flex items-center w-full gap-2">
+                {/* 모델 선택 드롭다운 - 너비를 120px로 변경 */}
+                <select
+                  aria-label="Select AI model"
+                  className="w-[120px] p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none flex-shrink-0"
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
                   disabled={isSending}
                 >
-                  ⨉
-                </button>
-              )}
+                  <option value="Llama">Free</option>
+                  <option value="gpt4.1_mini">GPT</option>
+                  <option value="gpt4.1">GPT+</option>
+                  <option value="Venice/venice_mistral">Venice</option>
+                  <option value="Venice/venice_uncensored">Venice+</option>
+                </select>
 
-              {/* 전송 버튼 */}
-              <button
-                onClick={editMode ? handleEditSubmit : handleSendMessage}
-                className={`w-11 h-11 flex items-center justify-center rounded-lg flex-shrink-0 transition-colors ${
-                  editMode
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-[#3b7cc9] text-white hover:bg-[#2d62a0]'
-                }`}
-                disabled={isSending}
-                style={{ fontSize: '22px', fontWeight: 'bold' }}
-                aria-label="전송"
-              >
-                ▶
-              </button>
+                {/* 입력창: 수정모드면 editMessage, 아니면 newMessage - onKeyDown 추가 */}
+                <textarea
+                  value={editMode ? editMessage : newMessage}
+                  onChange={(e) =>
+                    editMode
+                      ? setEditMessage(e.target.value)
+                      : setNewMessage(e.target.value)
+                  }
+                  onKeyDown={handleKeyDown} // 키보드 이벤트 핸들러 추가
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                  }}
+                  placeholder={isMobile ? "메시지를 입력하세요..." : "메시지 입력 (Shift+Enter: 줄바꿈, Enter: 전송)"}
+                  className="flex-1 p-3 bg-[#3f3f3f] text-white border-none focus:outline-none rounded-lg resize-none overflow-y-auto"
+                  rows={1}
+                  style={{ maxHeight: '120px', minWidth: editMode ? '0' : '120px' }}
+                  disabled={isSending}
+                ></textarea>
+
+                {/* 취소 버튼: 수정모드일 때만 노출 */}
+                {editMode && (
+                  <button
+                    onClick={handleCancelEdit}
+                    className="w-11 h-11 flex items-center justify-center bg-red-600 text-white rounded-lg hover:bg-red-700 flex-shrink-0 transition-colors"
+                    style={{ fontSize: '22px', fontWeight: 'bold' }}
+                    aria-label="수정 취소"
+                    disabled={isSending}
+                  >
+                    ⨉
+                  </button>
+                )}
+
+                {/* 전송 버튼 */}
+                <button
+                  onClick={editMode ? handleEditSubmit : handleSendMessage}
+                  className={`w-11 h-11 flex items-center justify-center rounded-lg flex-shrink-0 transition-colors ${
+                    editMode
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-[#3b7cc9] text-white hover:bg-[#2d62a0]'
+                  }`}
+                  disabled={isSending}
+                  style={{ fontSize: '22px', fontWeight: 'bold' }}
+                  aria-label="전송"
+                >
+                  ▶
+                </button>
+              </div>
             </div>
           </div>
         </div>

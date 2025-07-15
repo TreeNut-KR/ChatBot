@@ -305,7 +305,7 @@ const Profile: React.FC = () => {
         {/* 프로필 상단 영역: 이미지와 멤버십 배지 */}
         <div className="flex flex-col items-center mb-8">
           <div
-            className="w-32 h-32 bg-[#3f3f3f] rounded-full flex items-center justify-center shadow-md mb-4 border-2 border-[#3b7cc9] cursor-pointer relative overflow-hidden"
+            className="w-32 h-32 bg-[#3f3f3f] rounded-lg flex items-center justify-center shadow-md mb-4 border-2 border-[#3b7cc9] cursor-pointer relative overflow-hidden"
             title="프로필 이미지 업로드"
             onClick={handleProfileImageClick}
             style={{ position: 'relative' }}
