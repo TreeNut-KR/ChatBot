@@ -278,7 +278,11 @@ class RoomService(
             } else {
                 route // VIP 멤버십은 요청한 route 그대로 사용
             }
-            
+        
+            // 사용자 정보 조회하여 user_name 가져오기
+            val user = userRepository.findByUserid(userId)
+            val userName = user?.username ?: "Unknown"
+        
             webClient.build()
                 .post()
                 .uri("${pythonServerUrl}/character/{route}", finalRoute) // finalRoute 사용
@@ -292,6 +296,7 @@ class RoomService(
                         "context" to context,
                         "db_id" to mongodbId,
                         "user_id" to userId,
+                        "user_name" to userName  // user_name 추가
                     )
                 )
                 .retrieve()

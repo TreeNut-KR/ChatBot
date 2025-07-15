@@ -298,168 +298,170 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-8 px-4">
-      <h1 className="text-3xl font-bold text-white mb-6">내 프로필</h1>
+    <div className="w-full h-screen flex flex-col px-4">
+      <h1 className="text-3xl font-bold text-white mb-6 mt-8 flex-shrink-0">내 프로필</h1>
       
-      <div className="bg-[#2a2928] rounded-lg p-8 shadow-lg">
-        {/* 프로필 상단 영역: 이미지와 멤버십 배지 */}
-        <div className="flex flex-col items-center mb-8">
-          <div
-            className="w-32 h-32 bg-[#3f3f3f] rounded-full flex items-center justify-center shadow-md mb-4 border-2 border-[#3b7cc9] cursor-pointer relative overflow-hidden"
-            title="프로필 이미지 업로드"
-            onClick={handleProfileImageClick}
-            style={{ position: 'relative' }}
-          >
-            {profileImagePreview ? (
-              <img
-                src={profileImagePreview}
-                alt="프로필 미리보기"
-                className="w-full h-full object-cover rounded-full"
-              />
-            ) : userInfo.profileImage ? (
-              <img
-                src={userInfo.profileImage}
-                alt="프로필"
-                className="w-full h-full object-cover rounded-full"
-              />
-            ) : (
-              <span className="text-6xl">👤</span>
-            )}
-            {uploading && (
-              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#3b7cc9]"></div>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/png,image/jpeg"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              onChange={handleProfileImageChange}
-              aria-label="프로필 이미지 업로드"
-            />
-            <span className="absolute bottom-2 right-2 bg-[#3b7cc9] text-white text-xs px-2 py-1 rounded shadow">변경</span>
-          </div>
-          
-          {/* 멤버십 배지 */}
-          <div className="flex flex-col items-center">
-            <span className={`${getMembershipBadgeColor()} text-white px-4 py-1 rounded-full font-semibold shadow-sm`}>
-              {membership}
-            </span>
-            <p className="text-gray-300 mt-2 text-sm">{getMembershipDescription()}</p>
-          </div>
-        </div>
-
-        {/* 프로필 정보 폼 */}
-        <div className="space-y-6">
-          {/* 닉네임 */}
-          <div className="mb-4">
-            <label htmlFor="name" className="block text-white font-medium mb-2">
-              닉네임
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={editedInfo.name}
-              onChange={(e) => setEditedInfo({ ...editedInfo, name: e.target.value })}
-              className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#3b7cc9]"
-              placeholder="닉네임을 입력하세요"
-            />
-          </div>
-
-          {/* ID */}
-          <div className="mb-4">
-            <label htmlFor="userid" className="block text-white font-medium mb-2">
-              ID
-            </label>
-            <input
-              type="text"
-              id="userid"
-              value={editedInfo.userid}
-              readOnly
-              className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
-            />
-            <p className="text-gray-400 text-sm mt-1">계정 ID는 변경할 수 없습니다</p>
-          </div>
-
-          {/* 이메일 인증 */}
-          <div className="mb-6">
-            <label className="block text-white font-medium mb-2">이메일</label>
-            {membership === 'VIP' ? (
-              <>
-                <input
-                  type="email"
-                  value={userInfo.email}
-                  readOnly
-                  className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
-                  aria-labelledby="email-label"
-                  title="현재 이메일 주소"
-                  placeholder="이메일 주소"
+      <div className="bg-[#2a2928] rounded-lg shadow-lg flex-1 overflow-hidden max-w-4xl max-h-[calc(100vh-120px)] mx-auto w-full">
+        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-600 hover:scrollbar-thumb-gray-300 p-8">
+          {/* 프로필 상단 영역: 이미지와 멤버십 배지 */}
+          <div className="flex flex-col items-center mb-8">
+            <div
+              className="w-32 h-32 bg-[#3f3f3f] rounded-lg flex items-center justify-center shadow-md mb-4 border-2 border-[#3b7cc9] cursor-pointer relative overflow-hidden"
+              title="프로필 이미지 업로드"
+              onClick={handleProfileImageClick}
+              style={{ position: 'relative' }}
+            >
+              {profileImagePreview ? (
+                <img
+                  src={profileImagePreview}
+                  alt="프로필 미리보기"
+                  className="w-full h-full object-cover rounded-lg"
                 />
-                <p className="text-gray-400 text-sm mt-1">계정에 등록된 이메일은 변경할 수 없습니다</p>
-              </>
-            ) : (
-              <>
-                <div className="flex w-full space-x-4">
-                  {/* 이메일 입력창 */}
+              ) : userInfo.profileImage ? (
+                <img
+                  src={userInfo.profileImage}
+                  alt="프로필"
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              ) : (
+                <span className="text-6xl">👤</span>
+              )}
+              {uploading && (
+                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#3b7cc9]"></div>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                onChange={handleProfileImageChange}
+                aria-label="프로필 이미지 업로드"
+              />
+              <span className="absolute bottom-2 right-2 bg-[#3b7cc9] text-white text-xs px-2 py-1 rounded shadow">변경</span>
+            </div>
+            
+            {/* 멤버십 배지 */}
+            <div className="flex flex-col items-center">
+              <span className={`${getMembershipBadgeColor()} text-white px-4 py-1 rounded-full font-semibold shadow-sm`}>
+                {membership}
+              </span>
+              <p className="text-gray-300 mt-2 text-sm">{getMembershipDescription()}</p>
+            </div>
+          </div>
+
+          {/* 프로필 정보 폼 */}
+          <div className="space-y-6 max-w-2xl mx-auto">
+            {/* 닉네임 */}
+            <div className="mb-4">
+              <label htmlFor="name" className="block text-white font-medium mb-2">
+                닉네임
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={editedInfo.name}
+                onChange={(e) => setEditedInfo({ ...editedInfo, name: e.target.value })}
+                className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none focus:ring-2 focus:ring-[#3b7cc9]"
+                placeholder="닉네임을 입력하세요"
+              />
+            </div>
+
+            {/* ID */}
+            <div className="mb-4">
+              <label htmlFor="userid" className="block text-white font-medium mb-2">
+                ID
+              </label>
+              <input
+                type="text"
+                id="userid"
+                value={editedInfo.userid}
+                readOnly
+                className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
+              />
+              <p className="text-gray-400 text-sm mt-1">계정 ID는 변경할 수 없습니다</p>
+            </div>
+
+            {/* 이메일 인증 */}
+            <div className="mb-6">
+              <label className="block text-white font-medium mb-2">이메일</label>
+              {membership === 'VIP' ? (
+                <>
                   <input
                     type="email"
-                    placeholder="이메일을 입력하세요"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                    value={userInfo.email}
+                    readOnly
+                    className="w-full p-3 rounded-lg bg-[#3f3f3f] text-white border-none opacity-75 cursor-not-allowed"
+                    aria-labelledby="email-label"
+                    title="현재 이메일 주소"
+                    placeholder="이메일 주소"
                   />
+                  <p className="text-gray-400 text-sm mt-1">계정에 등록된 이메일은 변경할 수 없습니다</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex w-full space-x-4">
+                    {/* 이메일 입력창 */}
+                    <input
+                      type="email"
+                      placeholder="이메일을 입력하세요"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                    />
 
-                  {/* 인증 버튼 */}
-                  <button
-                    onClick={handleSendVerification}
-                    className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
-                  >
-                    인증 요청
-                  </button>
-                </div>
-                {isEmailSent && (
-                  <div className="mt-4">
-                    <label className="block text-white font-medium mb-2">인증 코드</label>
-                    <div className="flex w-full space-x-4">
-                      <input
-                        type="text"
-                        placeholder="인증 코드를 입력하세요"
-                        value={verificationCode}
-                        onChange={(e) => setVerificationCode(e.target.value)}
-                        className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
-                      />
-                      <button
-                        onClick={handleVerifyCode}
-                        className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
-                      >
-                        인증 확인
-                      </button>
-                    </div>
+                    {/* 인증 버튼 */}
+                    <button
+                      onClick={handleSendVerification}
+                      className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
+                    >
+                      인증 요청
+                    </button>
                   </div>
-                )}
-                {emailVerifyMessage && (
-                  <p className={`mt-2 text-sm ${emailVerifyStatus === 'success' ? 'text-green-500' : 'text-red-500'}`}>
-                    {emailVerifyMessage}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
+                  {isEmailSent && (
+                    <div className="mt-4">
+                      <label className="block text-white font-medium mb-2">인증 코드</label>
+                      <div className="flex w-full space-x-4">
+                        <input
+                          type="text"
+                          placeholder="인증 코드를 입력하세요"
+                          value={verificationCode}
+                          onChange={(e) => setVerificationCode(e.target.value)}
+                          className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
+                        />
+                        <button
+                          onClick={handleVerifyCode}
+                          className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
+                        >
+                          인증 확인
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {emailVerifyMessage && (
+                    <p className={`mt-2 text-sm ${emailVerifyStatus === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                      {emailVerifyMessage}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
 
-          {/* 버튼 영역 */}
-          <div className="flex flex-wrap gap-4 mt-8">
-            <button
-              onClick={handleUpdate}
-              className="flex-1 px-6 py-3 bg-[#3b7cc9] text-white rounded-lg hover:bg-[#2d62a0] transition-colors font-medium"
-            >
-              변경사항 저장
-            </button>
-            <button 
-              className="flex-1 px-6 py-3 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium"
-            >
-              회원탈퇴
-            </button>
+            {/* 버튼 영역 */}
+            <div className="flex flex-wrap gap-4 mt-8">
+              <button
+                onClick={handleUpdate}
+                className="flex-1 px-6 py-3 bg-[#3b7cc9] text-white rounded-lg hover:bg-[#2d62a0] transition-colors font-medium"
+              >
+                변경사항 저장
+              </button>
+              <button 
+                className="flex-1 px-6 py-3 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium"
+              >
+                회원탈퇴
+              </button>
+            </div>
           </div>
         </div>
       </div>

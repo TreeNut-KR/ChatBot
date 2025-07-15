@@ -378,90 +378,96 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="login-container">
-      {/* 토큰 만료 메시지 표시 */}
-      {showExpiredMessage && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
-          <p className="font-bold">세션 만료</p>
-          <p>로그인 세션이 만료되었습니다. 다시 로그인해 주세요.</p>
+    <div className="login-container flex items-center justify-center p-4 min-h-full">
+      <div className="w-full max-w-md">
+        <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
+          <div className="flex flex-col justify-center py-4">
+            {/* 토큰 만료 메시지 표시 */}
+            {/* {showExpiredMessage && (
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 mx-4" role="alert">
+                <p className="font-bold">세션 만료</p>
+                <p>로그인 세션이 만료되었습니다. 다시 로그인해 주세요.</p>
+              </div>
+            )} */}
+            
+            <form className="bg-white p-8 rounded-lg text-left w-full shadow-lg" onSubmit={handleSubmit}>
+              <div className="flex justify-center items-center mb-1">
+                <h2 className="text-green-600 text-2xl whitespace-nowrap">TreeNut</h2>
+              </div>
+              <div className="flex justify-center items-center mb-1">
+                <h2 className="text-lg whitespace-nowrap">AI 어시스턴트한테 도움을 받아보세요!</h2>
+              </div>
+              <h2 className="text-center text-sm mb-3 text-gray-600">
+                TreeNut과 함께 편리한 AI 서비스를 이용해보세요
+              </h2>
+              <div className="flex flex-col items-center mb-3">
+                <img
+                  src={logo_naver_kr}
+                  alt="Naver Logo"
+                  className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
+                  onClick={handleNaverLogin}
+                />
+                <img
+                  src={logo_kakao_kr}
+                  alt="Kakao Logo"
+                  className={`w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
+                  onClick={handleKakaoLogin}
+                />
+                <img
+                  src={logo_google_kr}
+                  alt="Google Logo"
+                  className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
+                  onClick={handleGoogleLogin}
+                  onTouchStart={handleGoogleLogin}
+                />
+              </div>
+              <div className="flex items-center mb-4">
+                <div className="flex-1 h-[1px] bg-gray-300"></div>
+                <span className="mx-2 text-gray-600 text-sm">또는</span>
+                <div className="flex-1 h-[1px] bg-gray-300"></div>
+              </div>
+              <div className="mb-2">
+                <input
+                  type="text"
+                  id="Id"
+                  value={Id}
+                  onChange={(e) => setId(e.target.value)}
+                  required
+                  className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-0 focus:border-gray-300"
+                  placeholder="아이디"
+                />
+              </div>
+              <div className="mb-2">
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-0 focus:border-gray-300"
+                  placeholder="비밀번호"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full font-semibold tracking-wider py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:bg-green-400"
+              >
+                {isLoading ? '로그인 중...' : '로그인'}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="w-full mt-2 font-semibold tracking-wider py-2 bg-white text-green-600 border border-green-600 rounded-md hover:bg-green-50 transition"
+              >
+                회원가입
+              </button>
+              {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
+              {success && <p className="text-green-600 mt-3 text-sm">로그인 성공!</p>}
+            </form>
+          </div>
         </div>
-      )}
-      
-      <form className="bg-white p-8 rounded-lg text-left w-full max-w-md shadow-lg" onSubmit={handleSubmit}>
-        <div className="flex justify-center items-center mb-1">
-          <h2 className="text-green-600 text-2xl whitespace-nowrap">TreeNut</h2>
-        </div>
-        <div className="flex justify-center items-center mb-1">
-          <h2 className="text-lg whitespace-nowrap">AI 어시스턴트한테 도움을 받아보세요!</h2>
-        </div>
-        <h2 className="text-center text-sm mb-3 text-gray-600">
-          TreeNut과 함께 편리한 AI 서비스를 이용해보세요
-        </h2>
-        <div className="flex flex-col items-center mb-3">
-          <img
-            src={logo_naver_kr}
-            alt="Naver Logo"
-            className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
-            onClick={handleNaverLogin}
-          />
-          <img
-            src={logo_kakao_kr}
-            alt="Kakao Logo"
-            className={`w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
-            onClick={handleKakaoLogin}
-          />
-          <img
-            src={logo_google_kr}
-            alt="Google Logo"
-            className="w-25 mb-2 transition-transform transform hover:translate-y-[-5px] cursor-pointer"
-            onClick={handleGoogleLogin}
-            onTouchStart={handleGoogleLogin}
-          />
-        </div>
-        <div className="flex items-center mb-4">
-          <div className="flex-1 h-[1px] bg-gray-300"></div>
-          <span className="mx-2 text-gray-600 text-sm">또는</span>
-          <div className="flex-1 h-[1px] bg-gray-300"></div>
-        </div>
-        <div className="mb-2">
-          <input
-            type="text"
-            id="Id"
-            value={Id}
-            onChange={(e) => setId(e.target.value)}
-            required
-            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-0 focus:border-gray-300"
-            placeholder="아이디"
-          />
-        </div>
-        <div className="mb-2">
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full p-2 border text-gray-700 border-gray-300 rounded-md opacity-70 focus:outline-none focus:ring-0 focus:border-gray-300"
-            placeholder="비밀번호"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full font-semibold tracking-wider py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition disabled:bg-green-400"
-        >
-          {isLoading ? '로그인 중...' : '로그인'}
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/register')}
-          className="w-full mt-2 font-semibold tracking-wider py-2 bg-white text-green-600 border border-green-600 rounded-md hover:bg-green-50 transition"
-        >
-          회원가입
-        </button>
-        {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
-        {success && <p className="text-green-600 mt-3 text-sm">로그인 성공!</p>}
-      </form>
+      </div>
     </div>
   );
 };
