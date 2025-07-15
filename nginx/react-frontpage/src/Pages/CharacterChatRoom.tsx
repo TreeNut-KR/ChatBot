@@ -25,7 +25,6 @@ interface Character {
   description: string;
   image: string;
   greeting?: string;
-  creator?: string;
 }
 
 // Message 인터페이스 정의
@@ -56,23 +55,19 @@ const CharacterChatRoom: React.FC = () => {
   const [editMessage, setEditMessage] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [showCharacterModal, setShowCharacterModal] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<any>(null); // CharacterChat.tsx와 동일하게 any로
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // 캐릭터 모달 열기 함수 추가
-  const handleCharacterClick = () => {
-    setShowCharacterModal(true);
+  // 캐릭터 클릭 시 모달 오픈 (CharacterChat.tsx와 동일)
+  const handleCharacterClick = (character: any) => {
+    setSelectedCharacter(character);
   };
 
-  // 캐릭터 모달 닫기 함수 추가
-  const handleCloseCharacterModal = () => {
-    setShowCharacterModal(false);
-  };
-
-  // 캐릭터와 채팅하기 함수 (현재 페이지이므로 모달만 닫기)
-  const handleChatWithCharacter = (uuid: string) => {
-    // 현재 이미 해당 캐릭터와 채팅 중이므로 모달만 닫기
-    setShowCharacterModal(false);
+  // 캐릭터와 채팅하기 (현재 페이지이므로 모달만 닫기)
+  const handleChat = async (character: any) => {
+    setSelectedCharacter(null);
+    // 이미 채팅방이므로 별도 이동 없음
   };
 
   // 모바일 감지 useEffect 추가
@@ -107,7 +102,7 @@ const CharacterChatRoom: React.FC = () => {
 
     const fetchCharacterDetails = async () => {
       try {
-        // 1. 채팅 로그 먼저 불러오기 - api.ts 활용
+        // 1. 채팅 로그 먼저 불러오기
         const logsData = await loadCharacterChatLogs(decodedUuid);
 
         if (!logsData || !logsData.logs || !logsData.logs.character_idx) {
@@ -118,18 +113,21 @@ const CharacterChatRoom: React.FC = () => {
 
         const characterIdx = logsData.logs.character_idx;
 
-        // 2. 캐릭터 정보 불러오기 - api.ts 활용
+        // 2. 캐릭터 정보 불러오기
         let detailsData = null;
         try {
           detailsData = await getCharacterDetails(characterIdx);
-          
+
           // creator 필드가 없는 경우 다른 필드명 확인 및 기본값 설정
           if (detailsData && !detailsData.creator) {
-            detailsData.creator = detailsData.author || detailsData.createdBy || detailsData.username || '알 수 없음';
+            detailsData.creator =
+              detailsData.author ||
+              detailsData.createdBy ||
+              detailsData.username ||
+              detailsData.owner || // owner 필드도 시도
+              '알 수 없음';
           }
-          
         } catch (error) {
-          console.error('캐릭터 정보 로딩 실패:', error);
           detailsData = null;
         }
 
@@ -144,14 +142,14 @@ const CharacterChatRoom: React.FC = () => {
                   sender: 'user',
                   content: log.input_data,
                   timestamp: log.timestamp,
-                  index: log.index, // index 추가
+                  index: log.index,
                 },
                 {
                   id: log.index * 2,
                   sender: 'character',
                   content: log.output_data,
                   timestamp: log.timestamp,
-                  index: log.index, // index 추가
+                  index: log.index,
                 },
               ]).flat()
             : [];
@@ -160,14 +158,13 @@ const CharacterChatRoom: React.FC = () => {
           let greetingMessage: Message | null = null;
           if (detailsData.greeting) {
             greetingMessage = {
-              id: -1, // 항상 최상단에 위치하도록 음수 ID 사용
+              id: -1,
               sender: 'character',
               content: detailsData.greeting,
-              timestamp: '', // 인사말은 시간 표시 안 함
+              timestamp: '',
             };
           }
 
-          // 인사말을 항상 최상단에 유지
           setMessages(greetingMessage ? [greetingMessage, ...chatLogs] : chatLogs);
         } else {
           setCharacter(null);
@@ -175,7 +172,6 @@ const CharacterChatRoom: React.FC = () => {
         }
         setLoading(false);
       } catch (err: any) {
-        console.error('채팅 정보 로딩 오류:', err);
         setError('채팅 정보를 불러오는데 실패했습니다.');
         setLoading(false);
       }
@@ -184,7 +180,7 @@ const CharacterChatRoom: React.FC = () => {
     if (decodedUuid) {
       fetchCharacterDetails();
     }
-  }, [decodedUuid]); // uuid가 바뀔 때마다 실행
+  }, [decodedUuid]);
 
   // 내 채팅방 목록 불러오기 - api.ts 활용
   useEffect(() => {
@@ -557,7 +553,6 @@ const CharacterChatRoom: React.FC = () => {
     <div className="w-full min-h-screen bg-[#1a1918]">
       {/* 상단 여유공간 추가 */}
       <div className="w-full h-4 bg-[#1a1918]"></div>
-      
       <header className="flex justify-between items-center w-full h-[56px] px-5 border-b border-transparent relative sticky top-4 z-40">
         <button
           type="button"
@@ -579,8 +574,7 @@ const CharacterChatRoom: React.FC = () => {
           </svg>
         </button>
       </header>
-      
-      <div className="w-full max-w-[1280px] mx-auto p-4"> {/* justify-center 제거하고 mx-auto 사용 */}
+      <div className="w-full max-w-[1280px] mx-auto p-4">
         <div className="flex gap-6">
           <CharacterChatSidebar
             rooms={myRooms}
@@ -589,13 +583,13 @@ const CharacterChatRoom: React.FC = () => {
             onSelectRoom={handleRoomClick}
           />
           <div className="flex-1 w-0 relative">
-            <div className="w-full flex flex-col pb-[120px]"> {/* 하단 입력창 높이만큼 패딩 증가 */}
+            <div className="w-full flex flex-col pb-[120px]">
               <div className="flex items-center mb-6 p-4 bg-[#2a2928] rounded-lg">
                 <img
                   src={character?.image || '/images/default-character.png'}
                   alt={character?.characterName}
                   className="w-12 h-12 rounded-full object-cover mr-4 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={handleCharacterClick}
+                  onClick={() => handleCharacterClick(character)}
                 />
                 <div>
                   <h2 className="text-xl font-bold text-white">{character?.characterName}</h2>
@@ -626,7 +620,7 @@ const CharacterChatRoom: React.FC = () => {
                               src={character?.image || '/images/default-character.png'}
                               alt={character?.characterName}
                               className="w-8 h-8 rounded-full object-cover mr-2 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={handleCharacterClick}
+                              onClick={() => handleCharacterClick(character)}
                             />
                             <span className="text-white text-sm font-medium">{character?.characterName}</span>
                           </div>
@@ -671,7 +665,7 @@ const CharacterChatRoom: React.FC = () => {
                               src={character?.image || '/images/default-character.png'}
                               alt={character?.characterName}
                               className="w-8 h-8 rounded-full object-cover mr-2 cursor-pointer hover:opacity-80 transition-opacity"
-                              onClick={handleCharacterClick}
+                              onClick={() => handleCharacterClick(character)}
                             />
                             <span className="text-white text-sm font-medium">{character?.characterName}</span>
                           </div>
@@ -818,7 +812,6 @@ const CharacterChatRoom: React.FC = () => {
                 <div ref={messagesEndRef} />
               </div>
             </div>
-            
             {/* 하단 입력창 */}
             <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[1280px] z-50 bg-[#232323] border-t border-[#353535] px-6 py-4 rounded-t-2xl">
               <div className="flex items-center w-full gap-2">
@@ -890,13 +883,12 @@ const CharacterChatRoom: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* 캐릭터 상세 모달 - CharacterDetailModal로 대체 */}
-      {showCharacterModal && character && (
+      {/* 캐릭터 상세 모달 - CharacterChat.tsx와 동일하게 selectedCharacter로 제어 */}
+      {selectedCharacter && (
         <CharacterDetailModal
-          character={character}
-          onClose={handleCloseCharacterModal}
-          onChat={handleChatWithCharacter}
+          character={selectedCharacter}
+          onClose={() => setSelectedCharacter(null)}
+          onChat={() => handleChat(selectedCharacter)}
         />
       )}
     </div>
