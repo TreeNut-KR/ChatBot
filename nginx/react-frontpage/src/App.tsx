@@ -34,8 +34,16 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 const AppRoutes: React.FC = () => {
   const location = useLocation();
 
-  // /chat/:uuid 경로에서는 SideBar를 숨김
-  const hideSidebar = location.pathname.startsWith('/chat/');
+  // SideBar를 숨겨야 하는 경로들 정의
+  const hideSidebar = location.pathname.startsWith('/chat/') || 
+                     location.pathname === '/' || 
+                     location.pathname === '/loginMain' ||
+                     location.pathname === '/register' ||
+                     location.pathname === '/login' ||
+                     location.pathname === '/signup' ||
+                     location.pathname === '/find-password' ||
+                     location.pathname === '/privacy' ||
+                     location.pathname.startsWith('/social/');
 
   return (
     <div className='flex h-screen'>

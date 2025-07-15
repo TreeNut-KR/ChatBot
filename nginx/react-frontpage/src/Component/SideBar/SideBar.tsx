@@ -233,6 +233,19 @@ const Sidebar: React.FC = () => {
                     </span>
                     <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">개인정보</span>
                   </button>
+                  {/* 내 캐릭터 버튼 추가 */}
+                  <button
+                    onClick={() => {
+                      setShowAuthOptions(false);
+                      handleNavigation('/mycharacter');
+                    }}
+                    className="flex flex-col items-center text-white hover:bg-[#2A2927] rounded-md transition-transform duration-200 transform hover:scale-105 w-[60px] h-[60px]"
+                  >
+                    <span className="flex justify-center items-center w-full h-full">
+                      <i className="fas fa-id-badge fa-lg text-[#FFA500]"></i>
+                    </span>
+                    <span className="mt-1 text-[14px] font-semibold whitespace-nowrap">내 캐릭터</span>
+                  </button>
                   <button
                     onClick={() => {
                       setShowAuthOptions(false);

@@ -46,11 +46,7 @@ const CharacterDetailModal: React.FC<Props> = ({ character, onClose, onChat }) =
             {/* 고정 높이 컨텐츠들 */}
             <div className="flex-shrink-0">
                 <p className="mb-4">{character.description}</p>
-                {character.greeting && (
-                    <div className="bg-gray-700 rounded p-4 mb-4">
-                        <span className="font-semibold">인사말:</span> {character.greeting}
-                    </div>
-                )}
+                {character.greeting}
                 <button
                     className="w-full py-3 bg-[#3b7cc9] text-white rounded-lg hover:bg-[#2d62a0]"
                     onClick={() => onChat(character.uuid)}
