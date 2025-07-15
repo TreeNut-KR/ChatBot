@@ -53,8 +53,21 @@ const CharacterChatRoom: React.FC = () => {
   const [isSending, setIsSending] = useState(false); // 메시지 전송 중 상태 추가
   const [editMode, setEditMode] = useState(false); // 수정 모드 여부
   const [editMessage, setEditMessage] = useState(''); // 수정할 메시지
+  const [isMobile, setIsMobile] = useState(false); // 모바일 감지 상태 추가
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // 모바일 감지 useEffect 추가
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // 새로운 메시지가 추가될 때 스크롤 아래로 이동
   const scrollToBottom = () => {
@@ -166,6 +179,30 @@ const CharacterChatRoom: React.FC = () => {
     window.addEventListener('focus', fetchMyRooms);
     return () => window.removeEventListener('focus', fetchMyRooms);
   }, []);
+
+  // 키보드 이벤트 핸들러 추가
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      if (isMobile) {
+        // 모바일: Enter만으로 줄바꿈 (기본 동작 허용)
+        return;
+      } else {
+        // 데스크톱: Shift+Enter로 줄바꿈, Enter로 전송
+        if (e.shiftKey) {
+          // Shift+Enter: 줄바꿈 (기본 동작 허용)
+          return;
+        } else {
+          // Enter: 전송
+          e.preventDefault();
+          if (editMode) {
+            handleEditSubmit();
+          } else {
+            handleSendMessage();
+          }
+        }
+      }
+    }
+  };
 
   // 메시지 전송 - api.ts 활용
   const handleSendMessage = async () => {
@@ -610,20 +647,22 @@ const CharacterChatRoom: React.FC = () => {
             }}
           >
             <div className="flex items-center w-full gap-2">
-              {/* 모델 선택 드롭다운 */}
+              {/* 모델 선택 드롭다운 - 너비를 120px로 변경 */}
               <select
                 aria-label="Select AI model"
-                className="w-[80px] p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none flex-shrink-0"
+                className="w-[120px] p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none flex-shrink-0"
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
                 disabled={editMode || isSending}
               >
                 <option value="Llama">Free</option>
-                <option value="gpt4.1_mini">Pro</option>
-                <option value="gpt4.1">Pro+</option>
+                <option value="gpt4.1_mini">GPT</option>
+                <option value="gpt4.1">GPT+</option>
+                <option value="Venice/venice_mistral">Venice</option>
+                <option value="Venice/venice_uncensored">Venice+</option>
               </select>
 
-              {/* 입력창: 수정모드면 editMessage, 아니면 newMessage */}
+              {/* 입력창: 수정모드면 editMessage, 아니면 newMessage - onKeyDown 추가 */}
               <textarea
                 value={editMode ? editMessage : newMessage}
                 onChange={(e) =>
@@ -631,12 +670,13 @@ const CharacterChatRoom: React.FC = () => {
                     ? setEditMessage(e.target.value)
                     : setNewMessage(e.target.value)
                 }
+                onKeyDown={handleKeyDown} // 키보드 이벤트 핸들러 추가
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
                   target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
                 }}
-                placeholder=""
+                placeholder={isMobile ? "메시지를 입력하세요..." : "메시지 입력 (Shift+Enter: 줄바꿈, Enter: 전송)"}
                 className="flex-1 p-3 bg-[#3f3f3f] text-white border-none focus:outline-none rounded-lg resize-none overflow-y-auto"
                 rows={1}
                 style={{ maxHeight: '120px', minWidth: editMode ? '0' : '120px' }}
