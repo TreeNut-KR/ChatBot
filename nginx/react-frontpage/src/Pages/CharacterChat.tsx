@@ -10,7 +10,8 @@ import {
   fetchCharacterChatRooms, 
   createCharacterChatRoom,
   getUserId,
-  deleteCharacterChatRoom // 삭제 API 임포트
+  deleteCharacterChatRoom, // 삭제 API 임포트
+  getCharacterDetails, // 캐릭터 상세 정보 API 임포트
 } from '../Component/Chatting/Services/api';
 
 const CharacterChatPage: React.FC = () => {
@@ -39,9 +40,35 @@ const CharacterChatPage: React.FC = () => {
     return () => window.removeEventListener('focus', fetchMyRooms);
   }, []);
   
-  // 캐릭터 클릭 시 모달 오픈
-  const handleCharacterClick = (character: any) => {
-    setSelectedCharacter(character);
+  // 캐릭터 클릭 시 모달 오픈 (creator는 userid로 세팅)
+  const handleCharacterClick = async (character: any) => {
+    try {
+      // 캐릭터 상세 정보 API 호출
+      const detail = await getCharacterDetails(character.idx);
+
+      // userid가 없으면 에러 처리
+      if (
+        typeof detail.userid !== 'string' ||
+        detail.userid.trim() === ''
+      ) {
+        throw new Error('캐릭터 정보에 userid 필드가 없습니다.');
+      }
+
+      // Character 타입에 맞게 변환 (creator는 userid로 세팅)
+      const characterDetail = {
+        idx: detail.idx,
+        uuid: detail.uuid,
+        characterName: detail.characterName,
+        description: detail.description,
+        image: detail.image,
+        creator: detail.userid,
+      };
+
+      setSelectedCharacter(characterDetail);
+    } catch (e) {
+      alert('캐릭터 상세 정보를 불러오지 못했습니다.');
+      setSelectedCharacter(null);
+    }
   };
 
   // 채팅 시작 버튼 클릭 시 - api.ts 활용

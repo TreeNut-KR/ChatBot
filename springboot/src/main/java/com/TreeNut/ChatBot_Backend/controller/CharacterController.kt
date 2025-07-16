@@ -292,12 +292,11 @@ class CharacterController(
             } else {
                 // CharacterChat 페이지에서 사용할 데이터 형식으로 변환
                 val characterData = publicCharacters.map { character ->
-                    val username = userRepository.findByUserid(character["userid"] as String)?.username ?: "Unknown"
                     mapOf(
                         "characterName" to character["character_name"],
                         "description" to character["description"],
                         "image" to character["image"],
-                        "creator" to username, // username을 반환
+                        "creator" to character["userid"], // userid를 반환
                         "uuid" to character["uuid"],
                         "idx" to character["idx"],
                     )

@@ -6,8 +6,7 @@ interface Character {
     characterName: string;
     description: string;
     image: string;
-    greeting?: string;
-    creator?: string;
+    creator: string;
 }
 
 interface Props {

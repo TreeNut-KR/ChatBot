@@ -136,7 +136,7 @@
             "characterName": "test",
             "description": "test characters",
             "image": "https://drive.google.com/thumbnail?id=1a2mPrSRXoPpUCblTO55UXaWsfHlFZK7_",
-            "creator": "testtest",
+            "creator": "uesrid",
             "uuid": "e30c961c48224e58a6ab9e4ae013c3a9",
             "idx": 2
         },

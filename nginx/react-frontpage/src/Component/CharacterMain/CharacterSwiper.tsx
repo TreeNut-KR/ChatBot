@@ -9,9 +9,9 @@ interface Character {
   characterName: string;
   description: string;
   image: string;
-  creator: string; 
-  uuid: string;  // uuid 속성 추가
-  idx: number;   // idx 속성 추가
+  creator: string;
+  uuid: string;
+  idx: number;
 }
 
 interface ApiResponse {
@@ -47,8 +47,12 @@ const CharacterSwiper: React.FC<CharacterSwiperProps> = ({ onCharacterClick }) =
         const response = await axios.get<ApiResponse>('/server/character/public');
         
         if (response.data && response.data.data) {
-          setCharacters(response.data.data);
-          console.log('Fetched characters:', response.data.data);
+          const charactersWithCreator = response.data.data.map((char) => ({
+            ...char,
+            creator: typeof char.creator === 'string' ? char.creator : '',
+          }));
+          setCharacters(charactersWithCreator);
+          console.log('Fetched characters:', charactersWithCreator);
         } else {
           setCharacters([]);
         }

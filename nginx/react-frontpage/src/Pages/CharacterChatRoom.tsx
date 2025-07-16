@@ -12,19 +12,17 @@ import {
   getCharacterResponse, 
   fetchCharacterChatRooms, 
   getCharacterDetails,
-  getUserId,
   deleteCharacterChatLog,
   updateCharacterChatLog
 } from '../Component/Chatting/Services/api';
 
-// Character 인터페이스 정의
 interface Character {
   idx: number;
   uuid: string;
   characterName: string;
   description: string;
   image: string;
-  greeting?: string;
+  creator: string; // creator는 userid로 세팅
 }
 
 // Message 인터페이스 정의
@@ -54,20 +52,43 @@ const CharacterChatRoom: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [editMessage, setEditMessage] = useState('');
   const [isMobile, setIsMobile] = useState(false);
-  const [showCharacterModal, setShowCharacterModal] = useState(false);
-  const [selectedCharacter, setSelectedCharacter] = useState<any>(null); // CharacterChat.tsx와 동일하게 any로
+  const [characterDetail, setCharacterDetail] = useState<Character | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // 캐릭터 클릭 시 모달 오픈 (CharacterChat.tsx와 동일)
-  const handleCharacterClick = (character: any) => {
-    setSelectedCharacter(character);
+  // 캐릭터 클릭 시 상세 정보 API 호출 후 모달 오픈
+  const handleCharacterClick = async (character: Character) => {
+    try {
+      const detail = await getCharacterDetails(character.idx);
+
+      // userid가 없으면 에러 처리
+      if (
+        typeof detail.userid !== 'string' ||
+        detail.userid.trim() === ''
+      ) {
+        throw new Error('캐릭터 정보에 userid 필드가 없습니다.');
+      }
+
+      // Character 타입에 맞게 변환 (creator는 userid로 세팅)
+      const characterDetail: Character = {
+        idx: detail.idx,
+        uuid: detail.uuid,
+        characterName: detail.characterName,
+        description: detail.description,
+        image: detail.image,
+        creator: detail.userid,
+      };
+
+      setCharacterDetail(characterDetail);
+    } catch (e) {
+      alert('캐릭터 상세 정보를 불러오지 못했습니다.');
+      setCharacterDetail(null);
+    }
   };
 
-  // 캐릭터와 채팅하기 (현재 페이지이므로 모달만 닫기)
-  const handleChat = async (character: any) => {
-    setSelectedCharacter(null);
-    // 이미 채팅방이므로 별도 이동 없음
+  // 캐릭터와 채팅하기 (채팅방에서는 모달만 닫음)
+  const handleChat = () => {
+    setCharacterDetail(null);
   };
 
   // 모바일 감지 useEffect 추가
@@ -113,26 +134,29 @@ const CharacterChatRoom: React.FC = () => {
 
         const characterIdx = logsData.logs.character_idx;
 
-        // 2. 캐릭터 정보 불러오기
         let detailsData = null;
         try {
           detailsData = await getCharacterDetails(characterIdx);
-
-          // creator 필드가 없는 경우 다른 필드명 확인 및 기본값 설정
-          if (detailsData && !detailsData.creator) {
-            detailsData.creator =
-              detailsData.author ||
-              detailsData.createdBy ||
-              detailsData.username ||
-              detailsData.owner || // owner 필드도 시도
-              '알 수 없음';
-          }
         } catch (error) {
           detailsData = null;
         }
 
-        if (detailsData) {
-          setCharacter(detailsData);
+        if (
+          detailsData &&
+          typeof detailsData.userid === 'string' &&
+          detailsData.userid.trim() !== ''
+        ) {
+          // Character 타입에 맞게 변환 (creator는 userid로 세팅)
+          const characterObj: Character = {
+            idx: detailsData.idx,
+            uuid: detailsData.uuid,
+            characterName: detailsData.characterName,
+            description: detailsData.description,
+            image: detailsData.image,
+            creator: detailsData.userid,
+          };
+
+          setCharacter(characterObj);
 
           // 3. 채팅 로그를 메시지 배열로 변환
           const chatLogs = Array.isArray(logsData.logs.value)
@@ -168,7 +192,7 @@ const CharacterChatRoom: React.FC = () => {
           setMessages(greetingMessage ? [greetingMessage, ...chatLogs] : chatLogs);
         } else {
           setCharacter(null);
-          setError('존재하지 않는 캐릭터입니다.');
+          setError('캐릭터 정보에 userid 필드가 없거나 잘못되었습니다.');
         }
         setLoading(false);
       } catch (err: any) {
@@ -884,11 +908,11 @@ const CharacterChatRoom: React.FC = () => {
         </div>
       </div>
       {/* 캐릭터 상세 모달 - CharacterChat.tsx와 동일하게 selectedCharacter로 제어 */}
-      {selectedCharacter && (
+      {characterDetail && (
         <CharacterDetailModal
-          character={selectedCharacter}
-          onClose={() => setSelectedCharacter(null)}
-          onChat={() => handleChat(selectedCharacter)}
+          character={characterDetail}
+          onClose={() => setCharacterDetail(null)}
+          onChat={handleChat}
         />
       )}
     </div>
