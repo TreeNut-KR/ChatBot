@@ -53,6 +53,7 @@ const CharacterChatRoom: React.FC = () => {
   const [editMessage, setEditMessage] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [characterDetail, setCharacterDetail] = useState<Character | null>(null);
+  const [membership, setMembership] = useState<'BASIC' | 'VIP'>('BASIC');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -551,6 +552,34 @@ const CharacterChatRoom: React.FC = () => {
     return blocks;
   }
 
+  useEffect(() => {
+    const getCookieValue = (name: string): string => {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const [cookieName, cookieValue] = cookie.trim().split('=');
+        if (cookieName === name) {
+          return decodeURIComponent(cookieValue);
+        }
+      }
+      return '';
+    };
+    const fetchMembership = async () => {
+      try {
+        const jwtToken = getCookieValue('jwt-token');
+        const res = await fetch('/server/user/membership', {
+          method: 'GET',
+          headers: { 'Authorization': jwtToken || '' },
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.membership) setMembership(data.membership);
+        }
+      } catch (e) {}
+    };
+    fetchMembership();
+  }, []);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center w-full h-full bg-[#1a1918]">
@@ -848,10 +877,14 @@ const CharacterChatRoom: React.FC = () => {
                   disabled={isSending}
                 >
                   <option value="Llama">Free</option>
-                  <option value="gpt4.1_mini">GPT</option>
-                  <option value="gpt4.1">GPT+</option>
-                  <option value="Venice/venice_mistral">Venice</option>
-                  <option value="Venice/venice_uncensored">Venice+</option>
+                  {membership === 'VIP' && (
+                    <>
+                      <option value="gpt4.1_mini">GPT</option>
+                      <option value="gpt4.1">GPT+</option>
+                      <option value="Venice/venice_mistral">Venice</option>
+                      <option value="Venice/venice_uncensored">Venice+</option>
+                    </>
+                  )}
                 </select>
 
                 {/* 입력창: 수정모드면 editMessage, 아니면 newMessage - onKeyDown 추가 */}

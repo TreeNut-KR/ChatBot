@@ -1,7 +1,17 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
+import { getCookie } from '../Cookies';
 
 const MainPage: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = getCookie('jwt-token');
+    if (!token) {
+      navigate('/?redirect=%2Fhome&expired=true', { replace: true });
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#1a1918] text-white">
       <main className="flex flex-1 w-full items-start md:items-center justify-center pt-8 md:pt-0 pb-16 md:pb-0">

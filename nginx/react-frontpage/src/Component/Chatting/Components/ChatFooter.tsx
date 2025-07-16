@@ -95,9 +95,13 @@ const ChatFooter: React.FC<ChatFooterWithModelProps> = ({
           aria-label="모델 선택"
         >
           <option value="Llama">Llama</option>
-          <option value="gpt4o_mini" disabled={membership !== 'VIP'}>gpt4o_mini</option>
-          <option value="gpt4.1" disabled={membership !== 'VIP'}>gpt4.1</option>
-          <option value="gpt4.1_mini" disabled={membership !== 'VIP'}>gpt4.1_mini</option>
+          {membership === 'VIP' && (
+            <>
+              <option value="gpt4o_mini">gpt4o_mini</option>
+              <option value="gpt4.1">gpt4.1</option>
+              <option value="gpt4.1_mini">gpt4.1_mini</option>
+            </>
+          )}
         </select>
         <textarea
           value={userInput}

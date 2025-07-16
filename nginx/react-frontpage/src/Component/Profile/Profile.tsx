@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // 쿠키에서 값을 읽어오는 함수
 const getCookieValue = (name: string): string => {
@@ -29,7 +30,9 @@ const Profile: React.FC = () => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isEmailRequesting, setIsEmailRequesting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate(); // 추가
 
   useEffect(() => {
     // 사용자 정보와 멤버십 정보 모두 가져오기
@@ -181,15 +184,36 @@ const Profile: React.FC = () => {
       alert('사용자 정보가 성공적으로 업데이트되었습니다.');
       
       // 사용자 정보 다시 가져오기
-      fetchUserInfo();
+      await fetchUserInfo();
+
+      // 변경사항 저장 후 /home으로 이동
+      navigate('/home');
     } catch (error) {
       console.error('Error updating user info:', error);
       alert('사용자 정보를 업데이트하는 중 오류가 발생했습니다.');
     }
   };
 
+  const validateEmail = (email: string) => {
+    // 간단한 이메일 정규식
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   // 인증 메일 발송
   const handleSendVerification = async () => {
+    if (!emailInput) {
+      setEmailVerifyStatus('error');
+      setEmailVerifyMessage('이메일을 입력하세요.');
+      return;
+    }
+    if (!validateEmail(emailInput)) {
+      setEmailVerifyStatus('error');
+      setEmailVerifyMessage('올바른 이메일 형식을 입력하세요.');
+      return;
+    }
+
+    setIsEmailRequesting(true);
+    setIsEmailSent(false);
     setEmailVerifyStatus('idle');
     setEmailVerifyMessage('');
     try {
@@ -208,11 +232,13 @@ const Profile: React.FC = () => {
         setEmailVerifyMessage('인증 코드가 이메일로 전송되었습니다.');
       } else {
         setEmailVerifyStatus('error');
-        setEmailVerifyMessage(data.message || '이메일 인증 요청에 실패했습니다.');
+        setEmailVerifyMessage('이메일 인증 요청에 실패했습니다.');
       }
     } catch (e: any) {
       setEmailVerifyStatus('error');
-      setEmailVerifyMessage(e.message || '이메일 인증 요청 중 오류가 발생했습니다.');
+      setEmailVerifyMessage('이메일 인증 요청 중 오류가 발생했습니다.');
+    } finally {
+      setIsEmailRequesting(false);
     }
   };
 
@@ -402,7 +428,6 @@ const Profile: React.FC = () => {
               ) : (
                 <>
                   <div className="flex w-full space-x-4">
-                    {/* 이메일 입력창 */}
                     <input
                       type="email"
                       placeholder="이메일을 입력하세요"
@@ -410,13 +435,26 @@ const Profile: React.FC = () => {
                       onChange={(e) => setEmailInput(e.target.value)}
                       className="flex-1 p-3 rounded-lg bg-[#3f3f3f] text-white border-none focus:outline-none"
                     />
-
-                    {/* 인증 버튼 */}
                     <button
                       onClick={handleSendVerification}
-                      className="p-3 rounded-lg text-white font-medium bg-[#3b7cc9] hover:bg-[#2d62a0] transition-colors"
+                      className={`p-3 rounded-lg text-white font-medium transition-colors
+                        ${isEmailRequesting
+                          ? 'bg-gray-400 cursor-not-allowed shadow-none'
+                          : 'bg-[#3b7cc9] hover:bg-[#2d62a0] active:scale-95'}
+                      `}
+                      disabled={isEmailRequesting}
                     >
-                      인증 요청
+                      {isEmailRequesting ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                          </svg>
+                          요청 중...
+                        </span>
+                      ) : (
+                        '인증 요청'
+                      )}
                     </button>
                   </div>
                   {isEmailSent && (

@@ -401,6 +401,7 @@ const Login: React.FC = () => {
                 TreeNut과 함께 편리한 AI 서비스를 이용해보세요
               </h2>
               <div className="flex flex-col items-center mb-3">
+                {/* 기존 소셜 로그인 버튼들 */}
                 <img
                   src={logo_naver_kr}
                   alt="Naver Logo"
@@ -420,6 +421,42 @@ const Login: React.FC = () => {
                   onClick={handleGoogleLogin}
                   onTouchStart={handleGoogleLogin}
                 />
+                {/* 게스트 입장 버튼 추가 */}
+                {window.location.search.includes('expired=true') && (
+                  <button
+                    type="button"
+                    className="w-full mt-2 font-semibold tracking-wider py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 transition"
+                    onClick={async () => {
+                      // 게스트용 임시 아이디/비번/이메일 생성
+                      const guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
+                      const guestPw = Math.random().toString(36).substring(2, 12);
+                      const guestEmail = guestId + '@guest.treenut.ai';
+
+                      try {
+                        const response = await axios.post('/server/user/register', {
+                          id: guestId,
+                          pw: guestPw,
+                          name: '게스트',
+                          email: guestEmail,
+                          privacy_policy: true,
+                          terms_of_service: true,
+                        });
+
+                        if (response.status === 200 && response.data.token) {
+                          setCookie('jwt-token', response.data.token);
+                          setCookie('user_id', guestId);
+                          window.location.href = '/home';
+                        } else {
+                          alert('게스트 회원가입에 실패했습니다. 다시 시도해 주세요.');
+                        }
+                      } catch (e) {
+                        alert('게스트 회원가입 중 오류가 발생했습니다.');
+                      }
+                    }}
+                  >
+                    게스트로 입장
+                  </button>
+                )}
               </div>
               <div className="flex items-center mb-4">
                 <div className="flex-1 h-[1px] bg-gray-300"></div>
